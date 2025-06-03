@@ -1,0 +1,95 @@
+Outline of main flora types of Siberia split into the two main biomes, Taiga and Tundra. 
+Including each of their biomass proportions relative to the whole, and their climate survival 
+conditions. Tree canopy cover ratio included.
+
+
+Taiga
+
+Biomass proportions (percentage of total live‐standing biomass)
+(Values based on g dry mass per m^2 estimates)
+
+Plant group	    Biomass (g/m^2)	     % of total biomass
+Trees (conifers: spruce, pine, fir, larch) 2636 	54.1 %
+Shrubs (dwarf birch, willow, ericaceous) 833 	17.1 %
+Lichens (ground dwelling Cladonia, Peltigera, etc.) 939 	19.3 %
+Mosses (e.g., Sphagnum, Pleurozium) 362 	 7.4 %
+Herbaceous vascular (forbs, grasses, sedges) ≈ 80 	 1.6 %
+
+
+Ground cover proportions (percentage of ground surface beneath the canopy)
+Plant group	Ground cover (%)
+Shrubs (dwarf birch, willow, Ericaceae) 15 % 
+Herbaceous vascular (forbs, grasses, sedges) 33 % 
+Mosses (bryophytes) 20 % 
+Lichens (ground dwelling; Cladonia, Peltigera) 32 %
+
+
+Trees are about 34% canopy cover
+80% coniferous, 20% deciduous
+
+
+Plant Group	Temperature extremes, lethal days	Drought, lethal days
+Coniferous Trees
+(pine, spruce, larch, fir)	
+• Cold: 1 day below –60 °C kills buds/needles of seedlings
+• Heat: ~5 days > 35 °C kills young trees 	• Seedlings: ~70 days without rain (< 0.11 cm/day)
+• Mature: > 100 days severe drought before hydraulic failure
+Dwarf Shrubs
+(dwarf birch, willow, ericaceous)	
+• Cold: survive weeks at –60 °C in dormancy 
+• Heat: ~7 days > 30 °C causes dieback (species dependent)	
+• Established shrubs: begin to fail after ~ 30 days without rain; widespread mortality by ~ 60 days
+Herbaceous Vascular Plants
+(forbs, grasses, sedges)	
+• Frost: single night < 0 °C kills above ground tissues of frost sensitive species 
+• Heat: ~7 days > 30 °C lethal to many forbs	
+• Drought: wilting point reached in 26 ± 9 days; death follows within days
+Mosses
+(Sphagnum, Pleurozium)	
+• Cold: survive ≥ 30 days at –196 °C & ≥ 5 years at –80 °C 
+• Heat: short bursts > 40 °C for days tolerated
+• Survive > 100 days of dryness; only months long drought causes major decline
+Lichens
+(Cladonia, Peltigera, etc.)	
+• Cold/Heat: tolerate –50 °C to + 40 °C extremes for days; survive 15 days in space vacuum 	
+• Remain viable 6 – 12 months without hydration
+
+
+
+https://www.airclim.org/northern-forests-and-climate-change/importance-russian-forests
+https://www.britannica.com/science/taiga/Environmental-conditions
+https://doi.org/10.1038/nclimate1293
+https://www.scirp.org/reference/referencespapers?referenceid=221713
+https://www.sciencedirect.com/science/article/pii/S0098847218317350
+https://www.researchgate.net/publication/201998606_Plants_and_Microclimate
+https://doi.org/10.1007/978-3-642-71745-1
+https://www.jstor.org/stable/20485752
+
+
+Tundra 
+
+Plant Group	Biomass (g/m^2)	% of Total Biomass
+Shrubs (e.g., dwarf birch, willow)	140–340	~35–45%	Dominant in Low Arctic; biomass increases with warmer temperatures.
+Mosses (e.g., Sphagnum, Pleurozium)	0–820	~30–40%	Significant ground cover; varies by location.
+Lichens (e.g., Cladonia, Peltigera)	50–300	~10–20%	Important in High Arctic regions.
+Herbaceous Vascular Plants (forbs, grasses, sedges)	7–112	~5–10%	Includes sedges and grasses; biomass varies with moisture availability.
+
+Plant group	Ground cover (%) 
+Shrubs (e.g., dwarf birch, willow)	15–30%	Coverage increases in warmer, southern tundra regions.
+Mosses (bryophytes)	20–40%	Common across various tundra types; significant in moist areas.
+Lichens (e.g., Cladonia, Peltigera)	10–30%	Predominant in drier, colder regions; crucial for ecosystem function.
+Herbaceous Vascular Plants (forbs, grasses, sedges)	10–25%	Distribution varies with soil moisture and temperature.
+
+Plant Group   Temperature Extremes	 Drought Tolerance
+Shrubs (e.g., dwarf birch, willow)	 Survive down to –60 °C	  Begin to fail after ~30 days without rain
+Mosses (e.g., Sphagnum, Pleurozium)	Survive ≥ 30 days at –196 °C	Survive > 100 days of dryness
+Lichens (e.g., Cladonia, Peltigera)	Tolerate –50 °C to +40 °C	Remain viable 6–12 months without hydration
+Herbaceous Vascular Plants (forbs, grasses, sedges)	Frost-sensitive species can be killed by a single night < 0 °C	Wilting point reached in 26 ± 9 days; death follows within days
+
+https://www.tundrarestoration.com/life-on-the-tundra-1
+https://www.alaska.edu/k12task/docs/adaptations-arctic-plants-2-5-science.pdf
+https://www.whoi.edu/science/po/arcticedge/arctic_west02/facts/facts_plants.html
+https://www.earthdata.nasa.gov/news/feature-articles/spread-green
+https://education.nationalgeographic.org/resource/tundra-biome/
+https://en.wikipedia.org/wiki/Active_layer
+https://en.wikipedia.org/wiki/Permafrost
