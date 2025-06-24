@@ -1,13 +1,12 @@
-Listing of all of the fauna relevant to the simulation. Very small animals have been disregarded as they may 
-have minimal affect on mammoths and increase the complexity of the simulation unceccesarily due to their
-infinite variety.
+Listing of all of the fauna relevant to the simulation and their population estimates. 
+Very small animals have been disregarded as they likely have minimal affect on mammoths and doing so would 
+increase the complexity of the simulation unceccesarily due to their infinite variety of small creatures.
 
 
 Medium to Large Prey
 
-Species	Population Estimate (Siberia)	Notes
-Reindeer (Rangifer tarandus)	~940,000	Managed in 19 herds; Taimyr herd is the largest.
-Moose (Alces alces)	~600,000	Common across the taiga.
+Reindeer (Rangifer tarandus) ~940,000	Managed in 19 herds; Taimyr herd is the largest.
+Moose (Alces alces)	~600,000 Common across the taiga.
 Siberian Roe Deer (Capreolus pygargus)	~326,825	Found in forest and steppe regions.
 Wild Boar (Sus scrofa)	~300,000–350,000	Expanding range.
 Red Deer (Cervus elaphus sibiricus)	~250,000–300,000	Inhabits southern and central Siberia.
@@ -25,9 +24,8 @@ European Bison (Bison bonasus)	~1,000	Reintroduction efforts have established sm
 Mongolian Gazelle (Procapra gutturosa)	~500,000	Trans-Baikal; southern Siberia.
 
 
-Small prey 
+Small prey (only those with high population chosen)
 
-Species	Population Estimate	Notes
 Mountain Hare (Lepus timidus)	Millions (cyclic)	Primary prey for lynx, foxes; adapts to snow.
 Tolai Hare (Lepus tolai)	Hundreds of thousands	Southern steppe zones.
 Northern Pika (Ochotona hyperborea)	Locally abundant	Rocky taiga/tundra; prey for raptors, weasels.
@@ -36,16 +34,15 @@ Alpine Pika (Ochotona alpina)	Locally abundant	Mountain prey species; important 
 
 Medium to Large Predators 
 
-Species	Population Estimate (Siberia)	Notes
-Brown Bear (Ursus arctos)	~120,000	Most numerous large predator; distributed across taiga and forested mountains.
+Brown Bear (Ursus arctos) ~120,000	Most numerous large predator; distributed across taiga and forested mountains.
 Red Fox (Vulpes vulpes)	100,000+	Very adaptable; widespread across taiga, tundra, and steppe.
 Gray Wolf (Canis lupus)	~39,980	Significant presence in forest and open terrain; apex predator in many zones.
-Eurasian Lynx (Lynx lynx)	~13,510	Important forest predator; especially reliant on hares and roe deer.
-Eurasian Badger (Meles meles)	~50,000+	Omnivorous mesopredator; common in forest-steppe.
+Eurasian Lynx (Lynx lynx) ~13,510	Important forest predator; especially reliant on hares and roe deer.
+Eurasian Badger (Meles meles) ~50,000+	Omnivorous mesopredator; common in forest-steppe.
 Asian Black Bear (Ursus thibetanus)	~5,000–7,000	Restricted to SE Siberia (Amur-Ussuri); forested habitats.
-Steppe Eagle (Aquila nipalensis)	~4,000–6,000 individuals	Predatory raptor; southern steppe and semi-open areas of southern Siberia.
-Polar Bear (Ursus maritimus)	~3,000	Coastal Arctic predator, especially in Chukotka and Laptev Sea regions.
-Wolverine (Gulo gulo)	~2,000–3,000	Wide-ranging; taiga and tundra; important scavenger and predator.
+Steppe Eagle (Aquila nipalensis) ~4,000–6,000 individuals	Predatory raptor; southern steppe and semi-open areas of southern Siberia.
+Polar Bear (Ursus maritimus) ~3,000	Coastal Arctic predator, especially in Chukotka and Laptev Sea regions.
+Wolverine (Gulo gulo) ~2,000–3,000	Wide-ranging; taiga and tundra; important scavenger and predator.
 Siberian Tiger (Panthera tigris altaica)	~400–700	Russian Far East; apex predator of the Sikhote-Alin.
 Amur Leopard (Panthera pardus orientalis)	~128–130	Critically endangered; SE corner of Siberia (Primorye).
 Snow Leopard (Panthera uncia)	~70–90	Altai and Sayan Mountains; elusive and rare.
@@ -56,33 +53,32 @@ Siberian Weasel (Mustela sibirica)	Widespread	Small, flexible predator; found th
 
 References:
 
-https://www.researchgate.net/publication/43297001_Populations_of_wild_and_feral_reindeer_in_Siberia_and_Far_East_of_Russia  
-https://www.researchgate.net/publication/346888324_Using_spatial_data_on_habitat_suitability_in_estimation_of_wild_boar_resources_in_Russia  
-https://earthobservatory.nasa.gov/images/146621/mapping-moose-populations-in-russia  
-https://e360.yale.edu/features/on_far-flung_wrangel_island_a_scientist_sizes_up_muskoxen  
-https://www.boone-crockett.org/chasing-worlds-largest-sheep-altai-argali-russia-mongolia-transboundary-zone  
-https://polarbearsinternational.org/what-we-do/research/chukchi-sea-polar-bears/  
-https://www.frontiersin.org/articles/10.3389/fevo.2022.869161/full  
+https://www.researchgate.net/publication/43297001_Populations_of_wild_and_feral_reindeer_in_Siberia_and_Far_East_of_Russia
+https://www.researchgate.net/publication/346888324_Using_spatial_data_on_habitat_suitability_in_estimation_of_wild_boar_resources_in_Russia
+https://earthobservatory.nasa.gov/images/146621/mapping-moose-populations-in-russia
+https://e360.yale.edu/features/on_far-flung_wrangel_island_a_scientist_sizes_up_muskoxen
+https://www.boone-crockett.org/chasing-worlds-largest-sheep-altai-argali-russia-mongolia-transboundary-zone
+https://polarbearsinternational.org/what-we-do/research/chukchi-sea-polar-bears/
+https://www.frontiersin.org/articles/10.3389/fevo.2022.869161/full
 https://wild-edens.com/foxes-leopards-and-sheep-visit-russias-altai-mountains/
-https://en.wikipedia.org/wiki/Reindeer  
-https://en.wikipedia.org/wiki/Siberian_roe_deer  
-https://en.wikipedia.org/wiki/Red_deer  
-https://en.wikipedia.org/wiki/Siberian_musk_deer  
-https://en.wikipedia.org/wiki/Snow_sheep  
-https://en.wikipedia.org/wiki/Siberian_ibex  
-https://en.wikipedia.org/wiki/Sika_deer  
-https://en.wikipedia.org/wiki/Saiga_antelope  
-https://en.wikipedia.org/wiki/Yakutian_horse  
-https://en.wikipedia.org/wiki/Mongolian_gazelle  
-https://en.wikipedia.org/wiki/List_of_carnivorans_by_population  
-https://en.wikipedia.org/wiki/Asian_black_bear  
-https://en.wikipedia.org/wiki/Siberian_tiger  
-https://en.wikipedia.org/wiki/Amur_leopard  
-https://en.wikipedia.org/wiki/Snow_leopard  
-https://en.wikipedia.org/wiki/Wolverine  
-https://en.wikipedia.org/wiki/Steppe_eagle  
-https://en.wikipedia.org/wiki/Mountain_hare  
-https://en.wikipedia.org/wiki/Tolai_hare  
-https://en.wikipedia.org/wiki/Northern_pika  
-https://en.wikipedia.org/wiki/Alpine_pika  
-
+https://en.wikipedia.org/wiki/Reindeer
+https://en.wikipedia.org/wiki/Siberian_roe_deer
+https://en.wikipedia.org/wiki/Red_deer
+https://en.wikipedia.org/wiki/Siberian_musk_deer
+https://en.wikipedia.org/wiki/Snow_sheep
+https://en.wikipedia.org/wiki/Siberian_ibex
+https://en.wikipedia.org/wiki/Sika_deer
+https://en.wikipedia.org/wiki/Saiga_antelope
+https://en.wikipedia.org/wiki/Yakutian_horse
+https://en.wikipedia.org/wiki/Mongolian_gazelle
+https://en.wikipedia.org/wiki/List_of_carnivorans_by_population
+https://en.wikipedia.org/wiki/Asian_black_bear
+https://en.wikipedia.org/wiki/Siberian_tiger
+https://en.wikipedia.org/wiki/Amur_leopard
+https://en.wikipedia.org/wiki/Snow_leopard
+https://en.wikipedia.org/wiki/Wolverine
+https://en.wikipedia.org/wiki/Steppe_eagle
+https://en.wikipedia.org/wiki/Mountain_hare
+https://en.wikipedia.org/wiki/Tolai_hare
+https://en.wikipedia.org/wiki/Northern_pika
+https://en.wikipedia.org/wiki/Alpine_pika
