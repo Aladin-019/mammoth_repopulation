@@ -7,14 +7,25 @@ With the advent of genetic cloning, mammoth repopulation of Siberia has been a n
 - Saskylakh (southern tundra)
 - Cape Chelyuskin (northern tundra)
 
-## Attribution
+## Climate Data Attribution
 This project uses data from the **Copernicus Climate Data Store (CDS)**:
 - Product: ERA5 hourly data on single levels
 - Variable: 2 metre temperature (short name `2t`)
 - License: [Copernicus Licence](https://cds.climate.copernicus.eu/disclaimer/licence)
-- Data provider: © European Centre for Medium-Range Weather Forecasts (ECMWF)
+- Data provider: European Centre for Medium-Range Weather Forecasts (ECMWF)
 
 Derived temperature statistics (not raw data) are shared in this repository.
+
+### Map Data Attribution
+The file `custom.geo.json` was generated from [https://geojson-maps.kyd.au](https://geojson-maps.kyd.au),
+a public tool for generating simplified GeoJSON maps.
+
+Underlying data is likely derived from either:
+- [Natural Earth](https://www.naturalearthdata.com/) — public domain, or
+- [OpenStreetMap](https://www.openstreetmap.org/) — Open Database License (ODbL)
+
+If the source is OpenStreetMap, the following attribution applies:
+OpenStreetMap contributors | www.openstreetmap.org | ODbL 1.0
 
 ## Requirements
 - Python 3.8+
