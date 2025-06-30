@@ -23,4 +23,10 @@ class TemperatureDriver:
             float: Simulated daily temperature for the given location and day.
         """
         mean, var = self.temp_data[location][day]
-        return np.random.normal(mean + biome_offset, var)
+        if mean is None or var is None:
+            raise ValueError(f"Temperature data for {location} on day {day} is missing.")
+        
+        # Random sample from normal distribution, mean and std deviation
+        if var < 0:
+            raise ValueError("Variance cannot be negative")
+        return np.random.normal(mean + biome_offset, np.sqrt(var))
