@@ -120,35 +120,20 @@ class Flora():
         # How far from center in units of "ideal range width"
         normalized_distance = (abs(current_value - mid) / width)
         return -min(normalized_distance, 2.0)  # Cap distance at 2.0
-
-    def get_consumer_population(self, consumer: Fauna) -> int:
-        """
-        Get the population of a specific consumer species that depends on this flora.
-        consumer (Fauna): The consumer species to check.
-        """
-        # Check if the consumer is in our consumers list
-        is_consumer = False
-        for c in self.consumers:
-            if c.get_name() == consumer.get_name():
-                is_consumer = True
-                break
-        
-        if not is_consumer:
-            return 0
-            
-        # Check if the consumer exists on the plot
-        plot_fauna = self.get_all_fauna()
-        for fauna in plot_fauna:
-            if fauna.get_name() == consumer.get_name():
-                return consumer.population
-        
-        return 0
+    
 
     def total_consumption_rate(self) -> float:
         """
         Calculate the total consumption rate of all consumers that depend on this flora.
+        Only consumers present on the plot are considered.
         """
-        if not self.consumers:
-            return 0.0  
-        total_rate = sum(consumer.population * consumer.get_feeding_rate() for consumer in self.consumers)
+        total_rate = 0.0
+        plot_fauna = self.plot.get_all_fauna()
+
+        for consumer in self.consumers:
+            for fauna in plot_fauna:
+                if fauna.get_name() == consumer.get_name():
+                    total_rate += fauna.population * fauna.get_feeding_rate()
+                    break
+
         return total_rate
