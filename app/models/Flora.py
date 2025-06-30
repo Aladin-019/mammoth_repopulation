@@ -6,15 +6,15 @@
 
 from app.models.Fauna import Fauna
 from typing import List, Tuple
-from app.interfaces.plot_info import PlotInformation
 from app.interfaces.flora_plot_info import FloraPlotInformation
 
 
-class Flora(FloraPlotInformation):
+class Flora():
     def __init__(self, name: str, description: str, total_mass: float,
                  ideal_growth_rate: float, ideal_temp_range: Tuple[float, float],
                  ideal_uv_range: Tuple[float, float], ideal_hydration_range: Tuple[float, float],
-                 ideal_soil_temp_range: Tuple[float, float], consumers: List[Fauna], root_depth: int):
+                 ideal_soil_temp_range: Tuple[float, float], consumers: List[Fauna], root_depth: int,
+                 plot: FloraPlotInformation):
         """
         Represents a flora species.
         Ideal ranges for temperature, UV index, hydration, and soil temperature
@@ -41,50 +41,85 @@ class Flora(FloraPlotInformation):
         self.ideal_soil_temp_range = ideal_soil_temp_range  # Celsius
         self.consumers = consumers                   # List of (Fauna) consumers that depend on this flora
         self.root_depth = root_depth                 # Depth of the roots by soil depth level (1-4)
+        self.plot = plot                             # The plot this flora is associated with
 
     def get_name(self) -> str:
         """
         Returns the name of the flora species.
         """
         return self.name
+    
+    def get_description(self) -> str:
+        """
+        Returns the description of the flora species.
+        """
+        return self.description
+    
+    def get_total_mass(self) -> float:
+        """
+        Returns the total mass of the flora species.
+        """
+        return self.total_mass
 
     def update_flora_mass(self, current_temp: float, current_uv: float,
                              current_hydration: float, current_soil_temp: float) -> float:
         """
         Update the mass of the flora based on the current environmental conditions.
         The mass is adjusted
+        based on the distance from the ideal ranges for temperature, UV index,
+        hydration, and soil temperature.
+        current_temp (float): Current temperature in Celsius
+        current_uv (float): Current UV index
+        current_hydration (float): Current hydration in kg/day
+        current_soil_temp (float): Current soil temperature in Celsius
         """
 
-        temp_distance = self.distance_from_ideal_range(current_temp, self.ideal_temp_range)
-        uv_distance = self.distance_from_ideal_range(current_uv, self.ideal_uv_range)
-        hydration_distance = self.distance_from_ideal_range(current_hydration, self.ideal_hydration_range)
-        soil_temp_distance = self.distance_from_ideal_range(current_soil_temp, self.ideal_soil_temp_range)
+         # Each returns a negative number or 0
+        temp_factor = self.distance_from_ideal(current_temp, self.ideal_temp_range)
+        uv_factor = self.distance_from_ideal(current_uv, self.ideal_uv_range)
+        hydration_factor = self.distance_from_ideal(current_hydration, self.ideal_hydration_range)
+        soil_temp_factor = self.distance_from_ideal(current_soil_temp, self.ideal_soil_temp_range)
 
-        # When climate values are in ideal range, distances will be 0 and wont affect the growth rate.
-        # Environmental flora decay factors acounted for here.
-        base_growth_rate = (self.ideal_growth_rate *
-                            (temp_distance + uv_distance + hydration_distance + soil_temp_distance))
-        
-        consumption_rate = self.total_consumption_rate()   
-        actual_growth_rate = base_growth_rate - consumption_rate   #kg/km^2/day (kg/plot/day)
+        # Average penalty, it ranges from 0 (ideal) to -2 (bad)
+        penalty_avg = (temp_factor + uv_factor + hydration_factor + soil_temp_factor) / 4
+
+        # Modify ideal growth rate by penalty
+        base_growth_rate = self.ideal_growth_rate * (1 + penalty_avg)
+
+        # Consumption from consumers
+        consumption_rate = self.total_consumption_rate()
+
+        # Net growth
+        actual_growth_rate = base_growth_rate - consumption_rate
         new_mass = self.total_mass + self.total_mass * actual_growth_rate
 
-        self.total_mass = new_mass
+        self.total_mass = max(0, new_mass)  # Prevent negative mass
 
-    def distance_from_ideal_range(self, current_value: float, ideal_range: tuple) -> float:
+    def distance_from_ideal(self, current_value: float, ideal_range: tuple) -> float:
         """
         Calculate the distance of the current value from the ideal range.
         current_value (float): The current environmental value
         ideal_range (tuple): A tuple representing the ideal range (min, max)
         Returns:
-            float: The distance from the ideal range
+            float: The distance from the ideal range (-2 - 0), 0 being ideal, -2 being farthest from ideal.
+
+        The reason for capping at -2 is to satisfy a (-1, 1) range for the penalty applied to ideal growth rate
+        in the following formula of Flora.update_flora_mass():
+        base_growth_rate = self.ideal_growth_rate * (1 + penalty_avg)
         """
-        if current_value < ideal_range[0]:
-            return ideal_range[0] - current_value
-        elif current_value > ideal_range[1]:
-            return current_value - ideal_range[1]
-        else:
-            return 0
+        min_val, max_val = ideal_range
+        if min_val == max_val:
+            return 0  # Avoid division by zero
+
+        mid = (min_val + max_val) / 2
+        width = (max_val - min_val) / 2
+
+        if min_val <= current_value <= max_val:
+            return 0.0  # Ideal
+
+        # How far from center in units of "ideal range width"
+        normalized_distance = (abs(current_value - mid) / width)
+        return -min(normalized_distance, 2.0)  # Cap distance at 2.0
 
     def get_consumer_population(self, consumer: Fauna) -> int:
         """
@@ -101,7 +136,7 @@ class Flora(FloraPlotInformation):
         if not is_consumer:
             return 0
             
-        # Check if the consumer exists on the plot using interface method
+        # Check if the consumer exists on the plot
         plot_fauna = self.get_all_fauna()
         for fauna in plot_fauna:
             if fauna.get_name() == consumer.get_name():
@@ -117,59 +152,3 @@ class Flora(FloraPlotInformation):
             return 0.0  
         total_rate = sum(consumer.population * consumer.get_feeding_rate() for consumer in self.consumers)
         return total_rate
-
-    def get_total_mass(self) -> float:
-        """
-        Returns the total mass of the flora species.
-        """
-        return self.total_mass
-
-    # Abstract method implementations required by PlotInformation
-    def get_temp(self) -> float:
-        """
-        Returns the current temperature. This would need to be implemented
-        to get the actual temperature from the plot.
-        """
-        # This is a placeholder - in a real implementation, this would get the temperature from the plot
-        return 0.0
-
-    def get_all_fauna(self) -> list:
-        """
-        Returns all fauna on the plot. This would need to be implemented
-        to get the actual fauna from the plot.
-        """
-        # This is a placeholder - in a real implementation, this would get fauna from the plot
-        return []
-
-    def get_all_flora(self) -> list:
-        """
-        Returns all flora on the plot. This would need to be implemented
-        to get the actual flora from the plot.
-        """
-        # This is a placeholder - in a real implementation, this would get flora from the plot
-        return []
-
-    # Abstract method implementations required by FloraPlotInformation
-    def get_rainfall(self) -> float:
-        """
-        Returns the current rainfall. This would need to be implemented
-        to get the actual rainfall from the plot.
-        """
-        # This is a placeholder - in a real implementation, this would get rainfall from the plot
-        return 0.0
-
-    def get_snowfall(self) -> float:
-        """
-        Returns the current snowfall. This would need to be implemented
-        to get the actual snowfall from the plot.
-        """
-        # This is a placeholder - in a real implementation, this would get snowfall from the plot
-        return 0.0
-
-    def get_uv_index(self) -> float:
-        """
-        Returns the current UV index. This would need to be implemented
-        to get the actual UV index from the plot.
-        """
-        # This is a placeholder - in a real implementation, this would get UV index from the plot
-        return 0.0

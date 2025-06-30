@@ -23,7 +23,8 @@ class TestFlora(unittest.TestCase):
             ideal_hydration_range=(1.0, 5.0),
             ideal_soil_temp_range=(2.0, 12.0),
             consumers=[self.consumer],
-            root_depth=1.0
+            root_depth=1.0,
+            plot=MagicMock()  # Mock the FloraPlotInformation interface
         )
 
     def test_flora_creation(self):
@@ -65,16 +66,24 @@ class TestFlora(unittest.TestCase):
     def test_distance_from_ideal_range(self):
         """Test distance calculation from ideal range"""
         # Test value within range
-        distance = self.flora.distance_from_ideal_range(5.0, (0.0, 10.0))
+        distance = self.flora.distance_from_ideal(5.0, (0.0, 10.0))
         self.assertEqual(distance, 0.0)
+
+        # Test value below range but below maximum penalty edge
+        distance = self.flora.distance_from_ideal(-2.0, (0.0, 10.0))
+        self.assertEqual(distance, -1.4)
         
-        # Test value below range
-        distance = self.flora.distance_from_ideal_range(-5.0, (0.0, 10.0))
-        self.assertEqual(distance, 5.0)
+        # Test value below range at maximum penalty edge
+        distance = self.flora.distance_from_ideal(-5.0, (0.0, 10.0))
+        self.assertEqual(distance, -2.0)
         
-        # Test value above range
-        distance = self.flora.distance_from_ideal_range(15.0, (0.0, 10.0))
-        self.assertEqual(distance, 5.0)
+        # Test value above range at maximum penalty edge
+        distance = self.flora.distance_from_ideal(15.0, (0.0, 10.0))
+        self.assertEqual(distance, -2.0)
+
+        # Test value above range and well above maximum penalty edge
+        distance = self.flora.distance_from_ideal(100.0, (0.0, 10.0))
+        self.assertEqual(distance, -2.0)
 
 
 if __name__ == "__main__":
