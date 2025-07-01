@@ -3,7 +3,14 @@ import logging
 
 class UVLoader:
     """
-    Loads daily UV mean and variance data from a CSV file for a specific location.
+    UVLoader is responsible for loading and organizing UV data from a CSV file
+    for a specific geographic location. It extracts the daily mean and variance of UV
+    and stores them in a structured dictionary format that is optimized for lookup by day of year.
+
+    Attributes:
+        location (str): The label identifying the geographic location.
+        uv_data (dict): A nested dictionary mapping day numbers to a tuple of (mean_uv, uv_var).
+                        Example: { "location": { day_number: (mean_uv, uv_var) } }
     """
 
     def __init__(self, filepath: str, location: str):
