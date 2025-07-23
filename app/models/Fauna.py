@@ -70,28 +70,6 @@ class Fauna:
         Returns the feeding rate of the fauna species.
         """
         return self.feeding_rate
-    
-    def update_fauna_mass(self, current_temp: float, current_food: float) -> float:
-        """
-        Update the total mass of the fauna based on current environmental conditions.
-        current_temp (float): Current temperature in Celsius
-        current_food (float): Current food intake in kg/day
-        """
-
-        current_temp = self.plot.get_temperature() if current_temp is None else current_temp
-        current_food = self.plot.total_available_food() if current_food is None else current_food
-
-        # penalties range from 0 (ideal) to -2 (bad)
-        penalty_temp = self.distance_from_ideal(current_temp, self.ideal_temp_range)
-        penalty_food = self.distance_from_ideal(current_food, self.ideal_food_range)
-        penalty_avg = (penalty_temp + penalty_food) / 2
-
-        
-        base_growth_rate = self.ideal_growth_rate * (1 + penalty_avg)
-        consumption_rate = self.total_consumption_rate()
-        actual_growth_rate = base_growth_rate - consumption_rate
-        new_mass = self.total_mass + self.total_mass * actual_growth_rate
-        self.total_mass = max(0, new_mass)  # Prevent negative mass
 
     def distance_from_ideal(self, current_value: float, ideal_range: tuple) -> float:
         """
