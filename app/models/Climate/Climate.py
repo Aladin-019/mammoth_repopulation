@@ -362,7 +362,7 @@ class Climate:
         Steppe conditions are characterized by high grass ratio, low shrub ratio, and valid permafrost.
         """
         try:
-            # First check permafrost conditions
+            # Check permafrost conditions
             if not self.is_permafrost():
                 logger.warning("Steppe conditions require valid permafrost")
                 return False
