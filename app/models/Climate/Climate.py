@@ -57,14 +57,22 @@ class Climate:
     Handles all of the climate logic for selecting and running the correct climate driver
     for the corresponding biome and day of the year, and changes in climate conditions based on
     environmental (plot) conditions.
-    Attributes:
-        biome (str): The biome type of the plot.
-        plot (PlotInformation): The plot information object containing environmental data.
-        loaders (dict): A dictionary to cache climate loaders for different types.
-        consecutive_frozen_soil_days (int): Counter for consecutive frozen soil days.
-        recent_values (dict): Cache of recent values for fallback when data is None (limited to past week).
     """
     def __init__(self, biome: str, plot: PlotInformation):
+        """
+        Initialize a Climate instance.
+        
+        Args:
+            biome (str): The biome type of the plot.
+            plot (PlotInformation): The plot information object containing environmental data.
+            
+        Attributes:
+            biome (str): The biome type of the plot.
+            plot (PlotInformation): The plot information object containing environmental data.
+            loaders (dict): A dictionary to cache climate loaders for different types.
+            consecutive_frozen_soil_days (int): Counter for consecutive frozen soil days.
+            recent_values (dict): Cache of recent values for fallback when data is None (limited to past week).
+        """
         if not isinstance(biome, str):
             raise ValueError(f"Biome must be a string, got: {type(biome)}")
         
