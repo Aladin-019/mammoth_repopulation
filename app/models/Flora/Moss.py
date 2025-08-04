@@ -22,7 +22,7 @@ class Moss(Flora):
                         ideal_temp_range, ideal_uv_range, ideal_hydration_range,
                         ideal_soil_temp_range, consumers, root_depth, plot)
 
-    def update_flora_mass(self, day: int) -> float:
+    def update_flora_mass(self, day: int) -> None:
         """
         Update the mass of the Moss.
         Mosses do well in cold and wetter conditions such as Tundra.
