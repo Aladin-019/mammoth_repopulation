@@ -187,37 +187,37 @@ class Plot(FloraPlotInformation):
         """Get current temperature for the given day."""
         self._validate_instance(day, int, "day")
         self._validate_positive_number(day, "day")
-        return self.climate.get_current_temperature(day)
+        return self.climate._get_current_temperature(day)
     
     def get_current_soil_temp(self, day: int) -> float:
         """Get current soil temperature for the given day."""
         self._validate_instance(day, int, "day")
         self._validate_positive_number(day, "day")
-        return self.climate.get_current_soil_temp(day)
+        return self.climate._get_current_soil_temp(day)
     
     def get_current_snowfall(self, day: int) -> float:
         """Get current snowfall for the given day."""
         self._validate_instance(day, int, "day")
         self._validate_positive_number(day, "day")
-        return self.climate.get_current_snowfall(day)
+        return self.climate._get_current_snowfall(day)
     
     def get_current_rainfall(self, day: int) -> float:
         """Get current rainfall for the given day."""
         self._validate_instance(day, int, "day")
         self._validate_positive_number(day, "day")
-        return self.climate.get_current_rainfall(day)
+        return self.climate._get_current_rainfall(day)
     
     def get_current_uv(self, day: int) -> float:
         """Get current UV index for the given day."""
         self._validate_instance(day, int, "day")
         self._validate_positive_number(day, "day")
-        return self.climate.get_current_uv(day)
+        return self.climate._get_current_uv(day)
     
     def get_current_SSRD(self, day: int) -> float:
         """Get current SSRD for the given day."""
         self._validate_instance(day, int, "day")
         self._validate_positive_number(day, "day")
-        return self.climate.get_current_SSRD(day)
+        return self.climate._get_current_SSRD(day)
     
     def update_avg_snow_height(self, day: int):
         """

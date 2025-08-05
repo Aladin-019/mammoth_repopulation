@@ -25,7 +25,7 @@ class Flora():
             ValueError: If value is not a valid string.
         """
         if not isinstance(value, str):
-            raise ValueError(f"{name} must be a string, got: {type(value)}")
+            raise TypeError(f"{name} must be a string, got: {type(value)}")
         
         if not allow_empty and not value.strip():
             raise ValueError(f"{name} cannot be empty")
@@ -43,7 +43,7 @@ class Flora():
             ValueError: If value is not a valid positive number
         """
         if not isinstance(value, (int, float)):
-            raise ValueError(f"{name} must be a number, got: {type(value)}")
+            raise TypeError(f"{name} must be a number, got: {type(value)}")
         
         if allow_zero and value < 0:
             raise ValueError(f"{name} must be non-negative, got: {value}")
@@ -62,7 +62,7 @@ class Flora():
             ValueError: If value is not a valid range tuple.
         """
         if not isinstance(value, tuple) or len(value) != 2:
-            raise ValueError(f"{name} must be a tuple of 2 values, got: {value}")
+            raise TypeError(f"{name} must be a tuple of 2 values, got: {value}")
         
         if not all(isinstance(x, (int, float)) for x in value):
             raise ValueError(f"{name} must contain only numbers, got: {value}")
@@ -84,7 +84,7 @@ class Flora():
             ValueError: If value is not a valid integer in range.
         """
         if not isinstance(value, int):
-            raise ValueError(f"{name} must be an integer, got: {type(value)}")
+            raise TypeError(f"{name} must be an integer, got: {type(value)}")
         
         if value < min_val or value > max_val:     # inclusive range
             raise ValueError(f"{name} must be between {min_val} and {max_val}, got: {value}")
@@ -102,7 +102,7 @@ class Flora():
             ValueError: If value is not a valid list.
         """
         if not isinstance(value, list):
-            raise ValueError(f"{name} must be a list, got: {type(value)}")
+            raise TypeError(f"{name} must be a list, got: {type(value)}")
         
         if element_type and not all(isinstance(item, element_type) for item in value):
             raise ValueError(f"{name} must contain only {element_type.__name__} objects")
@@ -164,19 +164,37 @@ class Flora():
             ValueError: If any input parameters are invalid.
             TypeError: If any input parameters have incorrect types.
         """
-        # Input validation using helper functions
+        self._validate_instance(name, str, "name")
         self._validate_string(name, "name")
+        
+        self._validate_instance(description, str, "description")
         self._validate_string(description, "description", allow_empty=True)
+        
+        self._validate_instance(total_mass, float, "total_mass")
         self._validate_positive_number(total_mass, "total_mass")
+        
+        self._validate_instance(population, int, "population")
         self._validate_positive_number(population, "population")
+        
+        self._validate_instance(ideal_growth_rate, float, "ideal_growth_rate")
         self._validate_positive_number(ideal_growth_rate, "ideal_growth_rate")
         
+        self._validate_instance(ideal_temp_range, tuple, "ideal_temp_range")
         self._validate_range_tuple(ideal_temp_range, "ideal_temp_range")
+        
+        self._validate_instance(ideal_uv_range, tuple, "ideal_uv_range")
         self._validate_range_tuple(ideal_uv_range, "ideal_uv_range")
+        
+        self._validate_instance(ideal_hydration_range, tuple, "ideal_hydration_range")
         self._validate_range_tuple(ideal_hydration_range, "ideal_hydration_range")
+        
+        self._validate_instance(ideal_soil_temp_range, tuple, "ideal_soil_temp_range")
         self._validate_range_tuple(ideal_soil_temp_range, "ideal_soil_temp_range")
         
+        self._validate_instance(consumers, list, "consumers")
         self._validate_list(consumers, "consumers", Fauna)
+        
+        self._validate_instance(root_depth, int, "root_depth")
         self._validate_integer_range(root_depth, "root_depth", 1, 4)
         
         self._validate_not_none(plot, "plot")
@@ -185,20 +203,19 @@ class Flora():
         try:
             self.name = name
             self.description = description
-            self.total_mass = float(total_mass)          # Total mass kg
-            self.population = population                 # Population count
-            self.ideal_growth_rate = float(ideal_growth_rate)   # kg/day
-            self.ideal_temp_range = ideal_temp_range     # Celsius
-            self.ideal_uv_range = ideal_uv_range         # UV index
-            self.ideal_hydration_range = ideal_hydration_range  # kg/day
-            self.ideal_soil_temp_range = ideal_soil_temp_range  # Celsius
-            self.consumers = consumers                   # List of (Fauna) consumers that depend on this flora
-            self.root_depth = root_depth                 # Depth of the roots by soil depth level (1-4)
-            self.plot = plot                             # The plot this flora is associated with
+            self.total_mass = float(total_mass)             
+            self.population = population                 
+            self.ideal_growth_rate = float(ideal_growth_rate)   
+            self.ideal_temp_range = ideal_temp_range     
+            self.ideal_uv_range = ideal_uv_range         
+            self.ideal_hydration_range = ideal_hydration_range 
+            self.ideal_soil_temp_range = ideal_soil_temp_range 
+            self.consumers = consumers                   
+            self.root_depth = root_depth                 
+            self.plot = plot                             
                         
         except Exception as e:
-            logger.error(f"Failed to initialize Flora {name}: {e}")
-            raise RuntimeError(f"Failed to initialize Flora: {e}")
+            raise RuntimeError(f"Failed to initialize Flora {name}: {e}")
 
     def get_name(self) -> str:
         return self.name

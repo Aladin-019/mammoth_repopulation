@@ -65,7 +65,9 @@ class Climate:
         Args:
             biome (str): The biome type of the plot.
             plot (PlotInformation): The plot information object containing environmental data.
-            
+        Raises:
+            ValueError: If any input parameters are invalid.
+            TypeError: If any input parameters have incorrect types.
         Attributes:
             biome (str): The biome type of the plot.
             plot (PlotInformation): The plot information object containing environmental data.
@@ -74,28 +76,34 @@ class Climate:
             recent_values (dict): Cache of recent values for fallback when data is None (limited to past week).
         """
         if not isinstance(biome, str):
-            raise ValueError(f"Biome must be a string, got: {type(biome)}")
+            raise TypeError(f"Biome must be a string, got: {type(biome)}")
         
         if biome not in BIOME_FILE_MAP:
             raise ValueError(f"Unknown biome: {biome}. Available biomes: {list(BIOME_FILE_MAP.keys())}")
         
-        self.biome = biome
-        self.plot = plot
-        self.loaders = {}
-        self.consecutive_frozen_soil_days = 0
-        self.recent_values = {
-            'temperature': deque(maxlen=7),  # keep last 7 days
-            'soil_temp': deque(maxlen=7),
-            'snowfall': deque(maxlen=7),
-            'rainfall': deque(maxlen=7),
-            'uv': deque(maxlen=7),
-            'ssrd': deque(maxlen=7)
-        }
+        if not isinstance(plot, PlotInformation):
+            raise TypeError(f"Plot must be an instance of PlotInformation, got: {type(plot)}")
+        
+        try:
+            self.biome = biome
+            self.plot = plot
+            self.loaders = {}
+            self.consecutive_frozen_soil_days = 0
+            self.recent_values = {
+                'temperature': deque(maxlen=7),  # keep last 7 days
+                'soil_temp': deque(maxlen=7),
+                'snowfall': deque(maxlen=7),
+                'rainfall': deque(maxlen=7),
+                'uv': deque(maxlen=7),
+                'ssrd': deque(maxlen=7)
+            }
+        except Exception as e:
+            raise RuntimeError(f"Failed to initialize Climate: {e}")
 
     def set_biome(self, new_biome: str) -> None:
         """Set the biome for this climate instance."""
         if not isinstance(new_biome, str):
-            raise ValueError(f"Biome must be a string, got: {type(new_biome)}")
+            raise TypeError(f"Biome must be a string, got: {type(new_biome)}")
         
         if new_biome not in BIOME_FILE_MAP:
             raise ValueError(f"Unknown biome: {new_biome}. Available biomes: {list(BIOME_FILE_MAP.keys())}")
@@ -153,7 +161,7 @@ class Climate:
         if data_type in self.recent_values:
             self.recent_values[data_type].append(value)
 
-    def get_current_temperature(self, day: int) -> float:
+    def _get_current_temperature(self, day: int) -> float:
         """
         Returns 2m air temperature as a sum of the random 2m temperature from the 
         regional data for the current day and the change in 2m temperature
@@ -163,8 +171,11 @@ class Climate:
         returns:
             float: The current temperature for the given day in the biome.
         """
-        if not isinstance(day, int) or day < 1 or day > 365:
-            raise ValueError(f"Day must be an integer between 1 and 365, got: {day}")
+        if not isinstance(day, int):
+            raise TypeError(f"Day must be an integer, got: {type(day)}")
+        
+        if day < 1 or day > 365:
+            raise ValueError(f"Day must be between 1 and 365, got: {day}")
         
         try:
             delta_snow_height = self.plot.delta_snow_height()
@@ -183,7 +194,7 @@ class Climate:
         except Exception as e:
             raise RuntimeError(f"Failed to get temperature for day {day}: {e}")
     
-    def get_current_soil_temp(self, day: int) -> float:
+    def _get_current_soil_temp(self, day: int) -> float:
         """
         Returns the soil temperature at level 4 depth as a sum of the random soil temperature
         from the regional data for the current day and the change in soil temperature
@@ -193,8 +204,11 @@ class Climate:
         returns:
             float: The current soil temperature for the given day in the biome.
         """
-        if not isinstance(day, int) or day < 1 or day > 365:
-            raise ValueError(f"Day must be an integer between 1 and 365, got: {day}")
+        if not isinstance(day, int):
+            raise TypeError(f"Day must be an integer, got: {type(day)}")
+        
+        if day < 1 or day > 365:
+            raise ValueError(f"Day must be between 1 and 365, got: {day}")
         
         try:
             delta_snow_height = self.plot.delta_snow_height()
@@ -228,7 +242,7 @@ class Climate:
         else:
             self.consecutive_frozen_soil_days = 0
 
-    def get_current_snowfall(self, day: int) -> float:
+    def _get_current_snowfall(self, day: int) -> float:
         """
         Returns random snowfall for the given day from regional data.
 
@@ -236,8 +250,11 @@ class Climate:
         returns:
             float: The current snowfall for the given day in the biome.
         """
-        if not isinstance(day, int) or day < 1 or day > 365:
-            raise ValueError(f"Day must be an integer between 1 and 365, got: {day}")
+        if not isinstance(day, int):
+            raise TypeError(f"Day must be an integer, got: {type(day)}")
+        
+        if day < 1 or day > 365:
+            raise ValueError(f"Day must be between 1 and 365, got: {day}")
         
         try:
             loader = self._load_climate_loader("snowfall", SnowfallLoader)
@@ -253,7 +270,7 @@ class Climate:
         except Exception as e:
             raise RuntimeError(f"Failed to get snowfall for day {day}: {e}")
 
-    def get_current_rainfall(self, day: int) -> float:
+    def _get_current_rainfall(self, day: int) -> float:
         """
         Returns random rainfall for the given day from regional data.
 
@@ -261,8 +278,11 @@ class Climate:
         returns:
             float: The current rainfall for the given day in the biome.
         """
-        if not isinstance(day, int) or day < 1 or day > 365:
-            raise ValueError(f"Day must be an integer between 1 and 365, got: {day}")
+        if not isinstance(day, int):
+            raise TypeError(f"Day must be an integer, got: {type(day)}")
+        
+        if day < 1 or day > 365:
+            raise ValueError(f"Day must be between 1 and 365, got: {day}")
         
         try:
             loader = self._load_climate_loader("rainfall", RainfallLoader)
@@ -278,7 +298,7 @@ class Climate:
         except Exception as e:
             raise RuntimeError(f"Failed to get rainfall for day {day}: {e}")
 
-    def get_current_uv(self, day: int) -> float:
+    def _get_current_uv(self, day: int) -> float:
         """
         Returns random UV index for the given day from regional data.
 
@@ -286,8 +306,11 @@ class Climate:
         returns:
             float: The current UV index for the given day in the biome.
         """
-        if not isinstance(day, int) or day < 1 or day > 365:
-            raise ValueError(f"Day must be an integer between 1 and 365, got: {day}")
+        if not isinstance(day, int):
+            raise TypeError(f"Day must be an integer, got: {type(day)}")
+        
+        if day < 1 or day > 365:
+            raise ValueError(f"Day must be between 1 and 365, got: {day}")
         
         try:
             loader = self._load_climate_loader("uv", UVLoader)
@@ -303,7 +326,7 @@ class Climate:
         except Exception as e:
             raise RuntimeError(f"Failed to get UV for day {day}: {e}")
     
-    def get_current_SSRD(self, day: int) -> float:
+    def _get_current_SSRD(self, day: int) -> float:
         """
         Returns random Surface Solar Radiation Downward (SSRD) for the given day
         from regional data.
@@ -312,8 +335,11 @@ class Climate:
         returns:
             float: The SSRD for the given day in the biome.
         """
-        if not isinstance(day, int) or day < 1 or day > 365:
-            raise ValueError(f"Day must be an integer between 1 and 365, got: {day}")
+        if not isinstance(day, int):
+            raise TypeError(f"Day must be an integer, got: {type(day)}")
+        
+        if day < 1 or day > 365:
+            raise ValueError(f"Day must be between 1 and 365, got: {day}")
         
         try:
             loader = self._load_climate_loader("ssrd", SSRDLoader)
