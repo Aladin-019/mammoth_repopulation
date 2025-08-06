@@ -10,12 +10,12 @@ class TestPlot(unittest.TestCase):
     def setUp(self):
         """Fixtures before each test method."""
         self.mock_climate = Mock()
-        self.mock_climate.get_current_temperature.return_value = 15.0
-        self.mock_climate.get_current_soil_temp.return_value = 8.0
-        self.mock_climate.get_current_snowfall.return_value = 0.1
-        self.mock_climate.get_current_rainfall.return_value = 5.0
-        self.mock_climate.get_current_uv.return_value = 3.0
-        self.mock_climate.get_current_SSRD.return_value = 1000.0
+        self.mock_climate._get_current_temperature.return_value = 15.0
+        self.mock_climate._get_current_soil_temp.return_value = 8.0
+        self.mock_climate._get_current_snowfall.return_value = 0.1
+        self.mock_climate._get_current_rainfall.return_value = 5.0
+        self.mock_climate._get_current_uv.return_value = 3.0
+        self.mock_climate._get_current_SSRD.return_value = 1000.0
         self.mock_climate.__class__.__name__ = "Climate"
         
         self.mock_plot = Mock()
@@ -299,7 +299,7 @@ class TestPlot(unittest.TestCase):
         result = self.plot.get_current_temperature(1)
         
         self.assertEqual(result, 15.0)
-        self.mock_climate.get_current_temperature.assert_called_once_with(1)
+        self.mock_climate._get_current_temperature.assert_called_once_with(1)
     
     def test_get_current_temperature_invalid_day_type(self):
         """Test getting current temperature with invalid day type."""
@@ -318,7 +318,7 @@ class TestPlot(unittest.TestCase):
         result = self.plot.get_current_soil_temp(1)
         
         self.assertEqual(result, 8.0)
-        self.mock_climate.get_current_soil_temp.assert_called_once_with(1)
+        self.mock_climate._get_current_soil_temp.assert_called_once_with(1)
     
     def test_get_current_soil_temp_invalid_day_type(self):
         """Test getting current soil temperature with invalid day type."""
@@ -337,7 +337,7 @@ class TestPlot(unittest.TestCase):
         result = self.plot.get_current_snowfall(1)
         
         self.assertEqual(result, 0.1)
-        self.mock_climate.get_current_snowfall.assert_called_once_with(1)
+        self.mock_climate._get_current_snowfall.assert_called_once_with(1)
     
     def test_get_current_snowfall_invalid_day_type(self):
         """Test getting current snowfall with invalid day type."""
@@ -356,7 +356,7 @@ class TestPlot(unittest.TestCase):
         result = self.plot.get_current_rainfall(1)
         
         self.assertEqual(result, 5.0)
-        self.mock_climate.get_current_rainfall.assert_called_once_with(1)
+        self.mock_climate._get_current_rainfall.assert_called_once_with(1)
     
     def test_get_current_rainfall_invalid_day_type(self):
         """Test getting current rainfall with invalid day type."""
@@ -375,7 +375,7 @@ class TestPlot(unittest.TestCase):
         result = self.plot.get_current_uv(1)
         
         self.assertEqual(result, 3.0)
-        self.mock_climate.get_current_uv.assert_called_once_with(1)
+        self.mock_climate._get_current_uv.assert_called_once_with(1)
     
     def test_get_current_uv_invalid_day_type(self):
         """Test getting current UV with invalid day type."""
@@ -394,7 +394,7 @@ class TestPlot(unittest.TestCase):
         result = self.plot.get_current_SSRD(1)
         
         self.assertEqual(result, 1000.0)
-        self.mock_climate.get_current_SSRD.assert_called_once_with(1)
+        self.mock_climate._get_current_SSRD.assert_called_once_with(1)
     
     def test_get_current_SSRD_invalid_day_type(self):
         """Test getting current SSRD with invalid day type."""
@@ -490,18 +490,18 @@ class TestPlot(unittest.TestCase):
         
         self.assertEqual(result, 0.0)
     
-    def test_meltwater_mass_from_ssrd_valid(self):
+    def test_get_current_melt_water_mass_valid(self):
         """Test calculating meltwater mass from SSRD with valid day."""
-        result = self.plot.meltwater_mass_from_ssrd(1)
+        result = self.plot.get_current_melt_water_mass(1)
         
         # (ETA * SSRD) / LF = (0.35 * 1000.0) / 334000
         expected = (0.35 * 1000.0) / 334000
         self.assertAlmostEqual(result, expected, places=10)
     
-    def test_meltwater_mass_from_ssrd_invalid_day_type(self):
+    def test_get_current_melt_water_mass_invalid_day_type(self):
         """Test calculating meltwater mass with invalid day type."""
         with self.assertRaises(TypeError) as context:
-            self.plot.meltwater_mass_from_ssrd("1")  # Should be int
+            self.plot.get_current_melt_water_mass("1")  # Should be int
         self.assertIn("day must be an instance of int", str(context.exception))
     
     def test_snow_height_loss_from_ssrd_valid(self):

@@ -219,6 +219,35 @@ class Plot(FloraPlotInformation):
         self._validate_positive_number(day, "day")
         return self.climate._get_current_SSRD(day)
     
+    def get_current_melt_water_mass(self, day: int) -> float:
+        """
+        Calculate meltwater mass from surface solar radiation downward (SSRD).
+        The calculation uses the efficiency factor (ETA) and latent heat of fusion (LF) 
+        to convert energy to mass.
+        
+        Formula: meltwater_mass = (ETA * SSRD) / LF
+        
+        Args:
+            day (int): The day of the year to get SSRD data for. 
+        Returns:
+            float: Meltwater mass in kg/m².  
+        Raises:
+            ValueError: If day is not a positive number.
+            RuntimeError: If calculation fails.
+        """
+        self._validate_instance(day, int, "day")
+        self._validate_positive_number(day, "day")
+        
+        try:
+            ssrd = self.get_current_SSRD(day)
+            return (ETA * ssrd) / LF
+        except Exception as e:
+            raise RuntimeError(f"Failed to calculate meltwater mass from SSRD on day {day}: {e}")
+    
+    def get_plot_area(self) -> float:
+        """Get the total area of the plot."""
+        return self.plot_area
+    
     def update_avg_snow_height(self, day: int):
         """
         Update the average snow height based on current snowfall, trampling,
@@ -288,31 +317,6 @@ class Plot(FloraPlotInformation):
         except Exception as e:
             raise RuntimeError(f"Failed to calculate trampled area ratio: {e}")
     
-    def meltwater_mass_from_ssrd(self, day: int) -> float:
-        """
-        Calculate meltwater mass from surface solar radiation downward (SSRD).
-        The calculation uses the efficiency factor (ETA) and latent heat of fusion (LF) 
-        to convert energy to mass.
-        
-        Formula: meltwater_mass = (ETA * SSRD) / LF
-        
-        Args:
-            day (int): The day of the year to get SSRD data for. 
-        Returns:
-            float: Meltwater mass in kg/m².  
-        Raises:
-            ValueError: If day is not a positive number.
-            RuntimeError: If calculation fails.
-        """
-        self._validate_instance(day, int, "day")
-        self._validate_positive_number(day, "day")
-        
-        try:
-            ssrd = self.get_current_SSRD(day)
-            return (ETA * ssrd) / LF
-        except Exception as e:
-            raise RuntimeError(f"Failed to calculate meltwater mass from SSRD on day {day}: {e}")
-    
     def snow_height_loss_from_ssrd(self, day: int) -> float:
         """
         Calculate snow height loss from surface solar radiation downward (SSRD).
@@ -333,7 +337,7 @@ class Plot(FloraPlotInformation):
         self._validate_positive_number(day, "day")
         
         try:
-            meltwater_mass = self.meltwater_mass_from_ssrd(day)
+            meltwater_mass = self.get_current_melt_water_mass(day)
             return meltwater_mass / (RHO_SNOW * self.plot_area)
         except Exception as e:
             raise RuntimeError(f"Failed to calculate snow height loss from SSRD on day {day}: {e}")
