@@ -129,13 +129,13 @@ class TestClimate(unittest.TestCase):
     def test_get_current_temperature_invalid_day(self):
         """Test getting temperature with invalid day."""
         with self.assertRaises(ValueError) as context:
-            self.climate.get_current_temperature(0)
+            self.climate._get_current_temperature(0)
         self.assertIn("Day must be an integer between 1 and 365", str(context.exception))
 
     def test_get_current_temperature_invalid_day_type(self):
         """Test getting temperature with invalid day type."""
         with self.assertRaises(ValueError) as context:
-            self.climate.get_current_temperature("1")
+            self.climate._get_current_temperature("1")
         self.assertIn("Day must be an integer between 1 and 365", str(context.exception))
 
     @patch('app.models.Climate.Climate.TemperatureDriver')
@@ -152,7 +152,7 @@ class TestClimate(unittest.TestCase):
         
         self.climate.loaders = {}
         
-        result = self.climate.get_current_temperature(1)
+        result = self.climate._get_current_temperature(1)
         
         self.assertEqual(result, 15.0)
         self.assertEqual(list(self.climate.recent_values['temperature']), [15.0])
@@ -173,7 +173,7 @@ class TestClimate(unittest.TestCase):
         
         self.climate.loaders = {}
         
-        result = self.climate.get_current_temperature(1)  # should use fallback value 12.0
+        result = self.climate._get_current_temperature(1)  # should use fallback value 12.0
         self.assertEqual(result, 12.0)
 
     @patch('app.models.Climate.Climate.TemperatureDriver')
@@ -191,13 +191,13 @@ class TestClimate(unittest.TestCase):
         self.climate.loaders = {}
         
         with self.assertRaises(RuntimeError) as context:
-            self.climate.get_current_temperature(1)
+            self.climate._get_current_temperature(1)
         self.assertIn("No recent fallback values available", str(context.exception))
 
     def test_get_current_soil_temp_invalid_day(self):
         """Test getting soil temperature with invalid day."""
         with self.assertRaises(ValueError) as context:
-            self.climate.get_current_soil_temp(366)
+            self.climate._get_current_soil_temp(366)
         self.assertIn("Day must be an integer between 1 and 365", str(context.exception))
 
     @patch('app.models.Climate.Climate.SoilTemp4Driver')
@@ -214,7 +214,7 @@ class TestClimate(unittest.TestCase):
         
         self.climate.loaders = {}
         
-        result = self.climate.get_current_soil_temp(1)
+        result = self.climate._get_current_soil_temp(1)
         
         self.assertEqual(result, 3.0)
         self.assertEqual(list(self.climate.recent_values['soil_temp']), [3.0])
@@ -423,7 +423,7 @@ class TestClimate(unittest.TestCase):
         
         self.climate.loaders = {}
         
-        result = self.climate.get_current_snowfall(1)
+        result = self.climate._get_current_snowfall(1)
         self.assertEqual(result, 3.0)
 
     @patch('app.models.Climate.Climate.RainfallDriver')
@@ -457,7 +457,7 @@ class TestClimate(unittest.TestCase):
         
         self.climate.loaders = {}
         
-        result = self.climate.get_current_uv(1)
+        result = self.climate._get_current_uv(1)
         self.assertEqual(result, 2.5)
 
     @patch('app.models.Climate.Climate.SSRDDriver')
