@@ -235,15 +235,18 @@ class Flora():
         self._validate_instance(day, int, "day")
         self._validate_positive_number(day, "day")
         
-        environmental_conditions = self._get_current_environmental_conditions(day)
+        try:
+            environmental_conditions = self._get_current_environmental_conditions(day)
 
-        environmental_penalty = self._calculate_environmental_penalty(environmental_conditions)
-        
-        base_growth_rate = self._calculate_base_growth_rate(environmental_penalty)
-        consumption_rate = self.total_consumption_rate()
-        
-        # update mass for this timestep
-        self._update_mass_from_growth_and_consumption(base_growth_rate, consumption_rate)
+            environmental_penalty = self._calculate_environmental_penalty(environmental_conditions)
+            
+            base_growth_rate = self._calculate_base_growth_rate(environmental_penalty)
+            consumption_rate = self.total_consumption_rate()
+            
+            # update mass for this timestep
+            self._update_mass_from_growth_and_consumption(base_growth_rate, consumption_rate)
+        except Exception as e:
+            raise RuntimeError(f"Error updating flora mass: {e}")
 
     def _get_current_environmental_conditions(self, day: int) -> dict:
         """

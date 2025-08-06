@@ -31,16 +31,19 @@ class Moss(Flora):
         self._validate_instance(day, int, "day")
         self._validate_positive_number(day, "day")
         
-        environmental_conditions = self._get_current_environmental_conditions(day)
+        try:
+            environmental_conditions = self._get_current_environmental_conditions(day)
 
-        shaded_environmental_conditions = self._apply_canopy_shading(environmental_conditions)
-        
-        environmental_penalty = self._calculate_environmental_penalty(shaded_environmental_conditions)
-        
-        base_growth_rate = self._calculate_base_growth_rate(environmental_penalty)
-        consumption_rate = self.total_consumption_rate()
-        
-        self._update_mass_from_growth_and_consumption(base_growth_rate, consumption_rate)
+            shaded_environmental_conditions = self._apply_canopy_shading(environmental_conditions)
+            
+            environmental_penalty = self._calculate_environmental_penalty(shaded_environmental_conditions)
+            
+            base_growth_rate = self._calculate_base_growth_rate(environmental_penalty)
+            consumption_rate = self.total_consumption_rate()
+            
+            self._update_mass_from_growth_and_consumption(base_growth_rate, consumption_rate)
+        except Exception as e:
+            raise RuntimeError(f"Error updating moss mass: {e}")
     
     def capacity_penalty(self) -> None:
         """
