@@ -96,9 +96,9 @@ class TestFlora(unittest.TestCase):
         params = self.valid_params.copy()
         params['name'] = 123  # Invalid type
         
-        with self.assertRaises(ValueError) as context:
+        with self.assertRaises(TypeError) as context:
             Flora(**params)
-        self.assertIn("must be a string", str(context.exception))
+        self.assertIn("must be an instance of str", str(context.exception))
     
     def test_init_empty_name(self):
         """Test Flora initialization with empty name."""
@@ -177,9 +177,9 @@ class TestFlora(unittest.TestCase):
         params = self.valid_params.copy()
         params['consumers'] = "not a list"  # Invalid type
         
-        with self.assertRaises(ValueError) as context:
+        with self.assertRaises(TypeError) as context:
             Flora(**params)
-        self.assertIn("must be a list", str(context.exception))
+        self.assertIn("must be an instance of list", str(context.exception))
     
     def test_init_invalid_root_depth(self):
         """Test Flora initialization with invalid root_depth."""
@@ -510,7 +510,7 @@ class TestFlora(unittest.TestCase):
     
     def test_validate_string_invalid(self):
         """Test _validate_string with invalid input."""
-        with self.assertRaises(ValueError) as context:
+        with self.assertRaises(TypeError) as context:
             Flora._validate_string(123, "test_param")
         self.assertIn("must be a string", str(context.exception))
         
@@ -528,7 +528,7 @@ class TestFlora(unittest.TestCase):
     
     def test_validate_positive_number_invalid(self):
         """Test _validate_positive_number with invalid input."""
-        with self.assertRaises(ValueError) as context:
+        with self.assertRaises(TypeError) as context:
             Flora._validate_positive_number("not a number", "test_param")
         self.assertIn("must be a number", str(context.exception))
         
@@ -548,9 +548,9 @@ class TestFlora(unittest.TestCase):
     
     def test_validate_range_tuple_invalid(self):
         """Test _validate_range_tuple with invalid input."""
-        with self.assertRaises(ValueError) as context:
+        with self.assertRaises(TypeError) as context:
             Flora._validate_range_tuple("not a tuple", "test_param")
-        self.assertIn("must be a tuple of 2 values", str(context.exception))
+        self.assertIn("must be a tuple", str(context.exception))
         
         with self.assertRaises(ValueError) as context:
             Flora._validate_range_tuple((1.0,), "test_param")
@@ -577,7 +577,7 @@ class TestFlora(unittest.TestCase):
     
     def test_validate_integer_range_invalid(self):
         """Test _validate_integer_range with invalid input."""
-        with self.assertRaises(ValueError) as context:
+        with self.assertRaises(TypeError) as context:
             Flora._validate_integer_range(5.0, "test_param", 1, 10)
         self.assertIn("must be an integer", str(context.exception))
         
@@ -598,7 +598,7 @@ class TestFlora(unittest.TestCase):
     
     def test_validate_list_invalid(self):
         """Test _validate_list with invalid input."""
-        with self.assertRaises(ValueError) as context:
+        with self.assertRaises(TypeError) as context:
             Flora._validate_list("not a list", "test_param")
         self.assertIn("must be a list", str(context.exception))
         

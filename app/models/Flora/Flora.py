@@ -61,8 +61,11 @@ class Flora():
         Raises:
             ValueError: If value is not a valid range tuple.
         """
-        if not isinstance(value, tuple) or len(value) != 2:
-            raise TypeError(f"{name} must be a tuple of 2 values, got: {value}")
+        if not isinstance(value, tuple):
+            raise TypeError(f"{name} must be a tuple, got: {type(value)}")
+        
+        if len(value) != 2:
+            raise ValueError(f"{name} must be a tuple of 2 values, got: {value}")
         
         if not all(isinstance(x, (int, float)) for x in value):
             raise ValueError(f"{name} must contain only numbers, got: {value}")
