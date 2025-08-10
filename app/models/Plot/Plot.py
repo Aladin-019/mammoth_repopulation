@@ -175,6 +175,10 @@ class Plot(FloraPlotInformation):
         """Get all flora on the plot."""
         return self.flora
     
+    def get_climate(self) -> 'Climate':
+        """Get the climate object associated with the plot."""
+        return self.climate
+    
     def get_avg_snow_height(self) -> float:
         """Get average snow height."""
         return self.avg_snow_height
