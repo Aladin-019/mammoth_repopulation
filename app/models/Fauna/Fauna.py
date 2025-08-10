@@ -194,7 +194,7 @@ class Fauna():
             self.description = description
             self.population = population
             self.avg_mass = float(avg_mass)
-            self.total_mass = self.population * self.avg_mass
+            self._total_mass = self.population * self.avg_mass
             self.ideal_growth_rate = float(ideal_growth_rate)
             self.ideal_temp_range = ideal_temp_range
             self.ideal_food_range = ideal_food_range
@@ -216,7 +216,11 @@ class Fauna():
         return self.population
     
     def get_total_mass(self) -> float:
-        return self.total_mass
+        return self._total_mass
+    
+    def set_total_mass(self, value: float):
+        # Cap negative mass at 0
+        self._total_mass = max(0.0, float(value))
     
     def get_feeding_rate(self) -> float:
         return self.feeding_rate
@@ -239,6 +243,9 @@ class Fauna():
         in the following formula of Flora.update_flora_mass():
         base_growth_rate = self.ideal_growth_rate * (1 + penalty_avg)
         """
+        self._validate_instance(current_value, float, "current_value")
+        self._validate_instance(ideal_range, tuple, "ideal_range")
+        
         min_val, max_val = ideal_range
         if min_val == max_val:
             return 0  # Avoid division by zero 

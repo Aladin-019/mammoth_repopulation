@@ -1,0 +1,141 @@
+
+from .Fauna import Fauna
+from typing import List, Tuple
+from app.interfaces.plot_info import PlotInformation
+
+class Predator(Fauna):
+    """
+    Represents a predator in the ecosystem.
+    Inherits from Fauna and adds predator specific update mass calculations.
+    """
+
+    def __init__(self, name: str, description: str, population: int, avg_mass: float,
+                 ideal_temp_range: Tuple[float, float], ideal_food_range: Tuple[float, float], ideal_growth_rate: float, 
+                 feeding_rate: float, avg_steps_taken: int, avg_feet_area: float, plot: PlotInformation, prey: List['Fauna']):
+        
+        super().__init__(name, description, population, avg_mass, ideal_growth_rate, ideal_temp_range, 
+                        ideal_food_range, feeding_rate, avg_steps_taken, avg_feet_area, plot)
+        
+        self._validate_instance(prey, list, "prey")
+        self._validate_list(prey, "prey", Fauna)
+        
+        self.prey = prey  # prey that this predator consumes
+
+    def total_available_prey_mass(self) -> float:
+        """
+        Calculate the total available mass of all prey that this predator consumes.
+        Only prey present on the plot are considered.
+        """
+        total_mass = 0.0
+        plot_fauna = self.plot.get_all_fauna()
+
+        for prey in self.prey:
+            for fauna in plot_fauna:
+                if prey.get_name() == fauna.get_name():
+                    total_mass += fauna.get_total_mass()
+
+        return total_mass
+
+    def update_predator_mass(self, day: int) -> float:
+        """
+        Update the total mass of the predator based on current environmental conditions.
+        Predator mass changes based on available prey and environmental conditions.
+        """
+        self._validate_instance(day, int, "day")
+        self._validate_positive_number(day, "day")
+        
+        try:
+            environmental_conditions = self._get_current_environmental_conditions(day)
+            
+            environmental_penalty = self._calculate_environmental_penalty(environmental_conditions)
+            
+            base_growth_rate = self._calculate_base_growth_rate(environmental_penalty)
+            
+            self._update_mass_from_growth(base_growth_rate)
+
+            self.capacity_penalty()
+
+        except Exception as e:
+            raise RuntimeError(f"Error updating predator mass: {e}")
+
+    def _get_current_environmental_conditions(self, day: int) -> dict:
+        """
+        Get current environmental conditions from the plot.
+        
+        Returns:
+            dict: Dictionary containing current environmental values
+        """
+        self._validate_instance(day, int, "day")
+        self._validate_positive_number(day, "day")
+        
+        current_temp = self.plot.get_temperature(day)
+        current_food = self.total_available_prey_mass()
+        
+        return {
+            'temperature': current_temp,
+            'food': current_food
+        }
+
+    def _calculate_environmental_penalty(self, environmental_conditions: dict) -> float:
+        """
+        Calculate the average environmental penalty based on current conditions.
+        
+        Args:
+            environmental_conditions (dict): Current environmental values
+        Returns:
+            float: Average penalty from 0 (ideal) to -2 (worst)
+        """
+        self._validate_instance(environmental_conditions, dict, "environmental_conditions")
+        self._validate_not_none(environmental_conditions, "environmental_conditions")
+        
+        penalty_temp = self.distance_from_ideal(
+            environmental_conditions['temperature'], 
+            self.ideal_temp_range
+        )
+        penalty_food = self.distance_from_ideal(
+            environmental_conditions['food'], 
+            self.ideal_food_range
+        )
+        
+        # Calculate average penalty
+        penalty_avg = (penalty_temp + penalty_food) / 2
+        return penalty_avg
+
+    def _calculate_base_growth_rate(self, environmental_penalty: float) -> float:
+        """
+        Calculate the base growth rate adjusted for environmental conditions.
+        
+        Args:
+            environmental_penalty (float): Environmental penalty from 0 to -2
+        Returns:
+            float: Adjusted base growth rate
+        """
+        self._validate_instance(environmental_penalty, float, "environmental_penalty")
+        
+        return self.ideal_growth_rate * (1 + environmental_penalty)
+
+    def _update_mass_from_growth(self, base_growth_rate: float) -> None:
+        """
+        Update the predator mass based on growth rate.
+        Predators don't have consumption_rate like prey - they just grow or shrink based on conditions.
+        
+        Args:
+            base_growth_rate (float): The base growth rate
+        """
+        self._validate_instance(base_growth_rate, float, "base_growth_rate")
+
+        actual_growth_rate = base_growth_rate
+        new_mass = self.get_total_mass() + self.get_total_mass() * actual_growth_rate
+        self.set_total_mass(max(0, new_mass))  # Prevent negative mass
+
+    def capacity_penalty(self) -> None:
+        """
+        Apply a penalty to predator mass if the plot is over predator capacity.
+        Predator populations are limited by available prey and space.
+        
+        Precondition: calculate_fauna_masses() must be called first (for current timestep)
+        """
+        if self.plot.over_predator_capacity():
+            self.set_total_mass(self.get_total_mass() * 0.9)    # Reduce mass by 10% if over predator capacity
+    
+
