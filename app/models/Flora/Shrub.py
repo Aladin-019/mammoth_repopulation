@@ -60,7 +60,7 @@ class Shrub(Flora):
         """
         self._validate_not_none(self.plot, "plot")
         
-        total_area_trampled = self.plot.get_area_trampled_percent()
+        total_area_trampled = self.plot.get_area_trampled_ratio()
         
         initial_shrub_area = self.population * self.shrub_area
         
