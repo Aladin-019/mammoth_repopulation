@@ -24,22 +24,22 @@ class SSRDLoader:
             dict: { location: { day_number: (mean, var) } }
         """
         try:
-            df = pd.read_csv(filepath, parse_dates=["date"])
+            df = pd.read_csv(filepath, parse_dates=["Date"])
         except Exception as e:
             logging.error(f"SRDLoader Failed to read SSRD CSV: {e}")
             return {self.location: {}}
 
-        if "date" not in df.columns or "mean_srd" not in df.columns or "srd_var" not in df.columns:
-            logging.error("SRDLoader Required columns ('date', 'mean_srd', 'srd_var') missing.")
+        if "Date" not in df.columns or "Mean_Surface_Solar_Radiation_Jm2" not in df.columns or "Variance_Surface_Solar_Radiation_Jm2" not in df.columns:
+            logging.error("SRDLoader Required columns ('Date', 'Mean_Surface_Solar_Radiation_Jm2', 'Variance_Surface_Solar_Radiation_Jm2') missing.")
             return {self.location: {}}
 
-        df["day_number"] = df["date"].dt.dayofyear - 1
+        df["day_number"] = df["Date"].dt.dayofyear - 1
 
         days_map = {}
         for _, row in df.iterrows():
             day = row["day_number"]
-            mean = row["mean_srd"]
-            var = row["srd_var"]
+            mean = row["Mean_Surface_Solar_Radiation_Jm2"]
+            var = row["Variance_Surface_Solar_Radiation_Jm2"]
 
             if pd.isna(mean) or pd.isna(var):
                 logging.warning(f"SRDLoader Skipping day {day}: missing mean: {mean} or variance: {var}")

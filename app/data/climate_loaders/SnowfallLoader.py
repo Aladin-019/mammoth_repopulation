@@ -24,22 +24,22 @@ class SnowfallLoader:
             dict: { location: { day_number: (mean, var) } }
         """
         try:
-            df = pd.read_csv(filepath, parse_dates=["date"])
+            df = pd.read_csv(filepath, parse_dates=["Date"])
         except Exception as e:
             logging.error(f"SnowfallLoader Failed to read snowfall CSV: {e}")
             return {self.location: {}}
 
-        if "date" not in df.columns or "mean_snowfall" not in df.columns or "snow_var" not in df.columns:
-            logging.error("SnowfallLoader Required columns ('date', 'mean_snowfall', 'snow_var') missing.")
+        if "Date" not in df.columns or "Mean_Snowfall_mm" not in df.columns or "Variance_Snowfall_mm" not in df.columns:
+            logging.error("SnowfallLoader Required columns ('Date', 'Mean_Snowfall_mm', 'Variance_Snowfall_mm') missing.")
             return {self.location: {}}
 
-        df["day_number"] = df["date"].dt.dayofyear - 1
+        df["day_number"] = df["Date"].dt.dayofyear - 1
 
         days_map = {}
         for _, row in df.iterrows():
             day = row["day_number"]
-            mean = row["mean_snowfall"]
-            var = row["snow_var"]
+            mean = row["Mean_Snowfall_mm"]
+            var = row["Variance_Snowfall_mm"]
 
             if pd.isna(mean) or pd.isna(var):
                 logging.warning(f"SnowfallLoader Skipping day {day}: missing mean: {mean} or variance: {var}")

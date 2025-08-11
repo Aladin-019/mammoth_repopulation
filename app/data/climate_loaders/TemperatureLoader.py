@@ -25,22 +25,22 @@ class TemperatureLoader:
             dict: { location: { day_number: (mean, var) } }
         """
         try:
-            df = pd.read_csv(filepath, parse_dates=["date"])
+            df = pd.read_csv(filepath, parse_dates=["Date"])
         except Exception as e:
             logging.error(f"TemperatureLoader Failed to read temperature CSV: {e}")
             return {self.location: {}}
 
-        if "date" not in df.columns or "mean_temp" not in df.columns or "temp_var" not in df.columns:
-            logging.error("TemperatureLoader Required columns ('date', 'mean_temp', 'temp_var') missing.")
+        if "Date" not in df.columns or "Mean_Temp_C" not in df.columns or "Variance_Temp_C" not in df.columns:
+            logging.error("TemperatureLoader Required columns ('Date', 'Mean_Temp_C', 'Variance_Temp_C') missing.")
             return {self.location: {}}
 
-        df["day_number"] = df["date"].dt.dayofyear - 1
+        df["day_number"] = df["Date"].dt.dayofyear - 1
 
         days_map = {}
         for _, row in df.iterrows():
             day = row["day_number"]
-            mean = row["mean_temp"]
-            var = row["temp_var"]
+            mean = row["Mean_Temp_C"]
+            var = row["Variance_Temp_C"]
 
             if pd.isna(mean) or pd.isna(var):
                 logging.warning(f"TemperatureLoader Skipping day {day}: missing mean: {mean} or variance: {var}")

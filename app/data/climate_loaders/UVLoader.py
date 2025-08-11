@@ -25,22 +25,22 @@ class UVLoader:
             dict: { location: { day_number: (mean, var) } }
         """
         try:
-            df = pd.read_csv(filepath, parse_dates=["date"])
+            df = pd.read_csv(filepath, parse_dates=["Date"])
         except Exception as e:
             logging.error(f"UVLoader Failed to read UV CSV: {e}")
             return {self.location: {}}
 
-        if "date" not in df.columns or "mean_uv" not in df.columns or "uv_var" not in df.columns:
-            logging.error("UVLoader Required columns ('date', 'mean_uv', 'uv_var') missing.")
+        if "Date" not in df.columns or "Mean_UV" not in df.columns or "Variance_UV" not in df.columns:
+            logging.error("UVLoader Required columns ('Date', 'Mean_UV', 'Variance_UV') missing.")
             return {self.location: {}}
 
-        df["day_number"] = df["date"].dt.dayofyear - 1
+        df["day_number"] = df["Date"].dt.dayofyear - 1
 
         days_map = {}
         for _, row in df.iterrows():
             day = row["day_number"]
-            mean = row["mean_uv"]
-            var = row["uv_var"]
+            mean = row["Mean_UV"]
+            var = row["Variance_UV"]
 
             if pd.isna(mean) or pd.isna(var):
                 logging.warning(f"UVLoader Skipping day {day}: missing mean: {mean} or variance: {var}")

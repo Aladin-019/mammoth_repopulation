@@ -24,22 +24,22 @@ class RainfallLoader:
             dict: { location: { day_number: (mean, var) } }
         """
         try:
-            df = pd.read_csv(filepath, parse_dates=["date"])
+            df = pd.read_csv(filepath, parse_dates=["Date"])
         except Exception as e:
             logging.error(f"RainfallLoader Failed to read rainfall CSV: {e}")
             return {self.location: {}}
 
-        if "date" not in df.columns or "mean_rainfall" not in df.columns or "rain_var" not in df.columns:
-            logging.error("RainfallLoader Required columns ('date', 'mean_rainfall', 'rain_var') missing.")
+        if "Date" not in df.columns or "Mean_Large_Scale_Rain_mmhr" not in df.columns or "Variance_Large_Scale_Rain_mmhr" not in df.columns:
+            logging.error("RainfallLoader Required columns ('Date', 'Mean_Large_Scale_Rain_mmhr', 'Variance_Large_Scale_Rain_mmhr') missing.")
             return {self.location: {}}
 
-        df["day_number"] = df["date"].dt.dayofyear - 1
+        df["day_number"] = df["Date"].dt.dayofyear - 1
 
         days_map = {}
         for _, row in df.iterrows():
             day = row["day_number"]
-            mean = row["mean_rainfall"]
-            var = row["rain_var"]
+            mean = row["Mean_Large_Scale_Rain_mmhr"]
+            var = row["Variance_Large_Scale_Rain_mmhr"]
 
             if pd.isna(mean) or pd.isna(var):
                 logging.warning(f"RainfallLoader Skipping day {day}: missing mean: {mean} or variance: {var}")

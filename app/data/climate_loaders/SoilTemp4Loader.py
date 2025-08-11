@@ -24,22 +24,22 @@ class SoilTemp4Loader:
             dict: { location: { day_number: (mean, var) } }
         """
         try:
-            df = pd.read_csv(filepath, parse_dates=["date"])
+            df = pd.read_csv(filepath, parse_dates=["Date"])
         except Exception as e:
             logging.error(f"SoilTemp4Loader Failed to read soil temperature CSV: {e}")
             return {self.location: {}}
 
-        if "date" not in df.columns or "mean_soil_temp" not in df.columns or "soil_temp_var" not in df.columns:
-            logging.error("SoilTemp4Loader Required columns ('date', 'mean_soil_temp', 'soil_temp_var') missing.")
+        if "Date" not in df.columns or "Mean_Temp_C" not in df.columns or "Variance_Temp_C" not in df.columns:
+            logging.error("SoilTemp4Loader Required columns ('Date', 'Mean_Temp_C', 'Variance_Temp_C') missing.")
             return {self.location: {}}
 
-        df["day_number"] = df["date"].dt.dayofyear - 1
+        df["day_number"] = df["Date"].dt.dayofyear - 1
 
         days_map = {}
         for _, row in df.iterrows():
             day = row["day_number"]
-            mean = row["mean_soil_temp"]
-            var = row["soil_temp_var"]
+            mean = row["Mean_Temp_C"]
+            var = row["Variance_Temp_C"]
 
             if pd.isna(mean) or pd.isna(var):
                 logging.warning(f"SoilTemp4Loader Skipping day {day}: missing mean: {mean} or variance: {var}")
