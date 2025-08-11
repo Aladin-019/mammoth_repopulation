@@ -27,8 +27,7 @@ locations = {
 temperature_data = {loc: defaultdict(list) for loc in locations}
 
 # Path to the local GRIB file
-grib_file_path = "C:/Users/aalad/Downloads/era5_2mtemp_2024.grib"
-print("Starting GRIB file processing.")
+grib_file_path = "C:/Users/aalad/Downloads/era5_2mtemp_2024.grib"  # file no longer exists due to lack of storage
 
 with pygrib.open(grib_file_path) as grbs:
     for i, grb in enumerate(grbs):

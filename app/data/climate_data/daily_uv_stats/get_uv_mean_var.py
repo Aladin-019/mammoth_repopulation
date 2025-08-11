@@ -1,4 +1,5 @@
-# Original data from CDS was of hourly UV radiation in GRIB format.
+# Original data from CDS was of hourly Downward UV radiation at the surface in GRIB format.
+# Joules per square meter (J/m^2).
 # This script processes a GRIB file to extract daily mean and variance of UV radiation
 # from specified locations and saves the results to CSV files.
 # Daily mean and variance used to stochastically simulate daily UV variations
