@@ -68,7 +68,7 @@ class Predator(Fauna):
         self._validate_instance(day, int, "day")
         self._validate_positive_number(day, "day")
         
-        current_temp = self.plot.get_temperature(day)
+        current_temp = self.plot.get_current_temperature(day)
         current_food = self.total_available_prey_mass()
         
         return {

@@ -1,10 +1,6 @@
 from .Fauna import Fauna
-from typing import List, Tuple, TYPE_CHECKING
+from typing import List, Tuple
 from app.interfaces.plot_info import PlotInformation
-
-
-# if TYPE_CHECKING:
-#     from app.models.Flora.Flora import Flora
 
 class Prey(Fauna):
     """
@@ -24,7 +20,6 @@ class Prey(Fauna):
         self._validate_list(predators, "predators", Fauna)
 
         self._validate_instance(consumable_flora, list, "consumable_flora")
-        # Import Flora here to avoid circular import
         from app.models.Flora.Flora import Flora
         self._validate_list(consumable_flora, "consumable_flora", Flora)
         
@@ -98,7 +93,7 @@ class Prey(Fauna):
         self._validate_instance(day, int, "day")
         self._validate_positive_number(day, "day")
         
-        current_temp = self.plot.get_temperature(day)
+        current_temp = self.plot.get_current_temperature(day)
         current_food = self.total_available_flora_mass()
         
         return {
