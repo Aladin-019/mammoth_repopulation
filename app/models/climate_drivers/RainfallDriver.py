@@ -14,11 +14,11 @@ class RainfallDriver:
         """
         self.rainfall_data = rainfall_data
 
-    def generate_daily_rainfall(self, location, day, biome_offset=0.0):
+    def generate_daily_rainfall(self, location, day, offset=0.0):
         """
         location (str): Name of the location.
         day (int): Day of year (0-365).
-        biome_offset (float): Mean rainfall adjustment (default 0.0).
+        offset (float): Mean rainfall adjustment (default 0.0).
 
         returns:
             float: Simulated daily rainfall for the given location and day.
@@ -50,4 +50,4 @@ class RainfallDriver:
             return None
 
         # Random sample from normal distribution using mean and std deviation
-        return np.random.normal(mean + biome_offset, np.sqrt(var))
+        return np.random.normal(mean + offset, np.sqrt(var))
