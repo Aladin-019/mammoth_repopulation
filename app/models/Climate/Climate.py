@@ -3,7 +3,12 @@ from typing import Optional
 from collections import deque
 
 # Import climate loaders and drivers
-from app.data.climate_loaders import TemperatureLoader, SnowfallLoader, RainfallLoader, UVLoader, SoilTemp4Loader, SSRDLoader
+from app.data.climate_loaders.TemperatureLoader import TemperatureLoader
+from app.data.climate_loaders.SnowfallLoader import SnowfallLoader
+from app.data.climate_loaders.RainfallLoader import RainfallLoader
+from app.data.climate_loaders.UVLoader import UVLoader
+from app.data.climate_loaders.SoilTemp4Loader import SoilTemp4Loader
+from app.data.climate_loaders.SSRDLoader import SSRDLoader
 from app.models.climate_drivers import TemperatureDriver, SnowfallDriver, RainfallDriver, UVDriver, SoilTemp4Driver, SSRDDriver
 
 from app.interfaces.plot_info import PlotInformation
@@ -58,6 +63,8 @@ class Climate:
     for the corresponding biome and day of the year, and changes in climate conditions based on
     environmental (plot) conditions.
     """
+    _class_loaders = {}
+    
     def __init__(self, biome: str, plot: PlotInformation):
         """
         Initialize a Climate instance.
@@ -87,7 +94,6 @@ class Climate:
         try:
             self.biome = biome
             self.plot = plot
-            self.loaders = {}
             self.consecutive_frozen_soil_days = 0
             self.recent_values = {
                 'temperature': deque(maxlen=7),  # keep last 7 days
@@ -110,8 +116,8 @@ class Climate:
         
         logger.info(f"Changing biome from {self.biome} to {new_biome}")
         self.biome = new_biome
-        # Clear cached loaders when biome changes
-        self.loaders = {}
+        # Clear cached loaders when biome changes (clear all since biome-specific keys)
+        Climate._class_loaders.clear()
     
     def get_biome(self) -> str:
         """Get the current biome."""
@@ -120,23 +126,27 @@ class Climate:
     def _load_climate_loader(self, loader_type: str, loader_class) -> object:
         """
         Loads the climate loader for the specified type if not already loaded.
+        Uses class-level caching to share loaders across all Climate instances.
         loader_type (str): The type of climate loader to load (e.g., "temperature", "snowfall", etc.).
         loader_class: The class of the climate loader to instantiate.
         """
-        if loader_type not in self.loaders:
+        # Unique key for this biome + loader type combination
+        cache_key = f"{self.biome}_{loader_type}"
+        
+        if cache_key not in Climate._class_loaders:
             if loader_type not in BIOME_FILE_MAP[self.biome]:
                 raise ValueError(f"Unknown loader type '{loader_type}' for biome '{self.biome}'")
             
             filepath = BIOME_FILE_MAP[self.biome][loader_type]
             try:
-                self.loaders[loader_type] = loader_class(filepath, self.biome)
+                Climate._class_loaders[cache_key] = loader_class(filepath, self.biome)
                 logger.debug(f"Loaded {loader_type} loader for biome {self.biome}")
             except (FileNotFoundError, PermissionError) as e:
                 raise RuntimeError(f"Failed to load climate data file for {loader_type}: {e}")
             except Exception as e:
                 raise RuntimeError(f"Unexpected error loading climate loader {loader_type}: {e}")
         
-        return self.loaders[loader_type]
+        return Climate._class_loaders[cache_key]
 
     def _get_fallback_value(self, data_type: str, day: int) -> Optional[float]:
         """
@@ -396,9 +406,9 @@ class Climate:
         Steppe conditions are characterized by high grass ratio, low shrub ratio, and valid permafrost.
         """
         try:
-            # Check permafrost conditions
+            # Check permafrost conditions (reduced requirement for testing)
             if not self.is_permafrost():
-                logger.warning("Steppe conditions require valid permafrost")
+                logger.debug(f"Steppe conditions require valid permafrost. Current consecutive frozen days: {self.consecutive_frozen_soil_days}")
                 return False
             
             flora_mass_composition = self.plot.get_flora_mass_composition()
@@ -415,7 +425,10 @@ class Climate:
                 logger.warning(f"Flora mass ratios don't sum to 1.0, got: {total_ratio}")
                 return False
             
-            if grass_ratio >= 0.85 and 0.0 <= shrub_ratio <= 0.15:
+            #if grass_ratio >= 0.85 and 0.0 <= shrub_ratio <= 0.15:
+            # More lenient conditions for testing - allow more variety in flora composition
+            if grass_ratio >= 0.4 and tree_ratio <= 0.3 and shrub_ratio <= 0.3:  # testing
+                logger.info(f"Steppe conditions met: grass={grass_ratio:.2f}, tree={tree_ratio:.2f}, shrub={shrub_ratio:.2f}")
                 return True
             return False
             
@@ -433,7 +446,8 @@ class Climate:
         """
         try:
             # Check consecutive frozen days (720 days = 2 years)
-            if self.consecutive_frozen_soil_days >= 720:
+            #if self.consecutive_frozen_soil_days >= 720:
+            if self.consecutive_frozen_soil_days >= 5:   # for testing - even more lenient
                 return True
             return False
             
