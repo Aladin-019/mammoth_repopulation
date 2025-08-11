@@ -175,8 +175,14 @@ class Plot(FloraPlotInformation):
         """Get all flora on the plot."""
         return self.flora
     
+    def remove_extinct_species(self) -> None:
+        """Remove any flora or fauna with mass <= 0 from the plot."""
+        self.flora = [flora for flora in self.flora if flora.get_total_mass() > 0]
+        
+        self.fauna = [fauna for fauna in self.fauna if fauna.get_total_mass() > 0]
+
     def get_climate(self) -> 'Climate':
-        """Get the climate object associated with the plot."""
+        """Get the climate object associated with this plot."""
         return self.climate
     
     def get_avg_snow_height(self) -> float:
@@ -363,13 +369,13 @@ class Plot(FloraPlotInformation):
             
             for flora in self.flora:
                 if flora.__class__.__name__ == "Grass":
-                    grass_mass += flora.total_mass
+                    grass_mass += flora.get_total_mass()
                 elif flora.__class__.__name__ == "Shrub":
-                    shrub_mass += flora.total_mass
+                    shrub_mass += flora.get_total_mass()
                 elif flora.__class__.__name__ == "Tree":
-                    tree_mass += flora.total_mass
+                    tree_mass += flora.get_total_mass()
                 elif flora.__class__.__name__ == "Moss":
-                    moss_mass += flora.total_mass
+                    moss_mass += flora.get_total_mass()
             
             # Store as instance variables for capacity methods
             self.grass_mass = grass_mass
@@ -400,6 +406,7 @@ class Plot(FloraPlotInformation):
             RuntimeError: If composition calculation fails.
         """
         try:
+            self.calculate_flora_masses() # Calculate fresh flora masses
             grass_mass, shrub_mass, tree_mass, moss_mass = self.get_flora_masses()
             total_mass = grass_mass + shrub_mass + tree_mass + moss_mass
             
@@ -470,7 +477,7 @@ class Plot(FloraPlotInformation):
         Returns:
             bool: True if prey mass exceeds maximum density, False otherwise.
         """
-        prey_mass = sum(fauna.total_mass for fauna in self.fauna if fauna.__class__.__name__ == "Prey")
+        prey_mass = sum(fauna.get_total_mass() for fauna in self.fauna if fauna.__class__.__name__ == "Prey")
         return prey_mass > (self.plot_area * MAX_PREY_DENSITY)
     
     def over_predator_capacity(self) -> bool:
@@ -482,5 +489,5 @@ class Plot(FloraPlotInformation):
         Returns:
             bool: True if predator mass exceeds maximum density, False otherwise.
         """
-        predator_mass = sum(fauna.total_mass for fauna in self.fauna if fauna.__class__.__name__ == "Predator")
+        predator_mass = sum(fauna.get_total_mass() for fauna in self.fauna if fauna.__class__.__name__ == "Predator")
         return predator_mass > (self.plot_area * MAX_PREDATOR_DENSITY)
