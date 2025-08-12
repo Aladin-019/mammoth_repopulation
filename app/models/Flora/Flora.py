@@ -255,6 +255,9 @@ class Flora():
         """
         Get current environmental conditions from the plot.
         
+        Only deep-rooted flora (root_depth >= 3) are affected by soil temperature.
+        Shallow-rooted flora (root_depth < 3) are only affected by surface conditions.
+        
         Returns:
             dict: Dictionary containing current environmental values
         """
@@ -266,18 +269,29 @@ class Flora():
         current_rainfall = self.plot.get_current_rainfall(day)
         current_melt_water_mass = self.plot.get_current_melt_water_mass(day)
         current_hydration = current_rainfall + current_melt_water_mass
-        current_soil_temp = self.plot.get_current_soil_temp(day)
-
-        return {
-            'temperature': current_temp,
-            'uv': current_uv,
-            'hydration': current_hydration,
-            'soil_temperature': current_soil_temp
-        }
+        
+        if self.root_depth >= 3:
+            current_soil_temp = self.plot.get_current_soil_temp(day)
+            return {
+                'temperature': current_temp,
+                'uv': current_uv,
+                'hydration': current_hydration,
+                'soil_temperature': current_soil_temp
+            }
+        else:
+            # shallow flora only affected by surface conditions
+            return {
+                'temperature': current_temp,
+                'uv': current_uv,
+                'hydration': current_hydration
+            }
 
     def _calculate_environmental_penalty(self, environmental_conditions: dict) -> float:
         """
         Calculate the average environmental penalty based on current conditions.
+        
+        Only deep-rooted flora (root_depth >= 3) include soil temperature in penalty calculation.
+        Shallow-rooted flora (root_depth < 3) only consider surface conditions.
         
         Args:
             environmental_conditions (dict): Current environmental values 
@@ -299,13 +313,17 @@ class Flora():
             environmental_conditions['hydration'], 
             self.ideal_hydration_range
         )
-        penalty_soil_temp = self.distance_from_ideal(
-            environmental_conditions['soil_temperature'], 
-            self.ideal_soil_temp_range
-        )
         
-        # average penalty
-        penalty_avg = (penalty_temp + penalty_uv + penalty_hydration + penalty_soil_temp) / 4
+        # only include soil temperature penalty for deep-rooted flora
+        if self.root_depth >= 3 and 'soil_temperature' in environmental_conditions:
+            penalty_soil_temp = self.distance_from_ideal(
+                environmental_conditions['soil_temperature'], 
+                self.ideal_soil_temp_range
+            )
+            penalty_avg = (penalty_temp + penalty_uv + penalty_hydration + penalty_soil_temp) / 4
+        else:
+            penalty_avg = (penalty_temp + penalty_uv + penalty_hydration) / 3
+        
         return penalty_avg
 
     def _calculate_base_growth_rate(self, environmental_penalty: float) -> float:
