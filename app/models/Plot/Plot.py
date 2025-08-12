@@ -193,6 +193,17 @@ class Plot(FloraPlotInformation):
         """Get previous average snow height."""
         return self.previous_avg_snow_height
     
+    def delta_snow_height(self) -> float:
+        """
+        Calculate the change in snow height from the previous day.
+        
+        Returns:
+            float: The change in snow height in meters (positive = increase, negative = decrease)
+        """
+        if self.previous_avg_snow_height is None:
+            return 0.0  # No change if we don't have previous data
+        return self.avg_snow_height - self.previous_avg_snow_height
+    
     def get_current_temperature(self, day: int) -> float:
         """Get current temperature for the given day."""
         self._validate_instance(day, int, "day")
