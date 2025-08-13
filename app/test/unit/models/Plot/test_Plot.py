@@ -24,7 +24,6 @@ class TestPlot(unittest.TestCase):
             Id=1,
             avg_snow_height=0.5,
             climate=self.mock_climate,
-            total_area_trampled=0.1,
             plot_area=1.0
         )
     
@@ -34,14 +33,12 @@ class TestPlot(unittest.TestCase):
             Id=1,
             avg_snow_height=0.5,
             climate=self.mock_climate,
-            total_area_trampled=0.1,
             plot_area=1.0
         )
         
         self.assertEqual(plot.Id, 1)
         self.assertEqual(plot.avg_snow_height, 0.5)
         self.assertEqual(plot.climate, self.mock_climate)
-        self.assertEqual(plot.total_area_trampled, 0.1)
         self.assertEqual(plot.plot_area, 1.0)
         self.assertEqual(plot.compaction_depth, 0.7)
         self.assertIsNone(plot.previous_avg_snow_height)
@@ -55,7 +52,6 @@ class TestPlot(unittest.TestCase):
                 Id="1",  # Should be int
                 avg_snow_height=0.5,
                 climate=self.mock_climate,
-                total_area_trampled=0.1,
                 plot_area=1.0
             )
         self.assertIn("Id must be an instance of int", str(context.exception))
@@ -67,7 +63,6 @@ class TestPlot(unittest.TestCase):
                 Id=-1,
                 avg_snow_height=0.5,
                 climate=self.mock_climate,
-                total_area_trampled=0.1,
                 plot_area=1.0
             )
         self.assertIn("Id must be non-negative", str(context.exception))
@@ -79,7 +74,6 @@ class TestPlot(unittest.TestCase):
                 Id=1,
                 avg_snow_height="0.5",  # Should be float
                 climate=self.mock_climate,
-                total_area_trampled=0.1,
                 plot_area=1.0
             )
         self.assertIn("avg_snow_height must be an instance of float", str(context.exception))
@@ -91,7 +85,6 @@ class TestPlot(unittest.TestCase):
                 Id=1,
                 avg_snow_height=-0.5,
                 climate=self.mock_climate,
-                total_area_trampled=0.1,
                 plot_area=1.0
             )
         self.assertIn("avg_snow_height must be non-negative", str(context.exception))
@@ -102,7 +95,6 @@ class TestPlot(unittest.TestCase):
             Id=1,
             avg_snow_height=0.0,
             climate=self.mock_climate,
-            total_area_trampled=0.1,
             plot_area=1.0
         )
         self.assertEqual(plot.avg_snow_height, 0.0)
@@ -114,7 +106,6 @@ class TestPlot(unittest.TestCase):
                 Id=1,
                 avg_snow_height=0.5,
                 climate="not_a_climate",  # Should be Climate
-                total_area_trampled=0.1,
                 plot_area=1.0
             )
         self.assertIn("climate must be an instance of Climate", str(context.exception))
@@ -126,45 +117,15 @@ class TestPlot(unittest.TestCase):
                 Id=1,
                 avg_snow_height=0.5,
                 climate=None,
-                total_area_trampled=0.1,
                 plot_area=1.0
             )
         self.assertIn("climate must be an instance of Climate", str(context.exception))
     
-    def test_init_invalid_area_trampled_type(self):
-        """Test Plot initialization with invalid area trampled type."""
-        with self.assertRaises(TypeError) as context:
-            Plot(
-                Id=1,
-                avg_snow_height=0.5,
-                climate=self.mock_climate,
-                total_area_trampled="0.1",  # Should be float
-                plot_area=1.0
-            )
-        self.assertIn("total_area_trampled must be an instance of float", str(context.exception))
+
     
-    def test_init_negative_area_trampled(self):
-        """Test Plot initialization with negative area trampled."""
-        with self.assertRaises(ValueError) as context:
-            Plot(
-                Id=1,
-                avg_snow_height=0.5,
-                climate=self.mock_climate,
-                total_area_trampled=-0.1,
-                plot_area=1.0
-            )
-        self.assertIn("total_area_trampled must be non-negative", str(context.exception))
+
     
-    def test_init_zero_area_trampled_allowed(self):
-        """Test Plot initialization with zero area trampled (should be allowed)."""
-        plot = Plot(
-            Id=1,
-            avg_snow_height=0.5,
-            climate=self.mock_climate,
-            total_area_trampled=0.0,
-            plot_area=1.0
-        )
-        self.assertEqual(plot.total_area_trampled, 0.0)
+
     
     def test_init_invalid_plot_area_type(self):
         """Test Plot initialization with invalid plot area type."""
@@ -173,7 +134,6 @@ class TestPlot(unittest.TestCase):
                 Id=1,
                 avg_snow_height=0.5,
                 climate=self.mock_climate,
-                total_area_trampled=0.1,
                 plot_area="1.0"  # Should be float
             )
         self.assertIn("plot_area must be an instance of float", str(context.exception))
@@ -185,7 +145,6 @@ class TestPlot(unittest.TestCase):
                 Id=1,
                 avg_snow_height=0.5,
                 climate=self.mock_climate,
-                total_area_trampled=0.1,
                 plot_area=0.0
             )
         self.assertIn("plot_area must be positive", str(context.exception))
@@ -197,7 +156,6 @@ class TestPlot(unittest.TestCase):
                 Id=1,
                 avg_snow_height=0.5,
                 climate=self.mock_climate,
-                total_area_trampled=0.1,
                 plot_area=-1.0
             )
         self.assertIn("plot_area must be positive", str(context.exception))
@@ -412,7 +370,6 @@ class TestPlot(unittest.TestCase):
         """Test updating average snow height with valid parameters."""
         # Set up initial conditions
         self.plot.avg_snow_height = 1.0  # Start with 1 meter of snow
-        self.plot.total_area_trampled = 0.2  # 20% of plot trampled
         self.plot.plot_area = 1.0
         
         initial_height = self.plot.avg_snow_height
@@ -432,7 +389,7 @@ class TestPlot(unittest.TestCase):
         # Calculate expected values
         snowfall = 0.1  # from mock
         ssrd_loss = (0.35 * 1000.0) / 334000 / (300.0 * 1.0)  # meltwater_mass / (RHO_SNOW * plot_area)
-        trampled_percent = 0.2 / 1.0  # total_area_trampled / plot_area
+        trampled_percent = 0.2 / 1.0  # 20% trampled area
         snow_height_before_trampling = 1.0 + snowfall - ssrd_loss
         trampling_reduction = 0.7 * trampled_percent * snow_height_before_trampling
         
@@ -452,43 +409,9 @@ class TestPlot(unittest.TestCase):
             self.plot.update_avg_snow_height(-1)
         self.assertIn("day must be non-negative", str(context.exception))
     
-    def test_update_area_trampled_valid(self):
-        """Test updating area trampled with valid additional area."""
-        initial_area = self.plot.total_area_trampled
-        
-        self.plot.update_area_trampled(0.2)
-        
-        self.assertEqual(self.plot.total_area_trampled, initial_area + 0.2)
+
     
-    def test_update_area_trampled_invalid_type(self):
-        """Test updating area trampled with invalid type."""
-        with self.assertRaises(TypeError) as context:
-            self.plot.update_area_trampled("0.2")  # Should be float
-        self.assertIn("additional_area must be an instance of float", str(context.exception))
-    
-    def test_update_area_trampled_negative(self):
-        """Test updating area trampled with negative value."""
-        with self.assertRaises(ValueError) as context:
-            self.plot.update_area_trampled(-0.2)
-        self.assertIn("additional_area must be non-negative", str(context.exception))
-    
-    def test_get_area_trampled_ratio_valid(self):
-        """Test getting area trampled ratio with valid values."""
-        self.plot.total_area_trampled = 0.3
-        self.plot.plot_area = 1.0
-        
-        result = self.plot.get_area_trampled_ratio()
-        
-        self.assertEqual(result, 0.3)
-    
-    def test_get_area_trampled_ratio_zero_trampled(self):
-        """Test getting area trampled ratio with zero trampled area."""
-        self.plot.total_area_trampled = 0.0
-        self.plot.plot_area = 1.0
-        
-        result = self.plot.get_area_trampled_ratio()
-        
-        self.assertEqual(result, 0.0)
+
     
     def test_get_current_melt_water_mass_valid(self):
         """Test calculating meltwater mass from SSRD with valid day."""
