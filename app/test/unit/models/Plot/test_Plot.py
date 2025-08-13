@@ -372,6 +372,18 @@ class TestPlot(unittest.TestCase):
         self.plot.avg_snow_height = 1.0  # Start with 1 meter of snow
         self.plot.plot_area = 1.0
         
+        # mock fauna to create trampling effect (20% of plot area)
+        mock_fauna = Mock()
+        mock_fauna.get_total_mass.return_value = 100.0  # Living fauna
+        mock_fauna.get_avg_feet_area.return_value = 0.1  # 0.1 km² per individual
+        mock_fauna.get_avg_steps_taken.return_value = 1000.0  # 1000 steps
+        mock_fauna.get_population.return_value = 2  # 2 individuals
+        mock_fauna.get_avg_feet_area.return_value = 0.0001  # 0.0001 km² per individual
+        mock_fauna.get_avg_steps_taken.return_value = 1000.0  # 1000 steps  
+        mock_fauna.get_population.return_value = 2  # 2 individuals
+        
+        self.plot.fauna = [mock_fauna]
+        
         initial_height = self.plot.avg_snow_height
         
         self.plot.update_avg_snow_height(1)
@@ -388,10 +400,11 @@ class TestPlot(unittest.TestCase):
         
         # Calculate expected values
         snowfall = 0.1  # from mock
-        ssrd_loss = (0.35 * 1000.0) / 334000 / (300.0 * 1.0)  # meltwater_mass / (RHO_SNOW * plot_area)
+        ssrd_loss = (0.35 * 1000.0) / 334000 / (300.0 * 1_000_000)  # meltwater_mass / (RHO_SNOW * plot_area_m2)
         trampled_percent = 0.2 / 1.0  # 20% trampled area
-        snow_height_before_trampling = 1.0 + snowfall - ssrd_loss
-        trampling_reduction = 0.7 * trampled_percent * snow_height_before_trampling
+        
+        snow_height_after_snowfall_and_ssrd = 1.0 + snowfall - ssrd_loss
+        trampling_reduction = 0.7 * trampled_percent * snow_height_after_snowfall_and_ssrd
         
         expected_height = 1.0 + snowfall - ssrd_loss - trampling_reduction
         
@@ -433,8 +446,9 @@ class TestPlot(unittest.TestCase):
         
         # melt water mass = (ETA * SSRD) / LF
         meltwater_mass = (0.35 * 1000.0) / 334000
-        # melt water height loss = melt water mass / (RHO_SNOW * plot_area)
-        expected = meltwater_mass / (300.0 * 1.0)
+        # melt water height loss = melt water mass / (RHO_SNOW * plot_area_m2)
+        # plot_area is 1.0 km², converted to 1,000,000 m²
+        expected = meltwater_mass / (300.0 * 1_000_000)
         self.assertAlmostEqual(result, expected, places=10)
     
     def test_calculate_flora_masses_empty(self):
@@ -453,6 +467,7 @@ class TestPlot(unittest.TestCase):
         grass = Mock()
         grass.name = "grass"
         grass.total_mass = 100.0
+        grass.get_total_mass.return_value = 100.0
         grass.ideal_growth_rate = 0.1
         grass.ideal_temp_range = (10.0, 25.0)
         grass.ideal_uv_range = (1.0, 5.0)
@@ -465,6 +480,7 @@ class TestPlot(unittest.TestCase):
         shrub = Mock()
         shrub.name = "shrub"
         shrub.total_mass = 50.0
+        shrub.get_total_mass.return_value = 50.0
         shrub.ideal_growth_rate = 0.05
         shrub.ideal_temp_range = (5.0, 20.0)
         shrub.ideal_uv_range = (2.0, 6.0)
@@ -477,6 +493,7 @@ class TestPlot(unittest.TestCase):
         tree = Mock()
         tree.name = "tree"
         tree.total_mass = 200.0
+        tree.get_total_mass.return_value = 200.0
         tree.ideal_growth_rate = 0.02
         tree.ideal_temp_range = (0.0, 15.0)
         tree.ideal_uv_range = (3.0, 7.0)
@@ -489,10 +506,11 @@ class TestPlot(unittest.TestCase):
         moss = Mock()
         moss.name = "moss"
         moss.total_mass = 25.0
+        moss.get_total_mass.return_value = 25.0
         moss.ideal_growth_rate = 0.08
         moss.ideal_temp_range = (2.0, 18.0)
         moss.ideal_uv_range = (0.5, 4.0)
-        moss.ideal_hydration_range = (0.6, 1.0)
+        moss.ideal_hydration_range = (0.6, 0.8)
         moss.ideal_soil_temp_range = (2.0, 8.0)
         moss.consumers = []
         moss.plot = self.mock_plot
@@ -535,6 +553,7 @@ class TestPlot(unittest.TestCase):
         grass = Mock()
         grass.name = "grass"
         grass.total_mass = 100.0
+        grass.get_total_mass.return_value = 100.0
         grass.ideal_growth_rate = 0.1
         grass.ideal_temp_range = (10.0, 25.0)
         grass.ideal_uv_range = (1.0, 5.0)
@@ -547,6 +566,7 @@ class TestPlot(unittest.TestCase):
         shrub = Mock()
         shrub.name = "shrub"
         shrub.total_mass = 50.0
+        shrub.get_total_mass.return_value = 50.0
         shrub.ideal_growth_rate = 0.05
         shrub.ideal_temp_range = (5.0, 20.0)
         shrub.ideal_uv_range = (2.0, 6.0)
@@ -559,6 +579,7 @@ class TestPlot(unittest.TestCase):
         tree = Mock()
         tree.name = "tree"
         tree.total_mass = 200.0
+        tree.get_total_mass.return_value = 200.0
         tree.ideal_growth_rate = 0.02
         tree.ideal_temp_range = (0.0, 15.0)
         tree.ideal_uv_range = (3.0, 7.0)
@@ -571,6 +592,7 @@ class TestPlot(unittest.TestCase):
         moss = Mock()
         moss.name = "moss"
         moss.total_mass = 25.0
+        moss.get_total_mass.return_value = 25.0
         moss.ideal_growth_rate = 0.08
         moss.ideal_temp_range = (2.0, 18.0)
         moss.ideal_uv_range = (0.5, 4.0)
@@ -727,15 +749,18 @@ class TestPlot(unittest.TestCase):
         # Create mock prey with total mass below limit (500 kg/km^2 * 1.0 km^2 = 500 kg)
         mock_prey1 = Mock()
         mock_prey1.total_mass = 200.0
+        mock_prey1.get_total_mass.return_value = 200.0
         mock_prey1.__class__.__name__ = "Prey"
         
         mock_prey2 = Mock()
         mock_prey2.total_mass = 150.0
+        mock_prey2.get_total_mass.return_value = 150.0
         mock_prey2.__class__.__name__ = "Prey"
         
         # Add a predator to ensure it's not counted
         mock_predator = Mock()
         mock_predator.total_mass = 100.0
+        mock_predator.get_total_mass.return_value = 100.0
         mock_predator.__class__.__name__ = "Predator"
         
         self.plot.fauna = [mock_prey1, mock_prey2, mock_predator]
@@ -750,10 +775,12 @@ class TestPlot(unittest.TestCase):
         # Create mock prey with total mass above limit (500 kg/km^2 * 1.0 km^2 = 500 kg)
         mock_prey1 = Mock()
         mock_prey1.total_mass = 300.0
+        mock_prey1.get_total_mass.return_value = 300.0
         mock_prey1.__class__.__name__ = "Prey"
         
         mock_prey2 = Mock()
         mock_prey2.total_mass = 250.0
+        mock_prey2.get_total_mass.return_value = 250.0
         mock_prey2.__class__.__name__ = "Prey"
         
         self.plot.fauna = [mock_prey1, mock_prey2]
@@ -776,15 +803,18 @@ class TestPlot(unittest.TestCase):
         # Create mock predators with total mass below limit (50 kg/km^2 * 1.0 km^2 = 50 kg)
         mock_predator1 = Mock()
         mock_predator1.total_mass = 20.0
+        mock_predator1.get_total_mass.return_value = 20.0
         mock_predator1.__class__.__name__ = "Predator"
         
         mock_predator2 = Mock()
         mock_predator2.total_mass = 15.0
+        mock_predator2.get_total_mass.return_value = 15.0
         mock_predator2.__class__.__name__ = "Predator"
         
         # Add prey to ensure it's not counted
         mock_prey = Mock()
         mock_prey.total_mass = 100.0
+        mock_prey.get_total_mass.return_value = 100.0
         mock_prey.__class__.__name__ = "Prey"
         
         self.plot.fauna = [mock_predator1, mock_predator2, mock_prey]
@@ -799,10 +829,12 @@ class TestPlot(unittest.TestCase):
         # Create mock predators with total mass above limit (50 kg/km^2 * 1.0 km^2 = 50 kg)
         mock_predator1 = Mock()
         mock_predator1.total_mass = 30.0
+        mock_predator1.get_total_mass.return_value = 30.0
         mock_predator1.__class__.__name__ = "Predator"
         
         mock_predator2 = Mock()
         mock_predator2.total_mass = 25.0
+        mock_predator2.get_total_mass.return_value = 25.0
         mock_predator2.__class__.__name__ = "Predator"
         
         self.plot.fauna = [mock_predator1, mock_predator2]
