@@ -73,13 +73,12 @@ class Plot(FloraPlotInformation):
                 raise TypeError(f"{name} must be an instance of {expected_type.__name__}, got: {type(value).__name__}")
     
     def __init__(self, Id: int, avg_snow_height: float, climate: 'Climate', 
-                total_area_trampled: float, plot_area: float):
+                plot_area: float):
         """
         Args:
             Id (int): Unique identifier for the plot.
             avg_snow_height (float): Average snow height in meters.
             climate (Climate): Climate object containing environmental data.
-            total_area_trampled (float): Total area trampled by fauna in km².
             plot_area (float): Total area of the plot in km².
         Raises:
             ValueError: If any input parameters are invalid.
@@ -93,7 +92,6 @@ class Plot(FloraPlotInformation):
             previous_avg_snow_height (float): Previous average snow height in meters.
             compaction_depth (float): Snow height reduction factor per step (70%).
             plot_area (float): Total area of the plot in km^2.
-            total_area_trampled (float): Total area trampled by fauna in km^2.
         """
         self._validate_instance(Id, int, "Id")
         self._validate_positive_number(Id, "Id", allow_zero=True)
@@ -102,9 +100,6 @@ class Plot(FloraPlotInformation):
         self._validate_positive_number(avg_snow_height, "avg_snow_height", allow_zero=True)
         
         self._validate_instance(climate, 'Climate', "climate")
-        
-        self._validate_instance(total_area_trampled, float, "total_area_trampled")
-        self._validate_positive_number(total_area_trampled, "total_area_trampled", allow_zero=True)
         
         self._validate_instance(plot_area, float, "plot_area")
         self._validate_positive_number(plot_area, "plot_area", allow_zero=False)
@@ -118,7 +113,6 @@ class Plot(FloraPlotInformation):
             self.previous_avg_snow_height = None
             self.compaction_depth = 0.7
             self.plot_area = float(plot_area)
-            self.total_area_trampled = float(total_area_trampled)
             
         except Exception as e:
             raise RuntimeError(f"Failed to initialize Plot {Id}: {e}")
@@ -306,23 +300,40 @@ class Plot(FloraPlotInformation):
         except Exception as e:
             raise RuntimeError(f"Failed to update snow height on day {day}: {e}")
     
-    def update_area_trampled(self, additional_area: float):
+
+    def _calculate_trampled_area(self) -> float:
         """
-        Update the total area trampled by fauna.
+        Calculate the total area trampled by all fauna on the plot in km^2
+        This is a private method to avoid duplicate calculations.
         
-        Args:
-            additional_area (float): Additional area trampled in km^2.
+        Returns:
+            float: Total trampled area in km²
         Raises:
-            ValueError: If additional_area is not a positive number.
-            RuntimeError: If area update fails.
+            RuntimeError: If calculation fails.
         """
-        self._validate_instance(additional_area, float, "additional_area")
-        self._validate_positive_number(additional_area, "additional_area")
-        
         try:
-            self.total_area_trampled += additional_area
+            total_trampled_area = 0.0
+            
+            for fauna in self.fauna:
+                if fauna.get_total_mass() > 0:  # Only count living fauna
+                    individual_trampled = fauna.get_avg_feet_area() * fauna.get_avg_steps_taken()
+                    total_trampled_area += individual_trampled * fauna.get_population()
+            
+            # Cap the trampled area at the plot area
+            return min(total_trampled_area, self.plot_area)
         except Exception as e:
-            raise RuntimeError(f"Failed to update trampled area: {e}")
+            raise RuntimeError(f"Failed to calculate total trampled area: {e}")
+    
+    def get_total_trampled_area(self) -> float:
+        """
+        Get the total area trampled by all fauna on the plot in km².
+        
+        Returns:
+            float: Total trampled area in km²
+        Raises:
+            RuntimeError: If calculation fails.
+        """
+        return self._calculate_trampled_area()
     
     def get_area_trampled_ratio(self) -> float:
         """
@@ -334,7 +345,8 @@ class Plot(FloraPlotInformation):
             RuntimeError: If calculation fails.
         """
         try:
-            return (self.total_area_trampled / self.plot_area)
+            total_trampled_area = self._calculate_trampled_area()
+            return (total_trampled_area / self.plot_area)
         except Exception as e:
             raise RuntimeError(f"Failed to calculate trampled area ratio: {e}")
     
@@ -344,7 +356,7 @@ class Plot(FloraPlotInformation):
         It first calculates the meltwater mass, then converts it to height loss 
         using snow density and plot area.
         
-        Formula: height_loss = meltwater_mass / (RHO_SNOW * plot_area)
+        Formula: height_loss = meltwater_mass / (RHO_SNOW * plot_area_m2)
         
         Args:
             day (int): The day of the year to get SSRD data for.
@@ -359,7 +371,8 @@ class Plot(FloraPlotInformation):
         
         try:
             meltwater_mass = self.get_current_melt_water_mass(day)
-            return meltwater_mass / (RHO_SNOW * self.plot_area)
+            plot_area_m2 = self.plot_area * 1_000_000 # convert plot_area from km^2 to m^2
+            return meltwater_mass / (RHO_SNOW * plot_area_m2)
         except Exception as e:
             raise RuntimeError(f"Failed to calculate snow height loss from SSRD on day {day}: {e}")
     
