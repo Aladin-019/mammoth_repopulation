@@ -139,7 +139,7 @@ class Flora():
         if not isinstance(value, expected_type):
             raise TypeError(f"{name} must be an instance of {expected_type.__name__}, got: {type(value)}")
     
-    def __init__(self, name: str, description: str, total_mass: float, population: int,
+    def __init__(self, name: str, description: str, avg_mass: float, population: int,
                  ideal_growth_rate: float, ideal_temp_range: Tuple[float, float],
                  ideal_uv_range: Tuple[float, float], ideal_hydration_range: Tuple[float, float],
                  ideal_soil_temp_range: Tuple[float, float], consumers: List[Fauna], root_depth: int,
@@ -152,7 +152,7 @@ class Flora():
         Args:
             name (str): Name of the flora species.
             description (str): Description of the flora species.
-            total_mass (float): Total mass in kg.
+            avg_mass (float): Average mass per individual in kg.
             population (int): Population count.
             ideal_growth_rate (float): Ideal growth rate in kg/day.
             ideal_temp_range (Tuple[float, float]): Ideal temperature range in Celsius.
@@ -173,8 +173,8 @@ class Flora():
         self._validate_instance(description, str, "description")
         self._validate_string(description, "description", allow_empty=True)
         
-        self._validate_instance(total_mass, float, "total_mass")
-        self._validate_positive_number(total_mass, "total_mass")
+        self._validate_instance(avg_mass, float, "avg_mass")
+        self._validate_positive_number(avg_mass, "avg_mass")
         
         self._validate_instance(population, int, "population")
         self._validate_positive_number(population, "population")
@@ -206,8 +206,9 @@ class Flora():
         try:
             self.name = name
             self.description = description
-            self.total_mass = float(total_mass)             
-            self.population = population                 
+            self.avg_mass = float(avg_mass)
+            self.population = population
+            self.total_mass = self.avg_mass * self.population
             self.ideal_growth_rate = float(ideal_growth_rate)   
             self.ideal_temp_range = ideal_temp_range     
             self.ideal_uv_range = ideal_uv_range         
@@ -229,23 +230,30 @@ class Flora():
     def get_total_mass(self) -> float:
         return self.total_mass
     
+    def get_avg_mass(self) -> float:
+        """Get the average mass per individual."""
+        return self.avg_mass
+    
     def update_flora_mass(self, day: int) -> None:
         """
         Update the mass of the flora based on the current environmental conditions.
         The mass is adjusted based on the distance from the ideal ranges for temperature, UV index,
-        hydration, and soil temperature.
+        hydration, and soil temperature (for deep-rooted flora).
+        
+        Args:
+            day (int): The current simulation day
         """
-        self._validate_instance(day, int, "day")
         self._validate_positive_number(day, "day")
         
         try:
+            # Get current environmental conditions
             environmental_conditions = self._get_current_environmental_conditions(day)
 
             environmental_penalty = self._calculate_environmental_penalty(environmental_conditions)
-            
+                
             base_growth_rate = self._calculate_base_growth_rate(environmental_penalty)
             consumption_rate = self.total_consumption_rate()
-            
+                
             # update mass for this timestep
             self._update_mass_from_growth_and_consumption(base_growth_rate, consumption_rate)
         except Exception as e:
@@ -253,15 +261,16 @@ class Flora():
 
     def _get_current_environmental_conditions(self, day: int) -> dict:
         """
-        Get current environmental conditions from the plot.
+        Get current environmental conditions for this flora.
         
-        Only deep-rooted flora (root_depth >= 3) are affected by soil temperature.
-        Shallow-rooted flora (root_depth < 3) are only affected by surface conditions.
+        Deep-rooted flora (root_depth >= 3) include soil temperature in their conditions.
+        Shallow-rooted flora (root_depth < 3) only consider surface conditions.
         
+        Args:
+            day (int): The current simulation day
         Returns:
             dict: Dictionary containing current environmental values
         """
-        self._validate_instance(day, int, "day")
         self._validate_positive_number(day, "day")
         
         current_temp = self.plot.get_current_temperature(day)
@@ -351,9 +360,15 @@ class Flora():
         self._validate_instance(base_growth_rate, float, "base_growth_rate")
         self._validate_instance(consumption_rate, float, "consumption_rate")
         
+        # Update mass
         actual_growth_rate = base_growth_rate - consumption_rate
         new_mass = self.total_mass + self.total_mass * actual_growth_rate
         self.total_mass = max(0, new_mass)  # Prevent negative mass
+        
+        # Recalculate population
+        if self.avg_mass > 0:
+            new_population = int(self.total_mass / self.avg_mass)
+            self.population = max(0, new_population)
 
     def _apply_canopy_shading(self, environmental_conditions: dict) -> dict:
         """
