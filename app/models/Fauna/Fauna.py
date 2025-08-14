@@ -225,7 +225,7 @@ class Fauna():
     def get_feeding_rate(self) -> float:
         return self.feeding_rate
     
-    def get_avg_steps_taken(self) -> int:
+    def get_avg_steps_taken(self) -> float:
         return self.avg_steps_taken
     
     def get_avg_feet_area(self) -> float:
