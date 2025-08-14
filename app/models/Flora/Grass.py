@@ -9,6 +9,7 @@ class Grass(Flora):
     Represents a grass species.
     Grasses resistant to trampling unlike shrubs. They are the key food source for mammoths 
     and other similar herbivores.
+    Grass uses total mass directly since it has uncountable populations.
     """
 
     def __init__(self, name: str, description: str, total_mass: float, population: int,
@@ -17,9 +18,14 @@ class Grass(Flora):
                  ideal_soil_temp_range: Tuple[float, float], consumers: List[Fauna], 
                  root_depth: int, plot: FloraPlotInformation):
         
-        super().__init__(name, description, total_mass, population, ideal_growth_rate, 
+        # Grass uses total mass directly, so we pass a dummy avg_mass to satisfy the base class
+        dummy_avg_mass = 1.0
+        
+        super().__init__(name, description, dummy_avg_mass, population, ideal_growth_rate, 
                         ideal_temp_range, ideal_uv_range, ideal_hydration_range,
                         ideal_soil_temp_range, consumers, root_depth, plot)
+        
+        self.total_mass = float(total_mass)
 
     def update_flora_mass(self, day: int) -> None:
         """
