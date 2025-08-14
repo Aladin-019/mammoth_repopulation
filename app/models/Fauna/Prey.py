@@ -10,7 +10,7 @@ class Prey(Fauna):
 
     def __init__(self, name: str, description: str, population: int, avg_mass: float,
                  ideal_temp_range: Tuple[float, float], ideal_food_range: Tuple[float, float], ideal_growth_rate: float, 
-                 feeding_rate: float, avg_steps_taken: int, avg_feet_area: float, plot: PlotInformation, predators: List['Fauna'],
+                 feeding_rate: float, avg_steps_taken: float, avg_feet_area: float, plot: PlotInformation, predators: List['Fauna'],
                  consumable_flora: List['Flora']):
         
         super().__init__(name, description, population, avg_mass, ideal_growth_rate, ideal_temp_range, 
@@ -152,6 +152,11 @@ class Prey(Fauna):
         actual_growth_rate = base_growth_rate - consumption_rate
         new_mass = self.get_total_mass() + self.get_total_mass() * actual_growth_rate
         self.set_total_mass(new_mass)  # Setter will cap at 0
+        
+        # Update population
+        if self.avg_mass > 0:
+            new_population = int(new_mass / self.avg_mass)
+            self.population = max(0, new_population)
 
     def capacity_penalty(self) -> None:
         """
