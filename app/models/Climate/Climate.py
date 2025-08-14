@@ -16,10 +16,11 @@ from app.interfaces.plot_info import PlotInformation
 logger = logging.getLogger(__name__)
 
 # Sensitivity constants for snow depth
-SOIL_SENSITIVITY = 5.0         # degrees C per meter of snow change
-AIR_SENSITIVITY = 2.0          # degrees C per meter of snow change
-MAX_DAILY_SOIL_DELTA = 3.0     # max daily soil temp change
-MAX_DAILY_AIR_DELTA = 1.5      # max daily air temp change
+# **** These are currently set higher than normal for testing purposes ****
+SOIL_SENSITIVITY = 50.0        # degrees C per meter of snow change
+AIR_SENSITIVITY = 20.0          # degrees C per meter of snow change
+MAX_DAILY_SOIL_DELTA = 30.0     # max daily soil temp change
+MAX_DAILY_AIR_DELTA = 15.0    # max daily air temp change
 
 # Raw climate data file paths for different biomes
 BIOME_FILE_MAP = {
@@ -95,6 +96,8 @@ class Climate:
             self.biome = biome
             self.plot = plot
             self.consecutive_frozen_soil_days = 0
+            self.cumulative_soil_temp_offset = 0.0
+            self.cumulative_air_temp_offset = 0.0
             self.recent_values = {
                 'temperature': deque(maxlen=7),  # keep last 7 days
                 'soil_temp': deque(maxlen=7),
@@ -189,11 +192,14 @@ class Climate:
         
         try:
             delta_snow_height = self.plot.delta_snow_height()
-            air_temp_offset = self._2mtemp_change_from_snow_delta(delta_snow_height)
+            daily_air_temp_offset = self._2mtemp_change_from_snow_delta(delta_snow_height)
+            
+            self.cumulative_air_temp_offset += daily_air_temp_offset
+            self.cumulative_air_temp_offset = Climate.clamp(self.cumulative_air_temp_offset, -MAX_DAILY_AIR_DELTA, MAX_DAILY_AIR_DELTA)
 
             loader = self._load_climate_loader("temperature", TemperatureLoader)
             driver = TemperatureDriver(loader.get_temp_data())
-            result = driver.generate_daily_temp(self.biome, day, air_temp_offset)
+            result = driver.generate_daily_temp(self.biome, day, self.cumulative_air_temp_offset)
             
             if result is None:
                 return self._get_fallback_value('temperature', day)
@@ -222,11 +228,14 @@ class Climate:
         
         try:
             delta_snow_height = self.plot.delta_snow_height()
-            soil_temp_offset = self._soil_temp_change_from_snow_delta(delta_snow_height)
-
+            daily_soil_temp_offset = self._soil_temp_change_from_snow_delta(delta_snow_height)
+            
+            self.cumulative_soil_temp_offset += daily_soil_temp_offset
+            self.cumulative_soil_temp_offset = Climate.clamp(self.cumulative_soil_temp_offset, -MAX_DAILY_SOIL_DELTA, MAX_DAILY_SOIL_DELTA)
+            
             loader = self._load_climate_loader("soil_temp4", SoilTemp4Loader)
             driver = SoilTemp4Driver(loader.get_soil_temp4_data())
-            result = driver.generate_daily_soil_temp(self.biome, day, soil_temp_offset)
+            result = driver.generate_daily_soil_temp(self.biome, day, self.cumulative_soil_temp_offset)
             
             if result is None:
                 return self._get_fallback_value('soil_temp', day)
@@ -249,7 +258,11 @@ class Climate:
         
         if soil_temp < 0.0:
             self.consecutive_frozen_soil_days += 1
+            logger.debug(f"Soil temp {soil_temp:.2f}°C < 0°C, consecutive frozen days: {self.consecutive_frozen_soil_days}")
         else:
+            # Reset counter when soil temperature goes above freezing
+            if self.consecutive_frozen_soil_days > 0:
+                logger.debug(f"Soil temp {soil_temp:.2f}°C > 0°C, resetting consecutive frozen days from {self.consecutive_frozen_soil_days} to 0")
             self.consecutive_frozen_soil_days = 0
 
     def _get_current_snowfall(self, day: int) -> float:
@@ -403,7 +416,15 @@ class Climate:
     def is_steppe(self) -> bool:
         """
         Check if the plot is in steppe conditions based on flora mass composition and permafrost.
-        Steppe conditions are characterized by high grass ratio, low shrub ratio, and valid permafrost.
+        
+        Mammoth steppe conditions are characterized by:
+        - High grass dominance (≥25%) for grazing
+        - Minimal tree coverage (≤45%) for open landscape (number higher due to high mass of trees)
+        - Moderate shrub coverage (≤20%) for diversity
+        - Significant moss/lichen coverage (≤10%) for ground cover
+        - Valid permafrost conditions
+        Returns:
+            bool: True if steppe conditions are met, False otherwise.
         """
         try:
             # Check permafrost conditions (reduced requirement for testing)
@@ -425,10 +446,11 @@ class Climate:
                 logger.warning(f"Flora mass ratios don't sum to 1.0, got: {total_ratio}")
                 return False
             
-            #if grass_ratio >= 0.85 and 0.0 <= shrub_ratio <= 0.15:
-            # More lenient conditions for testing - allow more variety in flora composition
-            if grass_ratio >= 0.4 and tree_ratio <= 0.3 and shrub_ratio <= 0.3:  # testing
-                logger.info(f"Steppe conditions met: grass={grass_ratio:.2f}, tree={tree_ratio:.2f}, shrub={shrub_ratio:.2f}")
+            if (grass_ratio >= 0.25 and  # Grass should be dominant
+                tree_ratio <= 0.45 and   # Trees should be minimal for open steppe (mass ratio higher due to high mass of trees)
+                shrub_ratio <= 0.2 and   # Shrubs can be moderate
+                moss_ratio <= 0.1):      # Moss/lichen can be significant but not overwhelming
+                logger.info(f"Steppe conditions met: grass={grass_ratio:.2f}, tree={tree_ratio:.2f}, shrub={shrub_ratio:.2f}, moss={moss_ratio:.2f}")
                 return True
             return False
             
