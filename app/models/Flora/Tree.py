@@ -11,13 +11,13 @@ class Tree(Flora):
     ground flora. Trees are resistent to trampling from large herbivores.
     """
 
-    def __init__(self, name: str, description: str, total_mass: float, population: int,
+    def __init__(self, name: str, description: str, avg_mass: float, population: int,
                  ideal_growth_rate: float, ideal_temp_range: Tuple[float, float],
                  ideal_uv_range: Tuple[float, float], ideal_hydration_range: Tuple[float, float],
                  ideal_soil_temp_range: Tuple[float, float], consumers: List[Fauna], 
                  root_depth: int, plot: FloraPlotInformation, single_tree_canopy_cover: float = 10.0, coniferous: bool = True):
                
-        super().__init__(name, description, total_mass, population, ideal_growth_rate, 
+        super().__init__(name, description, avg_mass, population, ideal_growth_rate, 
                         ideal_temp_range, ideal_uv_range, ideal_hydration_range,
                         ideal_soil_temp_range, consumers, root_depth, plot)
         
