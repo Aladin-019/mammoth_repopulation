@@ -11,16 +11,16 @@ class Shrub(Flora):
     They are affected by canopy cover, which reduces UV exposure.
     """
     
-    # amount of shrub area trampled by large herbivores
-    STOMPING_RATE = 0.5
+    # amount of shrub area trampled by large herbivores (probability they will trample if encountered)
+    STOMPING_RATE = 0.85
 
-    def __init__(self, name: str, description: str, total_mass: float, population: int,
+    def __init__(self, name: str, description: str, avg_mass: float, population: int,
                  ideal_growth_rate: float, ideal_temp_range: Tuple[float, float],
                  ideal_uv_range: Tuple[float, float], ideal_hydration_range: Tuple[float, float],
                  ideal_soil_temp_range: Tuple[float, float], consumers: List[Fauna], 
                  root_depth: int, plot: FloraPlotInformation, shrub_area: float = 1.0):
                 
-        super().__init__(name, description, total_mass, population, ideal_growth_rate, 
+        super().__init__(name, description, avg_mass, population, ideal_growth_rate, 
                         ideal_temp_range, ideal_uv_range, ideal_hydration_range,
                         ideal_soil_temp_range, consumers, root_depth, plot)
         
@@ -56,24 +56,23 @@ class Shrub(Flora):
     def _apply_trampling_reduction(self) -> None:
         """
         Apply reduction in shrub mass due to trampling by prey.
-        Calculate the area of shrubs stomped out based on trampled area.
+        The trampling effect is proportional to how much of the plot is trampled.
         """
         self._validate_not_none(self.plot, "plot")
         
-        total_area_trampled = self.plot.get_area_trampled_ratio()
+        trampled_ratio = self.plot.get_area_trampled_ratio()
         
-        initial_shrub_area = self.population * self.shrub_area
+        trampling_damage = self.STOMPING_RATE * trampled_ratio
         
-        stomping_rate = self.STOMPING_RATE * total_area_trampled
-        area_stomped_out = initial_shrub_area * stomping_rate
-        
-        updated_shrub_area = max(0, initial_shrub_area - area_stomped_out)
-        
-        if initial_shrub_area > 0:
-            area_reduction_ratio = updated_shrub_area / initial_shrub_area
-            self.total_mass *= area_reduction_ratio
+        if trampling_damage > 0:
+            # Reduce mass by trampling damage
+            mass_reduction = 1.0 - trampling_damage
+            self.total_mass *= max(0.0, mass_reduction)
             
-            self.population = int(updated_shrub_area / self.shrub_area)
+            # Recalculate population after mass reduction
+            if self.avg_mass > 0:
+                new_population = int(self.total_mass / self.avg_mass)
+                self.population = max(0, new_population)
     
     def capacity_penalty(self) -> None:
         """
