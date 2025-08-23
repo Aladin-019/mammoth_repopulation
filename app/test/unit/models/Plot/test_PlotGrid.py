@@ -18,6 +18,10 @@ class TestPlotGrid(unittest.TestCase):
         self.assertIs(self.grid.get_plot(1, 2), self.plot2)
         self.assertIsNone(self.grid.get_plot(5, 5))
 
+    def test_add_plot_invalid_plot(self):
+        with self.assertRaises(ValueError):
+            self.grid.add_plot(0, 0, "NotAPlotInstance")
+
     def test_grid_boundaries(self):
         self.grid.add_plot(3, 4, self.plot1)
         self.grid.add_plot(-2, 10, self.plot2)
@@ -34,6 +38,18 @@ class TestPlotGrid(unittest.TestCase):
     def test_empty_grid(self):
         self.assertIsNone(self.grid.get_plot(0, 0))
         self.assertEqual(self.grid.plots, {})
+
+    def test_get_all_plots(self):
+        self.grid.add_plot(0, 0, self.plot1)
+        self.grid.add_plot(1, 2, self.plot2)
+        all_plots = self.grid.get_all_plots()
+        self.assertEqual(len(all_plots), 2)
+        self.assertIn(self.plot1, all_plots)
+        self.assertIn(self.plot2, all_plots)
+
+        # Test with empty grid
+        empty_grid = PlotGrid()
+        self.assertEqual(empty_grid.get_all_plots(), [])
 
 if __name__ == '__main__':
     unittest.main()
