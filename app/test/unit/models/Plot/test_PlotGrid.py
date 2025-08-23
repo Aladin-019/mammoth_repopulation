@@ -19,7 +19,7 @@ class TestPlotGrid(unittest.TestCase):
         self.assertIsNone(self.grid.get_plot(5, 5))
 
     def test_add_plot_invalid_plot(self):
-        with self.assertRaises(ValueError):
+        with self.assertRaises(TypeError):
             self.grid.add_plot(0, 0, "NotAPlotInstance")
 
     def test_grid_boundaries(self):
