@@ -1,0 +1,39 @@
+import unittest
+from app.models.Plot.PlotGrid import PlotGrid
+from app.models.Plot import Plot
+from app.models.Climate import Climate
+
+class TestPlotGrid(unittest.TestCase):
+    def setUp(self):
+        self.grid = PlotGrid()
+        # Minimal Climate stub for Plot
+        self.climate = Climate('northern taiga', None)
+        self.plot1 = Plot(Id=1, avg_snow_height=0.1, climate=self.climate, plot_area=1.0)
+        self.plot2 = Plot(Id=2, avg_snow_height=0.2, climate=self.climate, plot_area=2.0)
+
+    def test_add_and_get_plot(self):
+        self.grid.add_plot(0, 0, self.plot1)
+        self.grid.add_plot(1, 2, self.plot2)
+        self.assertIs(self.grid.get_plot(0, 0), self.plot1)
+        self.assertIs(self.grid.get_plot(1, 2), self.plot2)
+        self.assertIsNone(self.grid.get_plot(5, 5))
+
+    def test_grid_boundaries(self):
+        self.grid.add_plot(3, 4, self.plot1)
+        self.grid.add_plot(-2, 10, self.plot2)
+        self.assertEqual(self.grid.min_row, -2)
+        self.assertEqual(self.grid.max_row, 3)
+        self.assertEqual(self.grid.min_col, 4)
+        self.assertEqual(self.grid.max_col, 10)
+
+    def test_overwrite_plot(self):
+        self.grid.add_plot(0, 0, self.plot1)
+        self.grid.add_plot(0, 0, self.plot2)
+        self.assertIs(self.grid.get_plot(0, 0), self.plot2)
+
+    def test_empty_grid(self):
+        self.assertIsNone(self.grid.get_plot(0, 0))
+        self.assertEqual(self.grid.plots, {})
+
+if __name__ == '__main__':
+    unittest.main()
