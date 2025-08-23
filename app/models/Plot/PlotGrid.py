@@ -76,3 +76,24 @@ class PlotGrid:
             Tuple of (min_row, max_row, min_col, max_col)
         """
         return (self.min_row, self.max_row, self.min_col, self.max_col)
+
+
+    def get_neighbors(self, row: int, col: int) -> List[Plot]:
+        """
+        Get all neighboring plots (diagonal plots included)
+        
+        Args:
+            row (int): Row coordinate
+            col (int): Column coordinate
+        Returns:
+            List of neighboring Plot objects
+        """
+        neighbors = []
+        for dr in [-1, 0, 1]:
+            for dc in [-1, 0, 1]:
+                if dr == 0 and dc == 0:
+                    continue  # Skip the center plot
+                neighbor = self.get_plot(row + dr, col + dc)
+                if neighbor is not None:
+                    neighbors.append(neighbor)
+        return neighbors
