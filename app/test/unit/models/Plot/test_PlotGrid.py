@@ -70,5 +70,34 @@ class TestPlotGrid(unittest.TestCase):
         empty_grid = PlotGrid()
         self.assertEqual(list(empty_grid.plots.keys()), [])
 
+    def test_grid_dimensions(self):
+        # Empty grid 
+        empty_grid = PlotGrid()
+        self.assertEqual(empty_grid.min_row, float('inf'))
+        self.assertEqual(empty_grid.max_row, float('-inf'))
+        self.assertEqual(empty_grid.min_col, float('inf'))
+        self.assertEqual(empty_grid.max_col, float('-inf'))
+
+        # Add one plot
+        self.grid.add_plot(2, 3, self.plot1)
+        self.assertEqual(self.grid.min_row, 2)
+        self.assertEqual(self.grid.max_row, 2)
+        self.assertEqual(self.grid.min_col, 3)
+        self.assertEqual(self.grid.max_col, 3)
+
+        # Add another plot
+        self.grid.add_plot(-1, 5, self.plot2)
+        self.assertEqual(self.grid.min_row, -1)
+        self.assertEqual(self.grid.max_row, 2)
+        self.assertEqual(self.grid.min_col, 3)
+        self.assertEqual(self.grid.max_col, 5)
+
+        # Overwrite plot at (2, 3) should not change dimensions
+        self.grid.add_plot(2, 3, self.plot2)
+        self.assertEqual(self.grid.min_row, -1)
+        self.assertEqual(self.grid.max_row, 2)
+        self.assertEqual(self.grid.min_col, 3)
+        self.assertEqual(self.grid.max_col, 5)
+
 if __name__ == '__main__':
     unittest.main()
