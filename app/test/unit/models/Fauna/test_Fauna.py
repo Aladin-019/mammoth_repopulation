@@ -25,6 +25,8 @@ class TestFauna(unittest.TestCase):
                 return 5.0
             def get_previous_snow_height(self) -> float:
                 return 4.0
+            def get_plot_id(self):
+                return 1
         
         self.mock_plot = MockPlot()
         
@@ -35,7 +37,7 @@ class TestFauna(unittest.TestCase):
             'avg_mass': 100.0,
             'ideal_growth_rate': 2.0,
             'ideal_temp_range': (10.0, 25.0),
-            'ideal_food_range': (50.0, 200.0),
+            'min_food_per_day': 50.0,
             'feeding_rate': 5.0,
             'avg_steps_taken': 1000.0,
             'avg_feet_area': 0.5,
@@ -52,15 +54,15 @@ class TestFauna(unittest.TestCase):
         self.assertEqual(self.fauna.avg_mass, 100.0)
         self.assertEqual(self.fauna.ideal_growth_rate, 2.0)
         self.assertEqual(self.fauna.ideal_temp_range, (10.0, 25.0))
-        self.assertEqual(self.fauna.ideal_food_range, (50.0, 200.0))
         self.assertEqual(self.fauna.feeding_rate, 5.0)
+        self.assertEqual(self.fauna.min_food_per_day, 50.0)
         self.assertEqual(self.fauna.avg_steps_taken, 1000.0)
         self.assertEqual(self.fauna.avg_feet_area, 0.5)
         self.assertEqual(self.fauna.plot, self.mock_plot)
         
         # Test calculated total_mass
         expected_total_mass = 50 * 100.0  # population * avg_mass
-        self.assertEqual(self.fauna.total_mass, expected_total_mass)
+        self.assertEqual(self.fauna._total_mass, expected_total_mass)
     
     def test_init_invalid_name_type(self):
         """Test Fauna initialization with invalid name type."""
@@ -168,15 +170,6 @@ class TestFauna(unittest.TestCase):
         with self.assertRaises(ValueError) as context:
             Fauna(**params)
         self.assertIn("must be in (min, max) order", str(context.exception))
-    
-    def test_init_invalid_ideal_food_range_type(self):
-        """Test Fauna initialization with invalid ideal_food_range type."""
-        params = self.valid_params.copy()
-        params['ideal_food_range'] = "50,200"  # Wrong type
-        
-        with self.assertRaises(TypeError) as context:
-            Fauna(**params)
-        self.assertIn("must be an instance of tuple", str(context.exception))
     
     def test_init_invalid_feeding_rate_type(self):
         """Test Fauna initialization with invalid feeding_rate type."""
@@ -309,6 +302,26 @@ class TestFauna(unittest.TestCase):
         """Test distance_from_ideal with same min and max values."""
         result = self.fauna.distance_from_ideal(15.0, (15.0, 15.0))
         self.assertEqual(result, 0.0)
+
+    def test_distance_from_min_food_enough(self):
+        """Test distance_from_min_food returns 0 when food is sufficient."""
+        min_food = self.fauna.min_food_per_day
+        self.assertEqual(self.fauna.distance_from_min_food(min_food), 0.0)
+        self.assertEqual(self.fauna.distance_from_min_food(min_food + 10), 0.0)
+
+    def test_distance_from_min_food_just_below(self):
+        """Test distance_from_min_food returns small negative when just below minimum."""
+        min_food = self.fauna.min_food_per_day
+        self.assertLess(self.fauna.distance_from_min_food(min_food - 1), 0.0)
+
+    def test_distance_from_min_food_far_below(self):
+        """Test distance_from_min_food returns -1.0 when food is zero."""
+        self.assertEqual(self.fauna.distance_from_min_food(0.0), -1.0)
+
+    def test_distance_from_min_food_half(self):
+        """Test distance_from_min_food returns -0.5 when food is half the minimum."""
+        min_food = self.fauna.min_food_per_day
+        self.assertAlmostEqual(self.fauna.distance_from_min_food(min_food / 2), -0.5)
 
 if __name__ == '__main__':
     unittest.main()

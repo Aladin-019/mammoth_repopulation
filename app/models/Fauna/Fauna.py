@@ -137,7 +137,7 @@ class Fauna():
     
     def __init__(self, name: str, description: str, population: int, avg_mass: float,
                  ideal_growth_rate: float, ideal_temp_range: Tuple[float, float],
-                 ideal_food_range: Tuple[float, float], feeding_rate: float,
+                 min_food_per_day: float, feeding_rate: float,
                  avg_steps_taken: float, avg_feet_area: float, plot: PlotInformation):
         """
         Represents a fauna species.
@@ -174,8 +174,8 @@ class Fauna():
         self._validate_instance(ideal_temp_range, tuple, "ideal_temp_range")
         self._validate_range_tuple(ideal_temp_range, "ideal_temp_range")
         
-        self._validate_instance(ideal_food_range, tuple, "ideal_food_range")
-        self._validate_range_tuple(ideal_food_range, "ideal_food_range")
+        self._validate_instance(min_food_per_day, float, "min_food_per_day")
+        self._validate_positive_number(min_food_per_day, "min_food_per_day", allow_zero=False)
         
         self._validate_instance(feeding_rate, float, "feeding_rate")
         self._validate_positive_number(feeding_rate, "feeding_rate", allow_zero=False)
@@ -197,7 +197,10 @@ class Fauna():
             self._total_mass = self.population * self.avg_mass
             self.ideal_growth_rate = float(ideal_growth_rate)
             self.ideal_temp_range = ideal_temp_range
-            self.ideal_food_range = ideal_food_range
+            self.min_food_per_day = float(min_food_per_day) * population
+            # Use a reasonable upper bound instead of infinity to avoid NaN in calculations
+            max_food = self.min_food_per_day * 1000.0  * population
+            self.ideal_food_range = (self.min_food_per_day, max_food)
             self.feeding_rate = float(feeding_rate)
             self.avg_steps_taken = float(avg_steps_taken)
             self.avg_feet_area = float(avg_feet_area)
@@ -252,13 +255,12 @@ class Fauna():
 
         mid = (min_val + max_val) / 2
         width = (max_val - min_val) / 2
-
+        
         if min_val <= current_value <= max_val:
             return 0.0  # Ideal
 
-        # How far from center in units of "ideal range width"
         normalized_distance = (abs(current_value - mid) / width)
-        return -min(normalized_distance, 2.0)  # Cap distance at 2.0
+        return -min(normalized_distance, 1.0)  # Cap distance at -1.0
 
     def capacity_penalty(self) -> None:
         """
