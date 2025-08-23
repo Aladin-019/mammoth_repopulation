@@ -99,5 +99,38 @@ class TestPlotGrid(unittest.TestCase):
         self.assertEqual(self.grid.min_col, 3)
         self.assertEqual(self.grid.max_col, 5)
 
+    def test_get_neighbors(self):
+        # Fill a 3x3 grid centered at (1,1)
+        plots = {}
+        for r in range(0, 3):
+            for c in range(0, 3):
+                p = Plot(Id=10*r+c, avg_snow_height=0.1, climate=self.climate, plot_area=1.0)
+                self.grid.add_plot(r, c, p)
+                plots[(r, c)] = p
+
+        # Center plot (1,1) should have 8 neighbors
+        neighbors = self.grid.get_neighbors(1, 1)
+        self.assertEqual(len(neighbors), 8)
+        for coord in [(0,0),(0,1),(0,2),(1,0),(1,2),(2,0),(2,1),(2,2)]:
+            self.assertIn(plots[coord], neighbors)
+
+        # Corner plot (0,0) should have 3 neighbors
+        neighbors = self.grid.get_neighbors(0, 0)
+        self.assertEqual(len(neighbors), 3)
+        for coord in [(0,1),(1,0),(1,1)]:
+            self.assertIn(plots[coord], neighbors)
+
+        # Edge plot (0,1) should have 5 neighbors
+        neighbors = self.grid.get_neighbors(0, 1)
+        self.assertEqual(len(neighbors), 5)
+        for coord in [(0,0),(0,2),(1,0),(1,1),(1,2)]:
+            self.assertIn(plots[coord], neighbors)
+
+        # Plot with no neighbors
+        empty_grid = PlotGrid()
+        p = Plot(Id=99, avg_snow_height=0.1, climate=self.climate, plot_area=1.0)
+        empty_grid.add_plot(5, 5, p)
+        neighbors = empty_grid.get_neighbors(5, 5)
+        self.assertEqual(neighbors, [])
 if __name__ == '__main__':
     unittest.main()
