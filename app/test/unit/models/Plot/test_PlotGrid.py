@@ -51,5 +51,24 @@ class TestPlotGrid(unittest.TestCase):
         empty_grid = PlotGrid()
         self.assertEqual(empty_grid.get_all_plots(), [])
 
+    def test_get_plot_coordinates(self):
+        self.grid.add_plot(0, 0, self.plot1)
+        self.grid.add_plot(1, 2, self.plot2)
+        coords = list(self.grid.plots.keys())
+        self.assertIn((0, 0), coords)
+        self.assertIn((1, 2), coords)
+        self.assertEqual(len(coords), 2)
+
+        # Test after overwriting a plot
+        self.grid.add_plot(0, 0, self.plot2)
+        coords = list(self.grid.plots.keys())
+        self.assertIn((0, 0), coords)
+        self.assertIn((1, 2), coords)
+        self.assertEqual(len(coords), 2)
+
+        # Test with empty grid
+        empty_grid = PlotGrid()
+        self.assertEqual(list(empty_grid.plots.keys()), [])
+
 if __name__ == '__main__':
     unittest.main()
