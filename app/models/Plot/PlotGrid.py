@@ -58,3 +58,13 @@ class PlotGrid:
             List of all Plot objects
         """
         return list(self.plots.values())
+
+    def get_plot_coordinates(self) -> List[Tuple[int, int]]:
+        """
+        Get all plot coordinates.
+        
+        Returns:
+            List of (row, col) tuples
+        """
+        return list(self.plots.keys())
+
