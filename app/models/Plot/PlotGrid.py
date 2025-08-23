@@ -68,3 +68,11 @@ class PlotGrid:
         """
         return list(self.plots.keys())
 
+    def get_grid_dimensions(self) -> Tuple[int, int, int, int]:
+        """
+        Get the grid dimensions.
+        
+        Returns:
+            Tuple of (min_row, max_row, min_col, max_col)
+        """
+        return (self.min_row, self.max_row, self.min_col, self.max_col)
