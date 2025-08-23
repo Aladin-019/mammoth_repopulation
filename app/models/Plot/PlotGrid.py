@@ -27,6 +27,9 @@ class PlotGrid:
             col (int): Column coordinate
             plot (Plot): The plot object to add
         """
+        if not isinstance(plot, Plot):
+            raise TypeError("plot must be an instance of Plot")
+
         self.plots[(row, col)] = plot
         
         # Update grid boundaries
@@ -46,3 +49,12 @@ class PlotGrid:
             Plot or None if no plot exists at that position
         """
         return self.plots.get((row, col))
+
+    def get_all_plots(self) -> List[Plot]:
+        """
+        Get all plots in the grid.
+        
+        Returns:
+            List of all Plot objects
+        """
+        return list(self.plots.values())
