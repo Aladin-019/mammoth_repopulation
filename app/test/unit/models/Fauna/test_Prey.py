@@ -28,6 +28,8 @@ class TestPrey(unittest.TestCase):
                 return 0.05
             def over_prey_capacity(self) -> bool:
                 return False
+            def get_plot_id(self):
+                return 1
         
         self.mock_plot = MockPlot()
         
@@ -39,7 +41,7 @@ class TestPrey(unittest.TestCase):
                     population=5,
                     avg_mass=100.0,
                     ideal_temp_range=(10.0, 25.0),
-                    ideal_food_range=(50.0, 200.0),
+                    min_food_per_day=50.0,
                     ideal_growth_rate=0.1,
                     feeding_rate=2.0,
                     avg_steps_taken=10.0,
@@ -61,7 +63,7 @@ class TestPrey(unittest.TestCase):
             'population': 20,
             'avg_mass': 50.0,
             'ideal_temp_range': (5.0, 20.0),
-            'ideal_food_range': (10.0, 100.0),
+            'min_food_per_day': 10.0,
             'ideal_growth_rate': 0.15,
             'feeding_rate': 1.5,
             'avg_steps_taken': 8.0,
@@ -80,7 +82,6 @@ class TestPrey(unittest.TestCase):
         self.assertEqual(prey.population, 20)
         self.assertEqual(prey.avg_mass, 50.0)
         self.assertEqual(prey.ideal_temp_range, (5.0, 20.0))
-        self.assertEqual(prey.ideal_food_range, (10.0, 100.0))
         self.assertEqual(prey.ideal_growth_rate, 0.15)
         self.assertEqual(prey.feeding_rate, 1.5)
         self.assertEqual(prey.avg_steps_taken, 8.0)
@@ -135,51 +136,78 @@ class TestPrey(unittest.TestCase):
         result = prey.total_consumption_rate()
         self.assertEqual(result, 0.0)
     
-    def test_total_consumption_rate_with_predators_on_plot(self):
-        """Test total consumption rate when predators are on the plot."""
+    def test_total_consumption_rate_multiple_predators(self):
+        """Test total_consumption_rate with multiple different predators present on plot."""
         prey = Prey(**self.valid_params)
-        
-        self.mock_plot.get_all_fauna = Mock(return_value=[self.mock_predator])
-        
-        result = prey.total_consumption_rate()
-        # Expected: population * feeding_rate = 5 * 2.0 = 10.0
-        self.assertEqual(result, 10.0)
-    
-    def test_total_consumption_rate_different_predators_on_plot(self):
-        """Test total consumption rate when different predators are on the plot."""
-        prey = Prey(**self.valid_params)
-        
-        # different predator that's not in prey's predator list
-        class DifferentPredator(Fauna):
+        # Add a second predator with a different name
+        class OtherPredator(Fauna):
             def __init__(self, plot):
                 super().__init__(
-                    name="different_predator",
-                    description="A different predator",
-                    population=3,
-                    avg_mass=80.0,
+                    name="other_predator",
+                    description="Another predator",
+                    population=4,
+                    avg_mass=90.0,
                     ideal_temp_range=(8.0, 22.0),
-                    ideal_food_range=(40.0, 150.0),
+                    min_food_per_day=40.0,
                     ideal_growth_rate=0.08,
-                    feeding_rate=1.8,
+                    feeding_rate=1.5,
                     avg_steps_taken=12.0,
                     avg_feet_area=0.4,
                     plot=plot
                 )
-            
             def get_name(self):
-                return "different_predator"
-            
+                return "other_predator"
             def get_feeding_rate(self):
                 return self.feeding_rate
-        
-        different_predator = DifferentPredator(self.mock_plot)
-        
-        self.mock_plot.get_all_fauna = Mock(return_value=[different_predator])
-        
+        other_predator = OtherPredator(self.mock_plot)
+        prey.predators.append(other_predator)
+        self.mock_plot.get_all_fauna = Mock(return_value=[self.mock_predator, other_predator])
         result = prey.total_consumption_rate()
-        # Should be 0.0
+        # Should sum both: (5*2.0) + (4*1.5) = 10.0 + 6.0 = 16.0
+        self.assertEqual(result, 16.0)
+
+    def test_total_available_flora_mass_multiple_flora(self):
+        """Test total_available_flora_mass with multiple flora present on plot."""
+        prey = Prey(**self.valid_params)
+        from app.models.Flora.Flora import Flora
+        flora1 = Mock(spec=Flora)
+        flora1.get_name = Mock(return_value="grass")
+        flora1.get_total_mass = Mock(return_value=100.0)
+        flora2 = Mock(spec=Flora)
+        flora2.get_name = Mock(return_value="moss")
+        flora2.get_total_mass = Mock(return_value=50.0)
+        prey.consumable_flora = [flora1, flora2]
+        self.mock_plot.get_all_flora = Mock(return_value=[flora1, flora2])
+        result = prey.total_available_flora_mass()
+        self.assertEqual(result, 150.0)
+
+    def test_total_available_flora_mass_duplicate_names(self):
+        """Test total_available_flora_mass with duplicate flora names on plot."""
+        prey = Prey(**self.valid_params)
+        from app.models.Flora.Flora import Flora
+        flora1 = Mock(spec=Flora)
+        flora1.get_name = Mock(return_value="grass")
+        flora1.get_total_mass = Mock(return_value=100.0)
+        flora2 = Mock(spec=Flora)
+        flora2.get_name = Mock(return_value="grass")
+        flora2.get_total_mass = Mock(return_value=50.0)
+        prey.consumable_flora = [flora1]
+        self.mock_plot.get_all_flora = Mock(return_value=[flora1, flora2])
+        result = prey.total_available_flora_mass()
+        self.assertEqual(result, 100.0)  # Only first match counted
+
+    def test_total_available_flora_mass_zero_mass(self):
+        """Test total_available_flora_mass with flora mass zero."""
+        prey = Prey(**self.valid_params)
+        from app.models.Flora.Flora import Flora
+        flora1 = Mock(spec=Flora)
+        flora1.get_name = Mock(return_value="grass")
+        flora1.get_total_mass = Mock(return_value=0.0)
+        prey.consumable_flora = [flora1]
+        self.mock_plot.get_all_flora = Mock(return_value=[flora1])
+        result = prey.total_available_flora_mass()
         self.assertEqual(result, 0.0)
-    
+
     def test_total_available_flora_mass_no_flora_on_plot(self):
         """Test total available flora mass when no flora is on the plot."""
         prey = Prey(**self.valid_params)
@@ -262,18 +290,15 @@ class TestPrey(unittest.TestCase):
     def test_get_current_environmental_conditions(self):
         """Test getting current environmental conditions."""
         prey = Prey(**self.valid_params)
-        
-        self.mock_plot.get_temperature = Mock(return_value=15.0)
+        self.mock_plot.get_current_temperature = Mock(return_value=15.0)
         prey.total_available_flora_mass = Mock(return_value=75.0)
-        
         result = prey._get_current_environmental_conditions(1)
-        
         expected = {
             'temperature': 15.0,
             'food': 75.0
         }
         self.assertEqual(result, expected)
-        self.mock_plot.get_temperature.assert_called_once_with(1)
+        self.mock_plot.get_current_temperature.assert_called_once_with(1)
         prey.total_available_flora_mass.assert_called_once()
     
     def test_calculate_environmental_penalty_ideal_conditions(self):
@@ -319,9 +344,10 @@ class TestPrey(unittest.TestCase):
         environmental_penalty = -0.5
         result = prey._calculate_base_growth_rate(environmental_penalty)
         
-        # Expected: ideal_growth_rate * (1 + penalty) = 0.15 * (1 + (-0.5)) = 0.075
-        expected = 0.075
-        self.assertEqual(result, expected)
+        # Expected: ideal_growth_rate + ideal_growth_rate * (1 + penalty/2)
+        # = 0.15 + 0.15 * (1 + (-0.5)/2) = 0.15 + 0.15 * (1 + -0.25) = 0.15 + 0.15 * 0.75 = 0.15 + 0.1125 = 0.2625
+        expected = 0.2625
+        self.assertAlmostEqual(result, expected)
     
     def test_calculate_base_growth_rate_invalid_input(self):
         """Test base growth rate calculation with invalid input."""

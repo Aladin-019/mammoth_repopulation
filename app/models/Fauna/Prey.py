@@ -9,12 +9,12 @@ class Prey(Fauna):
     """
 
     def __init__(self, name: str, description: str, population: int, avg_mass: float,
-                 ideal_temp_range: Tuple[float, float], ideal_food_range: Tuple[float, float], ideal_growth_rate: float, 
+                 ideal_temp_range: Tuple[float, float], min_food_per_day: float, ideal_growth_rate: float, 
                  feeding_rate: float, avg_steps_taken: float, avg_feet_area: float, plot: PlotInformation, predators: List['Fauna'],
                  consumable_flora: List['Flora']):
         
         super().__init__(name, description, population, avg_mass, ideal_growth_rate, ideal_temp_range, 
-                        ideal_food_range, feeding_rate, avg_steps_taken, avg_feet_area, plot)
+                        min_food_per_day, feeding_rate, avg_steps_taken, avg_feet_area, plot)
         
         self._validate_instance(predators, list, "predators")
         self._validate_list(predators, "predators", Fauna)
@@ -29,17 +29,17 @@ class Prey(Fauna):
     def total_consumption_rate(self) -> float:
         """
         Calculate the total consumption rate of all predators that depend on this prey.
-        Only predators present on the plot are considered.
+        Only predators present on the plot are considered. Assumes only one of each kind of fauna on the plot.
         """
         total_rate = 0.0
         plot_fauna = self.plot.get_all_fauna()
-
+        # Build a lookup for plot fauna by name (assume only one of each kind)
+        fauna_by_name = {fauna.get_name(): fauna for fauna in plot_fauna}
         for predator in self.predators:
-            for fauna in plot_fauna:
-                if fauna.get_name() == predator.get_name():
-                    total_rate += fauna.population * fauna.get_feeding_rate()
-                    break
-
+            predator_name = predator.get_name()
+            if predator_name in fauna_by_name:
+                plot_predator = fauna_by_name[predator_name]
+                total_rate += plot_predator.get_population() * plot_predator.get_feeding_rate()
         return total_rate
 
     def total_available_flora_mass(self) -> float:
@@ -115,14 +115,12 @@ class Prey(Fauna):
         
         penalty_temp = self.distance_from_ideal(
             environmental_conditions['temperature'], 
-            self.ideal_temp_range
-        )
-        penalty_food = self.distance_from_ideal(
-            environmental_conditions['food'], 
-            self.ideal_food_range
-        )
-        
+            self.ideal_temp_range)
+        penalty_food = self.distance_from_min_food(
+            environmental_conditions['food'])
+
         penalty_avg = (penalty_temp + penalty_food) / 2
+
         return penalty_avg
 
     def _calculate_base_growth_rate(self, environmental_penalty: float) -> float:
@@ -130,13 +128,13 @@ class Prey(Fauna):
         Calculate the base growth rate adjusted for environmental conditions.
         
         Args:
-            environmental_penalty (float): Environmental penalty from 0 to -2
+            environmental_penalty (float): Environmental penalty from 0 to -1
         Returns:
             float: Adjusted base growth rate
         """
         self._validate_instance(environmental_penalty, float, "environmental_penalty")
-        
-        return self.ideal_growth_rate * (1 + environmental_penalty)
+
+        return self.ideal_growth_rate + self.ideal_growth_rate * (1 + environmental_penalty/2)
 
     def _update_mass_from_growth_and_consumption(self, base_growth_rate: float, consumption_rate: float) -> None:
         """
@@ -150,8 +148,10 @@ class Prey(Fauna):
         self._validate_instance(consumption_rate, float, "consumption_rate")
         
         actual_growth_rate = base_growth_rate - consumption_rate
-        new_mass = self.get_total_mass() + self.get_total_mass() * actual_growth_rate
-        self.set_total_mass(new_mass)  # Setter will cap at 0
+        current_mass = self.get_total_mass()
+        new_mass = current_mass + current_mass * actual_growth_rate
+        
+        self.set_total_mass(max(0, new_mass))  # Prevent negative mass
         
         # Update population
         if self.avg_mass > 0:
@@ -167,5 +167,5 @@ class Prey(Fauna):
         """
         if self.plot.over_prey_capacity():
             self.set_total_mass(self.get_total_mass() * 0.9)    # Reduce mass by 10% if over prey capacity
-    
+
 
