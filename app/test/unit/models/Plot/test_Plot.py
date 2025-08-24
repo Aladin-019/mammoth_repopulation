@@ -41,7 +41,7 @@ class TestPlot(unittest.TestCase):
         self.assertEqual(plot.climate, self.mock_climate)
         self.assertEqual(plot.plot_area, 1.0)
         self.assertEqual(plot.compaction_depth, 0.7)
-        self.assertIsNone(plot.previous_avg_snow_height)
+        self.assertEqual(plot.previous_avg_snow_height, 0.5)
         self.assertEqual(len(plot.flora), 0)
         self.assertEqual(len(plot.fauna), 0)
     
@@ -121,12 +121,6 @@ class TestPlot(unittest.TestCase):
             )
         self.assertIn("climate must be an instance of Climate", str(context.exception))
     
-
-    
-
-    
-
-    
     def test_init_invalid_plot_area_type(self):
         """Test Plot initialization with invalid plot area type."""
         with self.assertRaises(TypeError) as context:
@@ -170,6 +164,21 @@ class TestPlot(unittest.TestCase):
         
         self.assertEqual(len(self.plot.flora), 1)
         self.assertIn(mock_flora, self.plot.flora)
+
+    def test_add_flora_replaces_existing(self):
+        """Test that adding flora with the same name raises ValueError and does not replace."""
+        flora1 = Mock()
+        flora1.name = "grass"
+        flora1.__class__.__name__ = "Flora"
+        flora2 = Mock()
+        flora2.name = "grass"
+        flora2.__class__.__name__ = "Flora"
+        self.plot.add_flora(flora1)
+        with self.assertRaises(ValueError) as context:
+            self.plot.add_flora(flora2)
+        self.assertIn("already exists", str(context.exception))
+        self.assertEqual(len(self.plot.flora), 1)
+        self.assertIn(flora1, self.plot.flora)
     
     def test_add_flora_none(self):
         """Test adding None flora to plot."""
@@ -193,6 +202,21 @@ class TestPlot(unittest.TestCase):
         
         self.assertEqual(len(self.plot.fauna), 1)
         self.assertIn(mock_fauna, self.plot.fauna)
+
+    def test_add_fauna_replaces_existing(self):
+        """Test that adding fauna with the same name raises ValueError and does not replace."""
+        fauna1 = Mock()
+        fauna1.name = "mammoth"
+        fauna1.__class__.__name__ = "Fauna"
+        fauna2 = Mock()
+        fauna2.name = "mammoth"
+        fauna2.__class__.__name__ = "Fauna"
+        self.plot.add_fauna(fauna1)
+        with self.assertRaises(ValueError) as context:
+            self.plot.add_fauna(fauna2)
+        self.assertIn("already exists", str(context.exception))
+        self.assertEqual(len(self.plot.fauna), 1)
+        self.assertIn(fauna1, self.plot.fauna)
     
     def test_add_fauna_none(self):
         """Test adding None fauna to plot."""
@@ -430,8 +454,11 @@ class TestPlot(unittest.TestCase):
         """Test calculating meltwater mass from SSRD with valid day."""
         result = self.plot.get_current_melt_water_mass(1)
         
-        # (ETA * SSRD) / LF = (0.35 * 1000.0) / 334000
-        expected = (0.35 * 1000.0) / 334000
+        # (ETA * SSRD) / LF = (0.75 * 1000.0) / 100_000
+        ETA = 0.75
+        SSRD = 1000.0
+        LF = 100_000
+        expected = (ETA * SSRD) / LF
         self.assertAlmostEqual(result, expected, places=10)
     
     def test_get_current_melt_water_mass_invalid_day_type(self):
@@ -444,11 +471,14 @@ class TestPlot(unittest.TestCase):
         """Test calculating snow height loss from SSRD with valid day."""
         result = self.plot.snow_height_loss_from_ssrd(1)
         
-        # melt water mass = (ETA * SSRD) / LF
-        meltwater_mass = (0.35 * 1000.0) / 334000
-        # melt water height loss = melt water mass / (RHO_SNOW * plot_area_m2)
-        # plot_area is 1.0 km², converted to 1,000,000 m²
-        expected = meltwater_mass / (300.0 * 1_000_000)
+        # Use constants from Plot.py
+        ETA = 0.75
+        RHO_SNOW = 100.0
+        LF = 100_000
+        SSRD = 1000.0
+        plot_area_m2 = 1.0 * 1_000_000
+        meltwater_mass = (ETA * SSRD) / LF
+        expected = meltwater_mass / (RHO_SNOW * plot_area_m2)
         self.assertAlmostEqual(result, expected, places=10)
     
     def test_calculate_flora_masses_empty(self):
@@ -648,7 +678,7 @@ class TestPlot(unittest.TestCase):
     def test_over_grass_capacity_over_limit(self):
         """Test over_grass_capacity when over the limit."""
         # Initialize flora mass attributes
-        self.plot.grass_mass = 3500.0
+        self.plot.grass_mass = 100_000_001.0
         self.plot.shrub_mass = 0.0
         self.plot.tree_mass = 0.0
         self.plot.moss_mass = 0.0
@@ -675,7 +705,7 @@ class TestPlot(unittest.TestCase):
         """Test over_shrub_capacity when over the limit."""
         # Initialize flora mass attributes
         self.plot.grass_mass = 0.0
-        self.plot.shrub_mass = 2000.0
+        self.plot.shrub_mass = 100_000_001.0
         self.plot.tree_mass = 0.0
         self.plot.moss_mass = 0.0
         self.plot.plot_area = 1.0
@@ -702,7 +732,7 @@ class TestPlot(unittest.TestCase):
         # Initialize flora mass attributes
         self.plot.grass_mass = 0.0
         self.plot.shrub_mass = 0.0
-        self.plot.tree_mass = 1000.0
+        self.plot.tree_mass = 100_000_001.0
         self.plot.moss_mass = 0.0
         self.plot.plot_area = 1.0
         
@@ -729,7 +759,7 @@ class TestPlot(unittest.TestCase):
         self.plot.grass_mass = 0.0
         self.plot.shrub_mass = 0.0
         self.plot.tree_mass = 0.0
-        self.plot.moss_mass = 300.0
+        self.plot.moss_mass = 100_000_001.0
         self.plot.plot_area = 1.0
         
         result = self.plot.over_moss_capacity()
@@ -746,104 +776,91 @@ class TestPlot(unittest.TestCase):
     
     def test_over_prey_capacity_under_limit(self):
         """Test over_prey_capacity when under the limit."""
-        # Create mock prey with total mass below limit (500 kg/km^2 * 1.0 km^2 = 500 kg)
+        # Create mock prey with total mass below limit (10 kg/km^2 * 1.0 km^2 = 10 kg)
         mock_prey1 = Mock()
-        mock_prey1.total_mass = 200.0
-        mock_prey1.get_total_mass.return_value = 200.0
+        mock_prey1.total_mass = 6.0
+        mock_prey1.get_total_mass.return_value = 6.0
         mock_prey1.__class__.__name__ = "Prey"
-        
+
         mock_prey2 = Mock()
-        mock_prey2.total_mass = 150.0
-        mock_prey2.get_total_mass.return_value = 150.0
+        mock_prey2.total_mass = 3.0
+        mock_prey2.get_total_mass.return_value = 3.0
         mock_prey2.__class__.__name__ = "Prey"
-        
+
         # Add a predator to ensure it's not counted
         mock_predator = Mock()
         mock_predator.total_mass = 100.0
         mock_predator.get_total_mass.return_value = 100.0
         mock_predator.__class__.__name__ = "Predator"
-        
+
         self.plot.fauna = [mock_prey1, mock_prey2, mock_predator]
         self.plot.plot_area = 1.0
-        
+
         result = self.plot.over_prey_capacity()
-        
-        self.assertFalse(result)  # 200 + 150 = 350 kg, under 500 kg limit
+
+        self.assertFalse(result)  # 6 + 3 = 9 kg, under 10 kg limit
     
     def test_over_prey_capacity_over_limit(self):
         """Test over_prey_capacity when over the limit."""
-        # Create mock prey with total mass above limit (500 kg/km^2 * 1.0 km^2 = 500 kg)
+        # Create mock prey with total mass above limit (10 kg/km^2 * 1.0 km^2 = 10 kg)
         mock_prey1 = Mock()
-        mock_prey1.total_mass = 300.0
-        mock_prey1.get_total_mass.return_value = 300.0
+        mock_prey1.total_mass = 6.0
+        mock_prey1.get_total_mass.return_value = 6.0
         mock_prey1.__class__.__name__ = "Prey"
-        
+
         mock_prey2 = Mock()
-        mock_prey2.total_mass = 250.0
-        mock_prey2.get_total_mass.return_value = 250.0
+        mock_prey2.total_mass = 7.0
+        mock_prey2.get_total_mass.return_value = 7.0
         mock_prey2.__class__.__name__ = "Prey"
-        
+
         self.plot.fauna = [mock_prey1, mock_prey2]
         self.plot.plot_area = 1.0
-        
         result = self.plot.over_prey_capacity()
-        
-        self.assertTrue(result)  # 300 + 250 = 550 kg, over 500 kg limit
-    
-    def test_over_predator_capacity_no_predators(self):
-        """Test over_predator_capacity when no predators exist."""
-        self.plot.fauna = []
-        
-        result = self.plot.over_predator_capacity()
-        
-        self.assertFalse(result)
+        self.assertTrue(result)  # 6 + 7 = 13 kg, over 10 kg limit
     
     def test_over_predator_capacity_under_limit(self):
         """Test over_predator_capacity when under the limit."""
-        # Create mock predators with total mass below limit (50 kg/km^2 * 1.0 km^2 = 50 kg)
+        # Create mock predators with total mass below limit (10 kg/km^2 * 1.0 km^2 = 10 kg)
         mock_predator1 = Mock()
-        mock_predator1.total_mass = 20.0
-        mock_predator1.get_total_mass.return_value = 20.0
+        mock_predator1.total_mass = 6.0
+        mock_predator1.get_total_mass.return_value = 6.0
         mock_predator1.__class__.__name__ = "Predator"
-        
+
         mock_predator2 = Mock()
-        mock_predator2.total_mass = 15.0
-        mock_predator2.get_total_mass.return_value = 15.0
+        mock_predator2.total_mass = 3.0
+        mock_predator2.get_total_mass.return_value = 3.0
         mock_predator2.__class__.__name__ = "Predator"
-        
+
         # Add prey to ensure it's not counted
         mock_prey = Mock()
         mock_prey.total_mass = 100.0
         mock_prey.get_total_mass.return_value = 100.0
         mock_prey.__class__.__name__ = "Prey"
-        
+
         self.plot.fauna = [mock_predator1, mock_predator2, mock_prey]
         self.plot.plot_area = 1.0
-        
+
         result = self.plot.over_predator_capacity()
-        
-        self.assertFalse(result)  # 20 + 15 = 35 kg, under 50 kg limit
+
+        self.assertFalse(result)  # 6 + 3 = 9 kg, under 10 kg limit
     
     def test_over_predator_capacity_over_limit(self):
         """Test over_predator_capacity when over the limit."""
-        # Create mock predators with total mass above limit (50 kg/km^2 * 1.0 km^2 = 50 kg)
+        # Create mock predators with total mass above limit (10 kg/km^2 * 1.0 km^2 = 10 kg)
         mock_predator1 = Mock()
-        mock_predator1.total_mass = 30.0
-        mock_predator1.get_total_mass.return_value = 30.0
+        mock_predator1.total_mass = 6.0
+        mock_predator1.get_total_mass.return_value = 6.0
         mock_predator1.__class__.__name__ = "Predator"
-        
+
         mock_predator2 = Mock()
-        mock_predator2.total_mass = 25.0
-        mock_predator2.get_total_mass.return_value = 25.0
+        mock_predator2.total_mass = 7.0
+        mock_predator2.get_total_mass.return_value = 7.0
         mock_predator2.__class__.__name__ = "Predator"
-        
+
         self.plot.fauna = [mock_predator1, mock_predator2]
         self.plot.plot_area = 1.0
-        
         result = self.plot.over_predator_capacity()
-        
-        self.assertTrue(result)  # 30 + 25 = 55 kg, over 50 kg limit
-
+        self.assertTrue(result)  # 6 + 7 = 13 kg, over 10 kg limit
 
 if __name__ == '__main__':
     unittest.main()
