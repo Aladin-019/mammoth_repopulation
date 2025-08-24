@@ -165,21 +165,6 @@ class TestPlot(unittest.TestCase):
         self.assertEqual(len(self.plot.flora), 1)
         self.assertIn(mock_flora, self.plot.flora)
 
-    def test_add_flora_replaces_existing(self):
-        """Test that adding flora with the same name raises ValueError and does not replace."""
-        flora1 = Mock()
-        flora1.name = "grass"
-        flora1.__class__.__name__ = "Flora"
-        flora2 = Mock()
-        flora2.name = "grass"
-        flora2.__class__.__name__ = "Flora"
-        self.plot.add_flora(flora1)
-        with self.assertRaises(ValueError) as context:
-            self.plot.add_flora(flora2)
-        self.assertIn("already exists", str(context.exception))
-        self.assertEqual(len(self.plot.flora), 1)
-        self.assertIn(flora1, self.plot.flora)
-    
     def test_add_flora_none(self):
         """Test adding None flora to plot."""
         with self.assertRaises(ValueError) as context:
@@ -203,21 +188,6 @@ class TestPlot(unittest.TestCase):
         self.assertEqual(len(self.plot.fauna), 1)
         self.assertIn(mock_fauna, self.plot.fauna)
 
-    def test_add_fauna_replaces_existing(self):
-        """Test that adding fauna with the same name raises ValueError and does not replace."""
-        fauna1 = Mock()
-        fauna1.name = "mammoth"
-        fauna1.__class__.__name__ = "Fauna"
-        fauna2 = Mock()
-        fauna2.name = "mammoth"
-        fauna2.__class__.__name__ = "Fauna"
-        self.plot.add_fauna(fauna1)
-        with self.assertRaises(ValueError) as context:
-            self.plot.add_fauna(fauna2)
-        self.assertIn("already exists", str(context.exception))
-        self.assertEqual(len(self.plot.fauna), 1)
-        self.assertIn(fauna1, self.plot.fauna)
-    
     def test_add_fauna_none(self):
         """Test adding None fauna to plot."""
         with self.assertRaises(ValueError) as context:
@@ -230,6 +200,38 @@ class TestPlot(unittest.TestCase):
             self.plot.add_fauna("not_fauna")
         self.assertIn("fauna must be an instance of Fauna", str(context.exception))
     
+    def test_add_flora_duplicate_name_raises(self):
+        """Test that adding flora with a duplicate name raises ValueError and does not replace the original."""
+        flora1 = Mock()
+        flora1.name = "grass"
+        flora1.__class__.__name__ = "Flora"
+        flora2 = Mock()
+        flora2.name = "grass"
+        flora2.__class__.__name__ = "Flora"
+        self.plot.add_flora(flora1)
+        with self.assertRaises(ValueError) as context:
+            self.plot.add_flora(flora2)
+        self.assertIn("already exists", str(context.exception))
+        self.assertEqual(len(self.plot.flora), 1)
+        self.assertIn(flora1, self.plot.flora)
+        self.assertNotIn(flora2, self.plot.flora)
+
+    def test_add_fauna_duplicate_name_raises(self):
+        """Test that adding fauna with a duplicate name raises ValueError and does not replace the original."""
+        fauna1 = Mock()
+        fauna1.name = "mammoth"
+        fauna1.__class__.__name__ = "Fauna"
+        fauna2 = Mock()
+        fauna2.name = "mammoth"
+        fauna2.__class__.__name__ = "Fauna"
+        self.plot.add_fauna(fauna1)
+        with self.assertRaises(ValueError) as context:
+            self.plot.add_fauna(fauna2)
+        self.assertIn("already exists", str(context.exception))
+        self.assertEqual(len(self.plot.fauna), 1)
+        self.assertIn(fauna1, self.plot.fauna)
+        self.assertNotIn(fauna2, self.plot.fauna)
+
     def test_get_a_fauna_found(self):
         """Test getting fauna that exists in plot."""
         mock_fauna = Mock()
