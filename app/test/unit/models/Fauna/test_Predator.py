@@ -30,6 +30,8 @@ class TestPredator(unittest.TestCase):
                 return False
             def get_temperature(self, day: int) -> float:
                 return 15.0
+            def get_plot_id(self) -> int:
+                return 1
         
         self.mock_plot = MockPlot()
         
@@ -41,7 +43,7 @@ class TestPredator(unittest.TestCase):
                     population=10,
                     avg_mass=30.0,
                     ideal_temp_range=(5.0, 20.0),
-                    ideal_food_range=(20.0, 80.0),
+                    min_food_per_day=20.0,
                     ideal_growth_rate=0.2,
                     feeding_rate=1.0,
                     avg_steps_taken=5.0,
@@ -64,7 +66,7 @@ class TestPredator(unittest.TestCase):
             'population': 3,
             'avg_mass': 80.0,
             'ideal_temp_range': (8.0, 22.0),
-            'ideal_food_range': (100.0, 500.0),
+            'min_food_per_day': 100.0,
             'ideal_growth_rate': 0.08,
             'feeding_rate': 2.5,
             'avg_steps_taken': 12.0,
@@ -82,7 +84,7 @@ class TestPredator(unittest.TestCase):
         self.assertEqual(predator.population, 3)
         self.assertEqual(predator.avg_mass, 80.0)
         self.assertEqual(predator.ideal_temp_range, (8.0, 22.0))
-        self.assertEqual(predator.ideal_food_range, (100.0, 500.0))
+        self.assertEqual(predator.min_food_per_day, 100.0)
         self.assertEqual(predator.ideal_growth_rate, 0.08)
         self.assertEqual(predator.feeding_rate, 2.5)
         self.assertEqual(predator.avg_steps_taken, 12.0)
@@ -141,7 +143,7 @@ class TestPredator(unittest.TestCase):
                     population=8,
                     avg_mass=25.0,
                     ideal_temp_range=(3.0, 18.0),
-                    ideal_food_range=(15.0, 70.0),
+                    min_food_per_day=15.0,
                     ideal_growth_rate=0.18,
                     feeding_rate=0.8,
                     avg_steps_taken=4.0,
@@ -162,6 +164,36 @@ class TestPredator(unittest.TestCase):
         result = predator.total_available_prey_mass()
         # Should be 0.0 because the prey on the plot is not in predator's prey list
         self.assertEqual(result, 0.0)
+    
+    def test_total_available_prey_mass_multiple_prey(self):
+        """Test total_available_prey_mass with multiple different prey present on plot."""
+        predator = Predator(**self.valid_params)
+        # Add a second prey with a different name
+        class OtherPrey(Fauna):
+            def __init__(self, plot):
+                super().__init__(
+                    name="other_prey",
+                    description="Another prey",
+                    population=7,
+                    avg_mass=25.0,
+                    ideal_temp_range=(6.0, 18.0),
+                    min_food_per_day=15.0,
+                    ideal_growth_rate=0.18,
+                    feeding_rate=0.8,
+                    avg_steps_taken=6.0,
+                    avg_feet_area=0.3,
+                    plot=plot
+                )
+            def get_name(self):
+                return "other_prey"
+            def get_total_mass(self):
+                return self.population * self.avg_mass
+        other_prey = OtherPrey(self.mock_plot)
+        predator.prey.append(other_prey)
+        self.mock_plot.get_all_fauna = Mock(return_value=[self.mock_prey, other_prey])
+        result = predator.total_available_prey_mass()
+        # Should sum both: (10*30.0) + (7*25.0) = 300.0 + 175.0 = 475.0
+        self.assertEqual(result, 475.0)
     
     def test_update_predator_mass_valid_day(self):
         """Test updating predator mass with valid day."""
@@ -203,7 +235,7 @@ class TestPredator(unittest.TestCase):
         """Test getting current environmental conditions."""
         predator = Predator(**self.valid_params)
         
-        self.mock_plot.get_temperature = Mock(return_value=15.0)
+        self.mock_plot.get_current_temperature = Mock(return_value=15.0)
         predator.total_available_prey_mass = Mock(return_value=250.0)
         
         result = predator._get_current_environmental_conditions(1)
@@ -213,7 +245,7 @@ class TestPredator(unittest.TestCase):
             'food': 250.0
         }
         self.assertEqual(result, expected)
-        self.mock_plot.get_temperature.assert_called_once_with(1)
+        self.mock_plot.get_current_temperature.assert_called_once_with(1)
         predator.total_available_prey_mass.assert_called_once()
     
     def test_calculate_environmental_penalty_ideal_conditions(self):
@@ -258,9 +290,9 @@ class TestPredator(unittest.TestCase):
         
         environmental_penalty = -0.4
         result = predator._calculate_base_growth_rate(environmental_penalty)
-        
-        # Expected: ideal_growth_rate * (1 + penalty) = 0.08 * (1 + (-0.4)) = 0.048
-        expected = 0.048
+
+        # Expected: ideal_growth_rate * (1 + penalty/2) = 0.08 * (1 + (-0.4/2)) = 0.08 * 0.8 = 0.064
+        expected = 0.064
         self.assertEqual(result, expected)
     
     def test_calculate_base_growth_rate_invalid_input(self):
