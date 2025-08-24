@@ -149,7 +149,7 @@ class Fauna():
             avg_mass (float): Average mass per individual in kg.
             ideal_growth_rate (float): Ideal growth rate in kg/day.
             ideal_temp_range (Tuple[float, float]): Ideal temperature range in Celsius.
-            ideal_food_range (Tuple[float, float]): Ideal food availability range.
+            min_food_per_day (float): Minimum food required per individual per day in kg.
             feeding_rate (float): Feeding rate in kg/day.
             avg_steps_taken (float): Average number of steps taken per day.
             avg_feet_area (float): Average area of feet in m^2.
@@ -197,10 +197,7 @@ class Fauna():
             self._total_mass = self.population * self.avg_mass
             self.ideal_growth_rate = float(ideal_growth_rate)
             self.ideal_temp_range = ideal_temp_range
-            self.min_food_per_day = float(min_food_per_day) * population
-            # Use a reasonable upper bound instead of infinity to avoid NaN in calculations
-            max_food = self.min_food_per_day * 1000.0  * population
-            self.ideal_food_range = (self.min_food_per_day, max_food)
+            self.min_food_per_day = float(min_food_per_day)
             self.feeding_rate = float(feeding_rate)
             self.avg_steps_taken = float(avg_steps_taken)
             self.avg_feet_area = float(avg_feet_area)
@@ -261,6 +258,24 @@ class Fauna():
 
         normalized_distance = (abs(current_value - mid) / width)
         return -min(normalized_distance, 1.0)  # Cap distance at -1.0
+
+    def distance_from_min_food(self, current_food: float) -> float:
+        """
+        Calculate the penalty for food availability below the minimum required.
+        Returns 0 if current_food >= min_food_per_day, else returns negative value proportional to shortage.
+        Args:
+            current_food (float): The current available food
+        Returns:
+            float: 0 if enough food, else negative value capped at -1.0
+        """
+        self._validate_instance(current_food, float, "current_food")
+        min_food = self.min_food_per_day
+        if current_food >= min_food:
+            return 0.0
+        shortage = min_food - current_food
+        # Normalize penalty: -1.0 means zero food, 0 means enough food
+        penalty = -min(shortage / min_food, 1.0) if min_food > 0 else 0.0
+        return penalty
 
     def capacity_penalty(self) -> None:
         """
