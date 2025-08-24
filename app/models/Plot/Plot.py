@@ -6,19 +6,19 @@ from app.interfaces.flora_plot_info import FloraPlotInformation
 logger = logging.getLogger(__name__)
 
 # Physical constants for snow melting calculations
-ETA = 0.35
-RHO_SNOW = 300.0
-LF = 334_000
+ETA = 0.75
+RHO_SNOW = 100.0
+LF = 100_000
 
 # Maximum density constants for flora types (kg/km^2)
-MAX_GRASS_DENSITY = 3000.0    # Grass can grow densely
-MAX_SHRUB_DENSITY = 1500.0    # Shrubs need more space
-MAX_TREE_DENSITY = 800.0      # Trees need significant space
-MAX_MOSS_DENSITY = 200.0      # Moss grows in patches
+MAX_GRASS_DENSITY = 100_000_000.0    # Grass can grow densely
+MAX_SHRUB_DENSITY = 100_000_000.0    # Shrubs need more space
+MAX_TREE_DENSITY = 100_000_000.0      # Trees need significant space
+MAX_MOSS_DENSITY = 100_000_000.0      # Moss grows in patches
 
 # Maximum density constants for fauna types (kg/km^2)
-MAX_PREY_DENSITY = 500.0      # Maximum herbivore density
-MAX_PREDATOR_DENSITY = 50.0   # Maximum predator density
+MAX_PREY_DENSITY = 10.0      # Maximum herbivore density
+MAX_PREDATOR_DENSITY = 10.0   # Maximum predator density
 
 class Plot(FloraPlotInformation):
     """
@@ -110,28 +110,34 @@ class Plot(FloraPlotInformation):
             self.Id = Id
             self.climate = climate
             self.avg_snow_height = float(avg_snow_height)
-            self.previous_avg_snow_height = None
+            self.previous_avg_snow_height = float(avg_snow_height)
             self.compaction_depth = 0.7
             self.plot_area = float(plot_area)
             
         except Exception as e:
             raise RuntimeError(f"Failed to initialize Plot {Id}: {e}")
+
+    def get_plot_id(self) -> int:
+        """Get the unique identifier for the plot."""
+        return self.Id
     
     def add_flora(self, flora):
-        """Add flora to the plot."""
+        """Add flora to the plot, preventing duplicates by name."""
         self._validate_not_none(flora, "flora")
         self._validate_instance(flora, 'Flora', "flora")
-        
+        if any(f.name == flora.name for f in self.flora):
+            raise ValueError(f"Flora with name '{flora.name}' already exists in plot {self.Id}.")
         try:
             self.flora.append(flora)
         except Exception as e:
             raise RuntimeError(f"Failed to add flora {flora.name} to plot {self.Id}: {e}")
     
     def add_fauna(self, fauna):
-        """Add fauna to the plot."""
+        """Add fauna to the plot, preventing duplicates by name."""
         self._validate_not_none(fauna, "fauna")
         self._validate_instance(fauna, 'Fauna', "fauna")
-        
+        if any(f.name == fauna.name for f in self.fauna):
+            raise ValueError(f"Fauna with name '{fauna.name}' already exists in plot {self.Id}.")
         try:
             self.fauna.append(fauna)
         except Exception as e:
@@ -196,7 +202,9 @@ class Plot(FloraPlotInformation):
         """
         if self.previous_avg_snow_height is None:
             return 0.0  # No change if we don't have previous data
-        return self.avg_snow_height - self.previous_avg_snow_height
+        
+        delta = self.avg_snow_height - self.previous_avg_snow_height
+        return delta
     
     def get_current_temperature(self, day: int) -> float:
         """Get current temperature for the given day."""
@@ -372,7 +380,9 @@ class Plot(FloraPlotInformation):
         try:
             meltwater_mass = self.get_current_melt_water_mass(day)
             plot_area_m2 = self.plot_area * 1_000_000 # convert plot_area from km^2 to m^2
-            return meltwater_mass / (RHO_SNOW * plot_area_m2)
+            ssrd_height_loss = meltwater_mass / (RHO_SNOW * plot_area_m2)
+            
+            return ssrd_height_loss
         except Exception as e:
             raise RuntimeError(f"Failed to calculate snow height loss from SSRD on day {day}: {e}")
     
