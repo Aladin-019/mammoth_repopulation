@@ -154,3 +154,55 @@ class PlotGrid:
                     elif hasattr(fauna, 'update_predator_mass'):
                         if np.random.random() < P_PREDATOR_MIGRATION:
                             self._migrate_fauna(fauna, target_plot, 'over_predator_capacity', PREDATOR_MIGRATION_RATIO)
+
+    def update_all_plots(self, day: int) -> None:
+        """
+        Daily update of all plots in the grid with staggered updates to handle dependencies.
+        Flora depends on climate and plot changes only, 
+        prey lags flora by one day, and predators lag prey by one day.
+        
+        Update schedule:
+        - Day 1: Flora updates (depends on climate)
+        - Day 2: Prey updates (depends on flora from day 1)
+        - Day 3: Flora updates (depends on climate) 
+                + Predator updates (depends on prey from day 2)
+        - Day 4: Prey updates (depends on flora from day 3)
+        - Day 5: Flora updates (depends on climate) 
+                + Predator updates (depends on prey from day 4)
+        - Repeat...
+        
+        Args:
+            day (int): The current simulation day (beginning at 1)
+        """
+        if not isinstance(day, int) or day < 1:
+            raise ValueError("day must be a positive integer starting from 1")
+
+        # Update snow heights of all plots first (needed for climate calculations)
+        for plot in self.plots.values():
+            plot.update_avg_snow_height(day)
+        
+        # Now process flora and fauna updates for each plot
+        for plot in self.plots.values():
+            if day % 2 == 1:
+                for flora in plot.get_all_flora():
+                    flora.update_flora_mass(day)
+
+            if day % 2 == 0:
+                for fauna in plot.get_all_fauna():
+                    if hasattr(fauna, 'update_prey_mass'):
+                        fauna.update_prey_mass(day)
+
+            if day % 2 == 1 and day > 1:
+                for fauna in plot.get_all_fauna():
+                    if hasattr(fauna, 'update_predator_mass'):
+                        fauna.update_predator_mass(day)
+        
+        # Clean up all extinct species
+        for plot in self.plots.values():
+            plot.remove_extinct_species()
+
+        # Handle migration
+        if day % 5 == 0:  # every 5th day
+            for plot in self.plots.values():
+                self.migrate_species()
+    
