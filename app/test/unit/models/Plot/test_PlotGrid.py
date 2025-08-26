@@ -12,8 +12,6 @@ class TestPlotGrid(unittest.TestCase):
         self.real_plot2 = Plot(Id=2, avg_snow_height=0.2, climate=self.climate, plot_area=2.0)
         self.plot1 = Mock(spec=Plot)
         self.plot2 = Mock(spec=Plot)
-        # Only pre-populate grid for migration tests
-
 
     def test_add_and_get_plot(self):
         self.grid.add_plot(0, 0, self.plot1)
@@ -227,6 +225,193 @@ class TestPlotGrid(unittest.TestCase):
         with patch.object(PlotGrid, '_migrate_fauna') as mock_migrate:
             self.grid.migrate_species()
             mock_migrate.assert_called()
+
+    def test_update_all_plots_staggered_updates(self):
+        """
+        Test that update_all_plots performs staggered updates for flora, prey, 
+        and predator, and handles snow height, extinction, and migration.
+        """
+        # Setup grid with two mock plots
+        self.grid.plots = {(0, 0): self.plot1, (0, 1): self.plot2}
+        # Mock all required plot methods
+        for plot in [self.plot1, self.plot2]:
+            plot.update_avg_snow_height = Mock()
+            plot.get_all_flora = Mock(return_value=[Mock()])
+            plot.get_all_fauna = Mock(return_value=[Mock()])
+            plot.remove_extinct_species = Mock()
+            plot.add_fauna = Mock()
+        # Mock flora and fauna update methods
+        flora1 = Mock()
+        flora2 = Mock()
+        fauna1 = Mock()
+        fauna2 = Mock()
+        flora1.update_flora_mass = Mock()
+        flora2.update_flora_mass = Mock()
+        fauna1.update_prey_mass = Mock()
+        fauna2.update_predator_mass = Mock()
+        self.plot1.get_all_flora.return_value = [flora1]
+        self.plot2.get_all_flora.return_value = [flora2]
+        self.plot1.get_all_fauna.return_value = [fauna1]
+        self.plot2.get_all_fauna.return_value = [fauna2]
+        # Test Day 1: Flora updates only
+        self.grid.update_all_plots(day=1)
+        flora1.update_flora_mass.assert_called_with(1)
+        flora2.update_flora_mass.assert_called_with(1)
+        fauna1.update_prey_mass.assert_not_called()
+        fauna2.update_predator_mass.assert_not_called()
+        # Test Day 2: Prey updates only
+        fauna1.update_prey_mass.reset_mock()
+        fauna2.update_predator_mass.reset_mock()
+        self.grid.update_all_plots(day=2)
+        fauna1.update_prey_mass.assert_called_with(2)
+        fauna2.update_predator_mass.assert_not_called()
+        # Test Day 3: Flora and predator updates
+        flora1.update_flora_mass.reset_mock()
+        flora2.update_flora_mass.reset_mock()
+        fauna2.update_predator_mass.reset_mock()
+        self.grid.update_all_plots(day=3)
+        flora1.update_flora_mass.assert_called_with(3)
+        flora2.update_flora_mass.assert_called_with(3)
+        fauna2.update_predator_mass.assert_called_with(3)
+
+        for day in [1,2,3,4,5,6,7,8,9,10,11]:
+            # Test migration triggered every 5th day only
+            if day % 5 == 0:
+                with patch.object(self.grid, 'migrate_species') as mock_migrate:
+                    self.grid.update_all_plots(day=day)
+                    mock_migrate.assert_called()
+            else:
+                with patch.object(self.grid, 'migrate_species') as mock_migrate:
+                    self.grid.update_all_plots(day=day)
+                    mock_migrate.assert_not_called()
+
+            # Test snow height and extinction always called
+            for plot in [self.plot1, self.plot2]:
+                plot.update_avg_snow_height.assert_any_call(day)
+                plot.remove_extinct_species.assert_any_call()
+
+    def test_update_all_plots_staggered_updates_multiple_animals(self):
+        # Test with multiple flora and fauna in plots
+        flora1 = Mock()
+        flora2 = Mock()
+        fauna1 = Mock()
+        fauna2 = Mock()
+        flora1.update_flora_mass = Mock()
+        flora2.update_flora_mass = Mock()
+        fauna1.update_prey_mass = Mock()
+        fauna2.update_predator_mass = Mock()
+        flora1_new = Mock()
+        flora2_new = Mock()
+        fauna1_new = Mock()
+        fauna2_new = Mock()
+        flora1_new.update_flora_mass = Mock()
+        flora2_new.update_flora_mass = Mock()
+        fauna1_new.update_prey_mass = Mock()
+        fauna2_new.update_predator_mass = Mock()
+        # fresh plot mocks for this test
+        plot1 = Mock(spec=Plot)
+        plot2 = Mock(spec=Plot)
+        plot1.update_avg_snow_height = Mock()
+        plot2.update_avg_snow_height = Mock()
+        plot1.remove_extinct_species = Mock()
+        plot2.remove_extinct_species = Mock()
+        plot1.add_fauna = Mock()
+        plot2.add_fauna = Mock()
+        plot1.get_all_flora.return_value = [flora1, flora1_new]
+        plot2.get_all_flora.return_value = [flora2, flora2_new]
+        plot1.get_all_fauna.return_value = [fauna1, fauna1_new]
+        plot2.get_all_fauna.return_value = [fauna2, fauna2_new]
+        self.grid.plots = {(0, 0): plot1, (0, 1): plot2}
+        self.plot1.update_avg_snow_height = Mock()
+        self.plot2.update_avg_snow_height = Mock()
+        self.plot1.remove_extinct_species = Mock()
+        self.plot2.remove_extinct_species = Mock()
+        self.plot1.add_fauna = Mock()
+        self.plot2.add_fauna = Mock()
+        self.plot1.get_all_flora.return_value = [flora1, flora1_new]
+        self.plot2.get_all_flora.return_value = [flora2, flora2_new]
+        self.plot1.get_all_fauna.return_value = [fauna1, fauna1_new]
+        self.plot2.get_all_fauna.return_value = [fauna2, fauna2_new]
+        # Test Day 1: Flora updates only
+        self.grid.update_all_plots(day=1)
+        flora1.update_flora_mass.assert_called_with(1)
+        flora1_new.update_flora_mass.assert_called_with(1)
+        flora2.update_flora_mass.assert_called_with(1)
+        flora2_new.update_flora_mass.assert_called_with(1)
+        fauna1.update_prey_mass.assert_not_called()
+        fauna1_new.update_prey_mass.assert_not_called()
+        fauna2.update_predator_mass.assert_not_called()
+        fauna2_new.update_predator_mass.assert_not_called()
+        # Test Day 2: Prey updates only
+        fauna1.update_prey_mass.reset_mock()
+        fauna1_new.update_prey_mass.reset_mock()
+        fauna2.update_predator_mass.reset_mock()
+        fauna2_new.update_predator_mass.reset_mock()
+        self.grid.update_all_plots(day=2)
+        fauna1.update_prey_mass.assert_called_with(2)
+        fauna1_new.update_prey_mass.assert_called_with(2)
+        fauna2.update_predator_mass.assert_not_called()
+        fauna2_new.update_predator_mass.assert_not_called()
+        # Test Day 3: Flora and predator updates
+        flora1.update_flora_mass.reset_mock()
+        flora1_new.update_flora_mass.reset_mock()
+        flora2.update_flora_mass.reset_mock()
+        flora2_new.update_flora_mass.reset_mock()
+        fauna2.update_predator_mass.reset_mock()
+        fauna2_new.update_predator_mass.reset_mock()
+        fauna1.update_prey_mass.reset_mock()
+        fauna1_new.update_prey_mass.reset_mock()
+        self.grid.update_all_plots(day=3)
+        flora1.update_flora_mass.assert_called_with(3)
+        flora1_new.update_flora_mass.assert_called_with(3)
+        flora2.update_flora_mass.assert_called_with(3)
+        flora2_new.update_flora_mass.assert_called_with(3)
+        fauna2.update_predator_mass.assert_called_with(3)
+        fauna2_new.update_predator_mass.assert_called_with(3)
+        fauna1.update_prey_mass.assert_not_called()
+        fauna1_new.update_prey_mass.assert_not_called()
+
+        for day in [1,2,3,4,5,6,7,8,9,10,11]:
+            # Test migration triggered every 5th day only
+            if day % 5 == 0:
+                with patch.object(self.grid, 'migrate_species') as mock_migrate:
+                    self.grid.update_all_plots(day=day)
+                    mock_migrate.assert_called()
+            else:
+                with patch.object(self.grid, 'migrate_species') as mock_migrate:
+                    self.grid.update_all_plots(day=day)
+                    mock_migrate.assert_not_called()
+
+            # Test snow height and extinction always called
+            for plot in [plot1, plot2]:
+                plot.update_avg_snow_height.assert_any_call(day)
+                plot.remove_extinct_species.assert_any_call()
+
+def test_update_all_plots_empty_plot(self):
+        """
+        Test that update_all_plots works with plots that have no flora or fauna (empty plot).
+        Should not raise errors and should call snow height and extinction methods.
+        """
+        empty_plot = Mock(spec=Plot)
+        empty_plot.get_all_flora.return_value = []
+        empty_plot.get_all_fauna.return_value = []
+        empty_plot.update_avg_snow_height = Mock()
+        empty_plot.remove_extinct_species = Mock()
+        
+        empty_plot.update_flora_mass = Mock()
+        empty_plot.update_prey_mass = Mock()
+        empty_plot.update_predator_mass = Mock()
+        empty_plot.add_fauna = Mock()
+        self.grid.plots = {(0, 0): empty_plot}
+        # Run for several days to check all update branches
+        for day in [1, 2, 3, 5, 10]:
+            self.grid.update_all_plots(day=day)
+            empty_plot.update_avg_snow_height.assert_any_call(day)
+            empty_plot.remove_extinct_species.assert_any_call()
+            empty_plot.update_flora_mass.assert_not_called()
+            empty_plot.update_prey_mass.assert_not_called()
+            empty_plot.update_predator_mass.assert_not_called()
+            empty_plot.add_fauna.assert_not_called()
 
 if __name__ == '__main__':
     unittest.main()
