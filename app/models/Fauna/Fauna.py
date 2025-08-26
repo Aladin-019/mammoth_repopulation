@@ -1,3 +1,4 @@
+
 import logging
 from typing import List, Tuple, Union
 from app.interfaces.plot_info import PlotInformation
@@ -10,6 +11,34 @@ class Fauna():
     Ideal ranges for temperature and food availability
     are to determine the conditions for optimal growth or potential death.
     """
+
+    @classmethod
+    def from_existing_with_mass(cls, source_fauna, migrating_mass: float, plot: PlotInformation = None):
+        """
+        Create a new Fauna instance from an existing one, with population calculated from migrating_mass.
+        Args:
+            source_fauna (Fauna): The fauna to copy attributes from
+            migrating_mass (float): The total mass for the new fauna
+            plot (PlotInformation, optional): The plot for the new fauna (defaults to source_fauna.plot)
+        Returns:
+            Fauna: New fauna instance
+        """
+        avg_mass = source_fauna.avg_mass
+        # Ensure at least 1 individual if mass > 0
+        population = max(1, int(migrating_mass / avg_mass)) if avg_mass > 0 else 1
+        return cls(
+            name=source_fauna.name,
+            description=source_fauna.description,
+            population=population,
+            avg_mass=avg_mass,
+            ideal_growth_rate=source_fauna.ideal_growth_rate,
+            ideal_temp_range=source_fauna.ideal_temp_range,
+            min_food_per_day=source_fauna.min_food_per_day / source_fauna.population if source_fauna.population > 0 else source_fauna.min_food_per_day,
+            feeding_rate=source_fauna.feeding_rate,
+            avg_steps_taken=source_fauna.avg_steps_taken,
+            avg_feet_area=source_fauna.avg_feet_area,
+            plot=plot if plot is not None else source_fauna.plot
+        )
     
     @staticmethod
     def _validate_string(value: str, name: str, allow_empty: bool = False) -> None:
