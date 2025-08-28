@@ -3,6 +3,7 @@ from unittest.mock import Mock, patch
 from app.models.Plot.PlotGrid import PlotGrid
 from app.models.Plot.Plot import Plot
 from app.models.Climate import Climate
+import numpy as np
 
 class TestPlotGrid(unittest.TestCase):
     def setUp(self):
@@ -387,9 +388,9 @@ class TestPlotGrid(unittest.TestCase):
                 plot.update_avg_snow_height.assert_any_call(day)
                 plot.remove_extinct_species.assert_any_call()
 
-def test_update_all_plots_empty_plot(self):
+    def test_update_all_plots_empty_plot(self):
         """
-        Test that update_all_plots works with plots that have no flora or fauna (empty plot).
+        Test that update_all_plots works with plots that have no flora or fauna.
         Should not raise errors and should call snow height and extinction methods.
         """
         empty_plot = Mock(spec=Plot)
@@ -397,7 +398,7 @@ def test_update_all_plots_empty_plot(self):
         empty_plot.get_all_fauna.return_value = []
         empty_plot.update_avg_snow_height = Mock()
         empty_plot.remove_extinct_species = Mock()
-        
+
         empty_plot.update_flora_mass = Mock()
         empty_plot.update_prey_mass = Mock()
         empty_plot.update_predator_mass = Mock()
@@ -413,5 +414,81 @@ def test_update_all_plots_empty_plot(self):
             empty_plot.update_predator_mass.assert_not_called()
             empty_plot.add_fauna.assert_not_called()
 
+    def test_visualize_biomes_no_plots(self):
+        """
+        Test visualize_biomes with no plots in the grid.
+        Should print 'No plots to visualize' and not raise errors.
+        """
+        self.grid.plots = {}
+        biome_colors = {'taiga': '#228B22', 'tundra': '#A9A9A9'}
+        # Patch print to capture output
+        with patch('builtins.print') as mock_print:
+            self.grid.visualize_biomes(biome_colors)
+            mock_print.assert_any_call('No plots to visualize')
+
+    def test_visualize_biomes_matplotlib_not_available(self):
+        """
+        Test visualize_biomes when matplotlib is not available.
+        Should print 'Matplotlib is not available. Cannot create visualization.'
+        """
+        # Patch MATPLOTLIB_AVAILABLE to False
+        with patch('app.models.Plot.PlotGrid.MATPLOTLIB_AVAILABLE', False):
+            biome_colors = {'taiga': '#228B22', 'tundra': '#A9A9A9'}
+            with patch('builtins.print') as mock_print:
+                self.grid.visualize_biomes(biome_colors)
+                mock_print.assert_any_call('Matplotlib is not available. Cannot create visualization.')
+
+    def test_visualize_biomes_basic(self):
+        """
+        Test visualize_biomes with a simple grid and biome mapping.
+        Should call plt.show() if matplotlib is available and not raise errors.
+        """
+        if not hasattr(self.grid, 'visualize_biomes'):
+            return  # Skip if method not present
+        # Create mock plots with get_climate().get_biome()
+        plot1 = Mock(spec=Plot)
+        plot2 = Mock(spec=Plot)
+        climate1 = Mock()
+        climate2 = Mock()
+        climate1.get_biome.return_value = 'taiga'
+        climate2.get_biome.return_value = 'tundra'
+        plot1.get_climate.return_value = climate1
+        plot2.get_climate.return_value = climate2
+        self.grid.plots = {(0, 0): plot1, (0, 1): plot2}
+        self.grid.min_row = 0
+        self.grid.max_row = 0
+        self.grid.min_col = 0
+        self.grid.max_col = 1
+        biome_colors = {'taiga': '#228B22', 'tundra': '#A9A9A9'}
+        # Patch plt.show and _blend_biome_borders to avoid randomness and window
+        with patch('matplotlib.pyplot.show') as mock_show, \
+             patch.object(self.grid, '_blend_biome_borders', side_effect=lambda grid, rows, cols, blend_prob=0.2: grid):
+            self.grid.visualize_biomes(biome_colors)
+            mock_show.assert_called()
+
+    def test_blend_biome_borders(self):
+        """
+        Test _blend_biome_borders helper for correct blending behavior.
+        """
+        # Create a simple grid with a border between two biomes
+        grid = np.array([
+            [0, 0, 1],
+            [0, 1, 1],
+            [1, 1, 1]
+        ], dtype=int)
+        rows, cols = grid.shape
+        # Patch random.random to always blend, and random.choice to pick the first neighbor
+        with patch('random.random', return_value=0.0), patch('random.choice', side_effect=lambda x: x[0]):
+            blended = self.grid._blend_biome_borders(grid, rows, cols, blend_prob=1.0)
+        # Check that border cells have been blended
+        # At 100% blend probability and diaglonals including neighbors, then
+        # blended grid should be:
+        #print("Blended Grid:\n", blended)
+        self.assertTrue(np.array_equal(blended, np.array([
+            [1, 1, 0],
+            [1, 0, 0],
+            [0, 0, 1]
+        ], dtype=int)))
+        
 if __name__ == '__main__':
     unittest.main()
