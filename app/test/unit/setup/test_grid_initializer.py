@@ -28,5 +28,21 @@ class TestGridInitializer(unittest.TestCase):
             self.assertIsInstance(defaults['prey'], list)
             self.assertIsInstance(defaults['predators'], list)
 
+    def test_update_resolution(self):
+        gi = GridInitializer()
+        gi.update_resolution(1.0, 1.0)
+        self.assertAlmostEqual(gi.plot_area_km2, 111.0 * 47.0, places=2)
+        self.assertAlmostEqual(gi.standardization_factor, 111.0 * 47.0, places=2)
+
+    def test_get_resolution_info(self):
+        gi = GridInitializer(lat_step=0.5, lon_step=0.5)
+        info = gi.get_resolution_info()
+        self.assertIn('plot_area_km2', info)
+        self.assertIn('standardization_factor', info)
+        self.assertEqual(info['base_resolution_km2'], 1.0)
+        self.assertAlmostEqual(info['plot_area_km2'], gi.plot_area_km2, places=2)
+        self.assertAlmostEqual(info['standardization_factor'], gi.standardization_factor, places=2)
+
+
 if __name__ == "__main__":
     unittest.main()

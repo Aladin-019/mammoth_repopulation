@@ -59,3 +59,24 @@ class GridInitializer:
                 'predators': ['wolf']
             }
         }
+
+    def update_resolution(self, lat_step: float, lon_step: float) -> None:
+        """Update the grid resolution and recalculate plot area and standardization factor."""
+        
+        base_lat_km = 111.0  # 1° latitude = 111 km (constant)
+        base_lon_km = 47.0   # 1° longitude ≈ 47 km at 65°N (Siberia average)
+        
+        # Calculate actual plot area and standardization factor
+        self.plot_area_km2 = (lat_step * base_lat_km) * (lon_step * base_lon_km)
+        self.standardization_factor = self.plot_area_km2 / 1.0
+        
+        print(f"Resolution updated: {lat_step}°×{lon_step}° → Plot area = {self.plot_area_km2:.1f} km²")
+        print(f"  Standardization: plots are {self.standardization_factor:.1f}x larger than 1 km² plots")
+    
+    def get_resolution_info(self) -> dict:
+        """Get current resolution information."""
+        return {
+            'plot_area_km2': self.plot_area_km2,
+            'standardization_factor': self.standardization_factor,
+            'base_resolution_km2': 1.0
+        }
