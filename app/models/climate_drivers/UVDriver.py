@@ -50,4 +50,7 @@ class UVDriver:
             return None
 
         # Random sample from normal distribution using mean and std deviation
-        return np.random.normal(mean + offset, np.sqrt(var))
+        result = np.random.normal(mean + offset, np.sqrt(var))
+        
+        # Ensure UV is never negative (UV index cannot be negative)
+        return max(0.0, result)

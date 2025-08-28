@@ -51,4 +51,7 @@ class SSRDDriver:
             return None
 
         # Random sample from normal distribution using mean and std deviation
-        return np.random.normal(mean + offset, np.sqrt(var))
+        result = np.random.normal(mean + offset, np.sqrt(var))
+        
+        # Ensure SSRD is never negative (solar radiation cannot be negative)
+        return max(0.0, result)
