@@ -43,6 +43,37 @@ class TestGridInitializer(unittest.TestCase):
         self.assertAlmostEqual(info['plot_area_km2'], gi.plot_area_km2, places=2)
         self.assertAlmostEqual(info['standardization_factor'], gi.standardization_factor, places=2)
 
+    def test_get_plot_grid_returns_plotgrid(self):
+        gi = GridInitializer()
+        grid = gi.get_plot_grid()
+        from app.models.Plot.PlotGrid import PlotGrid
+        self.assertIsInstance(grid, PlotGrid)
+
+    def test_create_plot_from_biome(self):
+        gi = GridInitializer()
+        plot = gi.create_plot_from_biome('southern taiga')
+        from app.models.Plot.Plot import Plot
+        self.assertIsInstance(plot, Plot)
+        self.assertEqual(plot.climate.get_biome(), 'southern taiga')
+        self.assertEqual(plot.plot_area, gi.plot_area_km2)
+
+    def test_create_plot_from_biome_invalid_biome(self):
+        gi = GridInitializer()
+        with self.assertRaises(ValueError) as cm:
+            gi.create_plot_from_biome('not_a_biome')
+        self.assertIn("Unknown biome", str(cm.exception))
+
+    def test_create_plot_from_biome_non_string(self):
+        gi = GridInitializer()
+        with self.assertRaises(TypeError):
+            gi.create_plot_from_biome(123)
+
+    def test_create_plot_from_biome_negative_plot_counter(self):
+        gi = GridInitializer()
+        gi.plot_counter = -1
+        with self.assertRaises(ValueError) as cm:
+            gi.create_plot_from_biome('southern taiga')
+        self.assertIn("cannot be negative", str(cm.exception))
 
 if __name__ == "__main__":
     unittest.main()

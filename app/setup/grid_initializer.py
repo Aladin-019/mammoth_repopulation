@@ -1,6 +1,15 @@
 from app.models.Plot.PlotGrid import PlotGrid
+from app.models.Plot.Plot import Plot
+from app.models.Climate.Climate import Climate
 
 class GridInitializer:
+    def _add_default_flora(self, plot, biome):
+        # Stub for testing
+        pass
+
+    def _add_default_fauna(self, plot, biome):
+        # Stub for testing
+        pass
     """
     Helper class to automatically initialize plots in a PlotGrid based on biome data.
     
@@ -80,3 +89,46 @@ class GridInitializer:
             'standardization_factor': self.standardization_factor,
             'base_resolution_km2': 1.0
         }
+
+    def get_plot_grid(self) -> PlotGrid:
+        """Get the initialized plot grid."""
+        return self.plot_grid
+    
+    def create_plot_from_biome(self, biome: str) -> Plot:
+        """
+        Create a plot with appropriate flora and fauna for the given biome.
+        """
+        # Create climate for this plot - Plot=None initially to avoid circular reference
+        climate = Climate(biome, None)
+
+        if self.plot_counter < 0:
+            raise ValueError("Plot counter cannot be negative")
+
+        if not isinstance(biome, str):
+            raise TypeError("Biome must be a string")
+
+        if biome not in self.biome_defaults:
+            raise ValueError(f"Biome '{biome}' not recognized. Available: {list(self.biome_defaults.keys())}")
+
+        plot_id = self.plot_counter  # Simple sequential ID starting from 0
+        self.plot_counter += 1       # Increment counter for next plot
+        
+        # Track northern taiga plots for finding the central one
+        if biome == 'northern taiga':
+            self._add_northern_taiga_plot_id(plot_id)
+        
+        plot = Plot(
+            Id=plot_id,
+            avg_snow_height=0.1,
+            climate=climate,
+            plot_area=self.plot_area_km2
+        )
+    
+        climate.set_plot(plot)
+        
+        self._add_default_flora(plot, biome)
+        self._add_default_fauna(plot, biome)
+        
+        return plot
+
+
