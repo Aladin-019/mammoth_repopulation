@@ -3,13 +3,13 @@ from app.models.Plot.Plot import Plot
 from app.models.Climate.Climate import Climate
 
 class GridInitializer:
-    def _add_default_flora(self, plot, biome):
-        # Stub for testing
-        pass
-
     def _add_default_fauna(self, plot, biome):
         # Stub for testing
         pass
+
+    def _create_flora_for_biome(self, flora_name, biome, plot):
+        # Stub for testing
+        return None
     """
     Helper class to automatically initialize plots in a PlotGrid based on biome data.
     
@@ -130,5 +130,19 @@ class GridInitializer:
         self._add_default_fauna(plot, biome)
         
         return plot
+
+    def _add_default_flora(self, plot: Plot, biome: str) -> None:
+        """Add default flora to the plot based on biome."""
+        if biome not in self.biome_defaults:
+            return
+            
+        flora_names = self.biome_defaults[biome]['flora']
+        
+        for flora_name in flora_names:
+            # Create flora with appropriate parameters for the biome
+            flora = self._create_flora_for_biome(flora_name, biome, plot)
+            if flora:
+                plot.add_flora(flora)
+
 
 

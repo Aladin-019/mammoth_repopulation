@@ -75,5 +75,20 @@ class TestGridInitializer(unittest.TestCase):
             gi.create_plot_from_biome('southern taiga')
         self.assertIn("cannot be negative", str(cm.exception))
 
+    def test__add_default_flora_adds_flora(self):
+        gi = GridInitializer()
+        class DummyFlora:
+            pass
+        class DummyPlot:
+            def __init__(self):
+                self.flora = []
+            def add_flora(self, flora):
+                self.flora.append(flora)
+        # Patch _create_flora_for_biome to return DummyFlora
+        gi._create_flora_for_biome = lambda name, biome, plot: DummyFlora()
+        plot = DummyPlot()
+        gi._add_default_flora(plot, 'southern taiga')
+        self.assertEqual(len(plot.flora), len(gi.biome_defaults['southern taiga']['flora']))
+
 if __name__ == "__main__":
     unittest.main()
