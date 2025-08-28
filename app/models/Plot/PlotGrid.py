@@ -2,6 +2,15 @@ from typing import Dict, Tuple, List, Optional
 from .Plot import Plot
 from app.interfaces.flora_plot_info import PlotInformation
 import numpy as np
+try:
+    import matplotlib.pyplot as plt
+    import matplotlib.colors as mcolors
+    MATPLOTLIB_AVAILABLE = True
+except ImportError:
+    MATPLOTLIB_AVAILABLE = False
+    plt = None
+    mcolors = None
+
 
 # Migration probabilities
 P_PREY_MIGRATION = 0.5
@@ -205,4 +214,104 @@ class PlotGrid:
         if day % 5 == 0:  # every 5th day
             for plot in self.plots.values():
                 self.migrate_species()
+
+    def visualize_biomes(self, biome_colors: Dict[str, str], figsize: Tuple[int, int] = (12, 8), 
+                        save_path: Optional[str] = None) -> None:
+        """
+        Visualize the grid with different colors for different biomes.
+        
+        Args:
+            biome_colors (Dict[str, str]): Dictionary mapping biome names to colors
+            figsize (Tuple[int, int]): Figure size for matplotlib
+            save_path (Optional[str]): Path to save the image
+        """
+        if not MATPLOTLIB_AVAILABLE:
+            print("Matplotlib is not available. Cannot create visualization.")
+            return
+            
+        if not self.plots:
+            print("No plots to visualize")
+            return
+        
+        # 2D array for the visualization
+        rows = self.max_row - self.min_row + 1
+        cols = self.max_col - self.min_col + 1
+        grid = np.full((rows, cols), -1, dtype=int)  # -1 for empty cells
+        
+        biome_to_int = {biome: i for i, biome in enumerate(biome_colors.keys())}
+        
+        # Fill grid with biome data from plots
+        for (row, col), plot in self.plots.items():
+            grid_row = row - self.min_row
+            grid_col = col - self.min_col
+            biome = plot.get_climate().get_biome()
+            grid[grid_row, grid_col] = biome_to_int.get(biome, len(biome_to_int) - 1)
+        # Blend biome borders for realism
+        grid = self._blend_biome_borders(grid, rows, cols, blend_prob=0.2)
+
+        fig, ax = plt.subplots(figsize=figsize)
+
+        # Custom colormap
+        colors = list(biome_colors.values())
+        cmap = mcolors.ListedColormap(colors)
+
+        # Plot the grid
+        im = ax.imshow(grid, cmap=cmap, aspect='equal', origin='lower')
+
+        # Colorbar and biome labels
+        cbar = plt.colorbar(im, ax=ax, ticks=range(len(biome_colors)))
+        cbar.set_ticklabels(list(biome_colors.keys()))
+        cbar.set_label('Biome Type')
+        ax.set_title('Siberia Biome Distribution')
+        ax.set_xlabel('Column')
+        ax.set_ylabel('Row')
+
+        # Grid lines
+        ax.grid(True, which='both', color='black', linewidth=0.5, alpha=0.3)
+        ax.set_xticks(range(cols))
+        ax.set_yticks(range(rows))
+        ax.set_xticklabels(range(self.min_col, self.max_col + 1))
+        ax.set_yticklabels(range(self.min_row, self.max_row + 1))
+
+        plt.tight_layout()
+
+        if save_path:
+            plt.savefig(save_path, dpi=300, bbox_inches='tight')
+            print(f"Biome visualization saved to {save_path}")
+
+        plt.show()
+
+    def _blend_biome_borders(self, grid, rows, cols, blend_prob=0.2):
+        """
+        Helps blend biome borders in visualize_biomes for more realistic transitions.
+        For each border plot (adjacent to a different biome), with probability blend_prob,
+        assign the plot the biome of a neighbor.
+        Args:
+            grid: 2D numpy array of biome indices
+            rows: number of rows in grid
+            cols: number of columns in grid
+            blend_prob: probability to blend a border plot
+        Returns:
+            grid: blended 2D numpy array
+        """
+        import random
+        blended_grid = grid.copy()
+        for r in range(rows):
+            for c in range(cols):
+                biome_idx = grid[r, c]
+                # Check neighbors for different biome
+                neighbor_biomes = set()
+                for dr in [-1, 0, 1]:
+                    for dc in [-1, 0, 1]:
+                        nr, nc = r + dr, c + dc
+                        if 0 <= nr < rows and 0 <= nc < cols and (dr != 0 or dc != 0):
+                            neighbor_biome = grid[nr, nc]
+                            if neighbor_biome != biome_idx:
+                                neighbor_biomes.add(neighbor_biome)
+                if neighbor_biomes:
+                    # Border plot detected
+                    if random.random() < blend_prob:
+                        # Assign biome of a random neighbor
+                        blended_grid[r, c] = random.choice(list(neighbor_biomes))
+        return blended_grid
     
