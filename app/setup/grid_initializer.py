@@ -3,13 +3,25 @@ from app.models.Plot.Plot import Plot
 from app.models.Climate.Climate import Climate
 
 class GridInitializer:
-    def _add_default_fauna(self, plot, biome):
-        # Stub for testing
-        pass
-
     def _create_flora_for_biome(self, flora_name, biome, plot):
         # Stub for testing
         return None
+    def _add_northern_taiga_plot_id(self, plot_id):
+        # Stub for testing
+        pass
+    def _create_prey_for_biome(self, prey_name, biome, plot):
+        # Stub for testing
+        return None
+    def _create_predator_for_biome(self, predator_name, biome, prey_list, plot):
+        # Stub for testing
+        return None
+    def _establish_food_chain_relationships(self, plot):
+        # Stub for testing
+        pass
+    def _update_predator_prey_lists(self, plot):
+        # Stub for testing
+        pass
+    
     """
     Helper class to automatically initialize plots in a PlotGrid based on biome data.
     
@@ -143,6 +155,37 @@ class GridInitializer:
             flora = self._create_flora_for_biome(flora_name, biome, plot)
             if flora:
                 plot.add_flora(flora)
+
+    def _add_default_fauna(self, plot: Plot, biome: str) -> None:
+        """Add default fauna to the plot based on biome."""
+        if biome not in self.biome_defaults:
+            return
+            
+        prey_names = self.biome_defaults[biome]['prey']
+        predator_names = self.biome_defaults[biome]['predators']
+        
+        prey_list = []
+        for prey_name in prey_names:
+            if prey_name == 'mammoth':
+                # Don't add mammoths yet - we do this after all plots are created
+                continue
+            else:
+                prey = self._create_prey_for_biome(prey_name, biome, plot)
+                if prey:
+                    prey.plot = plot
+                    plot.add_fauna(prey)
+                    prey_list.append(prey)
+
+        for predator_name in predator_names:
+            predator = self._create_predator_for_biome(predator_name, biome, prey_list, plot)
+            if predator:
+                predator.plot = plot
+                plot.add_fauna(predator)
+        
+        self._establish_food_chain_relationships(plot)
+        
+        self._update_predator_prey_lists(plot)
+
 
 
 

@@ -90,5 +90,55 @@ class TestGridInitializer(unittest.TestCase):
         gi._add_default_flora(plot, 'southern taiga')
         self.assertEqual(len(plot.flora), len(gi.biome_defaults['southern taiga']['flora']))
 
+    def test__add_default_fauna_adds_prey_and_predators(self):
+        gi = GridInitializer()
+        class DummyPrey:
+            def __init__(self, name):
+                self.name = name
+                self.plot = None
+        class DummyPredator:
+            def __init__(self, name):
+                self.name = name
+                self.plot = None
+        class DummyPlot:
+            def __init__(self):
+                self.fauna = []
+            def add_fauna(self, fauna):
+                self.fauna.append(fauna)
+        # Patch creation methods
+        gi._create_prey_for_biome = lambda name, biome, plot: DummyPrey(name)
+        gi._create_predator_for_biome = lambda name, biome, prey_list, plot: DummyPredator(name)
+        gi._establish_food_chain_relationships = lambda plot: None
+        gi._update_predator_prey_lists = lambda plot: None
+        plot = DummyPlot()
+        gi._add_default_fauna(plot, 'southern taiga')
+        prey_names = [n for n in gi.biome_defaults['southern taiga']['prey'] if n != 'mammoth']
+        predator_names = gi.biome_defaults['southern taiga']['predators']
+        prey_count = sum(isinstance(f, DummyPrey) for f in plot.fauna)
+        predator_count = sum(isinstance(f, DummyPredator) for f in plot.fauna)
+        self.assertEqual(prey_count, len(prey_names))
+        self.assertEqual(predator_count, len(predator_names))
+        # Check names
+        self.assertSetEqual(set(f.name for f in plot.fauna), set(prey_names + predator_names))
+
+    def test__add_default_fauna_excludes_mammoth(self):
+        gi = GridInitializer()
+        class DummyPrey:
+            def __init__(self, name):
+                self.name = name
+        class DummyPlot:
+            def __init__(self):
+                self.fauna = []
+            def add_fauna(self, fauna):
+                self.fauna.append(fauna)
+        gi._create_prey_for_biome = lambda name, biome, plot: DummyPrey(name)
+        gi._create_predator_for_biome = lambda name, biome, prey_list, plot: None
+        gi._establish_food_chain_relationships = lambda plot: None
+        gi._update_predator_prey_lists = lambda plot: None
+        plot = DummyPlot()
+        gi._add_default_fauna(plot, 'southern taiga')
+        names = [f.name for f in plot.fauna]
+        self.assertNotIn('mammoth', names)
+
 if __name__ == "__main__":
     unittest.main()
