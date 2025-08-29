@@ -156,5 +156,27 @@ class TestGridInitializer(unittest.TestCase):
         self.assertEqual(gi._get_standardized_population(0), 0)
         self.assertEqual(gi._get_standardized_population(-2), 0)
 
+    def test__m2_to_km2(self):
+        gi = GridInitializer()
+        self.assertAlmostEqual(gi._m2_to_km2(1_000_000), 1.0)
+        self.assertAlmostEqual(gi._m2_to_km2(500_000), 0.5)
+        self.assertAlmostEqual(gi._m2_to_km2(0), 0.0)
+        self.assertAlmostEqual(gi._m2_to_km2(-1_000_000), -1.0)
+
+    def test__add_random_variation_within_bounds(self):
+        gi = GridInitializer()
+        base = 100.0
+        percent = 15.0
+        for _ in range(20):
+            varied = gi._add_random_variation(base, percent)
+            self.assertGreaterEqual(varied, base * (1 - percent/100.0))
+            self.assertLessEqual(varied, base * (1 + percent/100.0))
+
+    def test__add_random_variation_zero_percent(self):
+        gi = GridInitializer()
+        base = 100.0
+        for _ in range(10):
+            self.assertAlmostEqual(gi._add_random_variation(base, 0), base)
+
 if __name__ == "__main__":
     unittest.main()

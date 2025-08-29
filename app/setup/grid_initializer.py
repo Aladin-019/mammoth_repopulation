@@ -194,6 +194,32 @@ class GridInitializer:
         """Convert 1 km^2 population to standardized value based on current plot size population."""
         return max(0, int(base_population_per_km2 * self.standardization_factor))
 
+    def _m2_to_km2(self, area_m2: float) -> float:
+        """Convert area from square meters to square kilometers."""
+        return area_m2 / 1_000_000  # 1 km^2 = 1,000,000 m^2
+    
+    def _add_random_variation(self, base_value: float, variation_percent: float = 15.0) -> float:
+        """
+        Add some random variation to a base value, by multiplying it by a random multiplier within variation_percent.
+
+        Args:
+            base_value (float): The base value to vary
+            variation_percent (float): Percentage variation (default: ±15%)
+        Returns:
+            float: Base value with random variation applied
+        """
+        import random
+        
+        variation_decimal = variation_percent / 100.0
+        
+        # Generate multiplier range between (1 - variation) and (1 + variation)
+        min_multiplier = 1.0 - variation_decimal
+        max_multiplier = 1.0 + variation_decimal
+
+        random_multiplier = random.uniform(min_multiplier, max_multiplier)
+
+        return base_value * random_multiplier
+
 
 
 
