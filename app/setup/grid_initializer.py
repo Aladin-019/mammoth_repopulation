@@ -21,7 +21,7 @@ class GridInitializer:
     def _update_predator_prey_lists(self, plot):
         # Stub for testing
         pass
-    
+
     """
     Helper class to automatically initialize plots in a PlotGrid based on biome data.
     
@@ -185,6 +185,14 @@ class GridInitializer:
         self._establish_food_chain_relationships(plot)
         
         self._update_predator_prey_lists(plot)
+
+    def _get_standardized_float(self, base_float: float) -> float:
+        """Convert from base 1km^2 to standardized value based on current plot size."""
+        return base_float * self.standardization_factor
+
+    def _get_standardized_population(self, base_population_per_km2: float) -> int:
+        """Convert 1 km^2 population to standardized value based on current plot size population."""
+        return max(0, int(base_population_per_km2 * self.standardization_factor))
 
 
 

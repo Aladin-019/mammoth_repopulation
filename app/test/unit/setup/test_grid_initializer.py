@@ -140,5 +140,21 @@ class TestGridInitializer(unittest.TestCase):
         names = [f.name for f in plot.fauna]
         self.assertNotIn('mammoth', names)
 
+    def test__get_standardized_float(self):
+        gi = GridInitializer(lat_step=2.0, lon_step=2.0)
+        # plot_area_km2 = 2*111 * 2*47 = 20868
+        # standardization_factor = 20868
+        self.assertAlmostEqual(gi._get_standardized_float(1.5), 1.5 * gi.standardization_factor)
+        self.assertAlmostEqual(gi._get_standardized_float(0), 0)
+        self.assertAlmostEqual(gi._get_standardized_float(-2), -2 * gi.standardization_factor)
+
+    def test__get_standardized_population(self):
+        gi = GridInitializer(lat_step=2.0, lon_step=2.0)
+        # plot_area_km2 = 20868, standardization_factor = 20868
+        # Should round down and never return negative
+        self.assertEqual(gi._get_standardized_population(1.5), int(1.5 * gi.standardization_factor))
+        self.assertEqual(gi._get_standardized_population(0), 0)
+        self.assertEqual(gi._get_standardized_population(-2), 0)
+
 if __name__ == "__main__":
     unittest.main()
