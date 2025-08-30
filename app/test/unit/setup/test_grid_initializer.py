@@ -180,7 +180,7 @@ class TestGridInitializer(unittest.TestCase):
 
     def test__create_flora_for_biome_all_types(self):
         gi = GridInitializer()
-        # Patch random methods for deterministic output
+        # Patch random and standardization methods for deterministic output
         gi._add_random_variation = lambda base, percent=15.0: base
         gi._get_standardized_float = lambda base: base
         gi._get_standardized_population = lambda base: int(base)
@@ -235,21 +235,29 @@ class TestGridInitializer(unittest.TestCase):
                 # Check population and mass attributes
                 self.assertIsInstance(flora.population, int)
                 self.assertGreaterEqual(flora.population, 0)
-                if hasattr(flora, 'total_mass'):
+                if flora_type == 'grass' or flora_type == 'moss':
+                    self.assertTrue(hasattr(flora, 'total_mass'))
                     self.assertGreaterEqual(flora.total_mass, 0)
-                if hasattr(flora, 'avg_mass'):
+                if flora_type == 'shrub' or flora_type == 'tree':
+                    self.assertTrue(hasattr(flora, 'avg_mass'))
                     self.assertGreater(flora.avg_mass, 0)
                 # Check growth and ideal ranges
+                self.assertTrue(hasattr(flora, 'ideal_growth_rate'))
                 self.assertGreater(flora.ideal_growth_rate, 0)
+                self.assertTrue(hasattr(flora, 'ideal_temp_range'))
                 self.assertIsInstance(flora.ideal_temp_range, tuple)
                 self.assertEqual(len(flora.ideal_temp_range), 2)
+                self.assertTrue(hasattr(flora, 'ideal_uv_range'))
                 self.assertIsInstance(flora.ideal_uv_range, tuple)
                 self.assertEqual(len(flora.ideal_uv_range), 2)
+                self.assertTrue(hasattr(flora, 'ideal_hydration_range'))
                 self.assertIsInstance(flora.ideal_hydration_range, tuple)
                 self.assertEqual(len(flora.ideal_hydration_range), 2)
+                self.assertTrue(hasattr(flora, 'ideal_soil_temp_range'))
                 self.assertIsInstance(flora.ideal_soil_temp_range, tuple)
                 self.assertEqual(len(flora.ideal_soil_temp_range), 2)
                 # Check consumers list
+                self.assertTrue(hasattr(flora, 'consumers'))
                 self.assertIsInstance(flora.consumers, list)
                 self.assertEqual(len(flora.consumers), 0) # No consumers at creation
                 # Check Plot
@@ -257,7 +265,7 @@ class TestGridInitializer(unittest.TestCase):
                 self.assertEqual(flora.plot, plot)
                 # Check root depth
                 self.assertTrue(hasattr(flora, 'root_depth'))
-                if flora_type in ['tree']:
+                if flora_type == 'tree':
                     self.assertEqual(flora.root_depth, 3)
                 else:
                     self.assertEqual(flora.root_depth, 1)
