@@ -324,7 +324,7 @@ class Plot(FloraPlotInformation):
             
             for fauna in self.fauna:
                 if fauna.get_total_mass() > 0:  # Only count living fauna
-                    individual_trampled = fauna.get_avg_feet_area() * fauna.get_avg_steps_taken()
+                    individual_trampled = fauna.get_avg_foot_area() * fauna.get_avg_steps_taken()
                     total_trampled_area += individual_trampled * fauna.get_population()
             
             # Cap the trampled area at the plot area

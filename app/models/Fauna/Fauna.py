@@ -167,7 +167,7 @@ class Fauna():
     def __init__(self, name: str, description: str, population: int, avg_mass: float,
                  ideal_growth_rate: float, ideal_temp_range: Tuple[float, float],
                  min_food_per_day: float, feeding_rate: float,
-                 avg_steps_taken: float, avg_feet_area: float, plot: PlotInformation):
+                 avg_steps_taken: float, avg_foot_area: float, plot: PlotInformation):
         """
         Represents a fauna species.
         
@@ -181,7 +181,7 @@ class Fauna():
             min_food_per_day (float): Minimum food required per individual per day in kg.
             feeding_rate (float): Feeding rate in kg/day.
             avg_steps_taken (float): Average number of steps taken per day.
-            avg_feet_area (float): Average area of feet in m^2.
+            avg_foot_area (float): Average area of foot in m^2.
             plot (PlotInformation): The plot this fauna is associated with.
             
         Raises:
@@ -211,10 +211,10 @@ class Fauna():
         
         self._validate_instance(avg_steps_taken, float, "avg_steps_taken")
         self._validate_positive_number(avg_steps_taken, "avg_steps_taken")
-        
-        self._validate_instance(avg_feet_area, float, "avg_feet_area")
-        self._validate_positive_number(avg_feet_area, "avg_feet_area", allow_zero=False)
-        
+
+        self._validate_instance(avg_foot_area, float, "avg_foot_area")
+        self._validate_positive_number(avg_foot_area, "avg_foot_area", allow_zero=False)
+
         self._validate_not_none(plot, "plot")
         self._validate_instance(plot, PlotInformation, "plot")
         
@@ -229,7 +229,7 @@ class Fauna():
             self.min_food_per_day = float(min_food_per_day)
             self.feeding_rate = float(feeding_rate)
             self.avg_steps_taken = float(avg_steps_taken)
-            self.avg_feet_area = float(avg_feet_area)
+            self.avg_foot_area = float(avg_foot_area)
             self.plot = plot
                         
         except Exception as e:
@@ -257,8 +257,8 @@ class Fauna():
     def get_avg_steps_taken(self) -> float:
         return self.avg_steps_taken
     
-    def get_avg_feet_area(self) -> float:
-        return self.avg_feet_area
+    def get_avg_foot_area(self) -> float:
+        return self.avg_foot_area
 
     def distance_from_ideal(self, current_value: float, ideal_range: tuple) -> float:
         """

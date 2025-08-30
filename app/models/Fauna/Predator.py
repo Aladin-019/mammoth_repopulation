@@ -10,10 +10,10 @@ class Predator(Fauna):
 
     def __init__(self, name: str, description: str, population: int, avg_mass: float,
                  ideal_temp_range: Tuple[float, float], min_food_per_day: float, ideal_growth_rate: float, 
-                 feeding_rate: float, avg_steps_taken: float, avg_feet_area: float, plot: PlotInformation, prey: List['Fauna']):
+                 feeding_rate: float, avg_steps_taken: float, avg_foot_area: float, plot: PlotInformation, prey: List['Fauna']):
         
         super().__init__(name, description, population, avg_mass, ideal_growth_rate, ideal_temp_range, 
-                        min_food_per_day, feeding_rate, avg_steps_taken, avg_feet_area, plot)
+                        min_food_per_day, feeding_rate, avg_steps_taken, avg_foot_area, plot)
         
         self._validate_instance(prey, list, "prey")
         self._validate_list(prey, "prey", Fauna)
