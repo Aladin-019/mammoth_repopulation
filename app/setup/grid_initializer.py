@@ -6,14 +6,12 @@ from app.models.Flora.Shrub import Shrub
 from app.models.Flora.Tree import Tree
 from app.models.Flora.Moss import Moss
 from app.models.Flora.Flora import Flora
+from app.models.Fauna.Prey import Prey
 
 class GridInitializer:
     def _add_northern_taiga_plot_id(self, plot_id):
         # Stub for testing
         pass
-    def _create_prey_for_biome(self, prey_name, biome, plot):
-        # Stub for testing
-        return None
     def _create_predator_for_biome(self, predator_name, biome, prey_list, plot):
         # Stub for testing
         return None
@@ -345,6 +343,52 @@ class GridInitializer:
             )
         
         return None
+    
+    def _create_prey_for_biome(self, prey_name: str, biome: str, plot: Plot) -> Prey:
+        """Create a prey object with appropriate parameters for the biome."""
+        if prey_name == 'deer':
+            base_population = 0.01   # deer per km^2
+            avg_mass = 150.0         # kg (per animal)
+            avg_foot_area = 0.002    # m^2
+            avg_steps_taken = 80000  # steps per day
+            return Prey(
+                name='Deer',
+                description='Deer adapted to various biomes',
+                population=self._get_standardized_population(self._add_random_variation(base_population, 20.0)),
+                avg_mass=self._add_random_variation(avg_mass, 15.0),
+                ideal_growth_rate=self._get_standardized_float(self._add_random_variation(0.0005, 15.0)),
+                ideal_temp_range=(-40.0, 30.0),  # degree Celsius
+                min_food_per_day=self._get_standardized_float(self._add_random_variation(0.05, 5.0)),  # kg per day
+                feeding_rate=self._add_random_variation(0.1, 10.0),  # kg per day
+                avg_steps_taken=self._get_standardized_float(self._add_random_variation(avg_steps_taken, 15.0)),
+                avg_foot_area=self._m2_to_km2(self._add_random_variation(avg_foot_area, 10.0)),
+                plot=plot,
+                predators=[],        # No predators initially
+                consumable_flora=[]  # Will be set when flora is added
+            )
+        elif prey_name == 'mammoth':
+            base_population = 0.01  # mammoths per km^2
+            avg_mass = 6000.0  # kg per mammoth
+            avg_foot_area = 0.12  # m^2
+            avg_steps_taken = 80000  # steps per day
+            return Prey(
+                name='Mammoth',
+                description='Woolly mammoth adapted to cold steppe conditions',
+                population=self._get_standardized_population(self._add_random_variation(base_population, 30.0)),
+                avg_mass=self._add_random_variation(avg_mass, 20.0),
+                ideal_growth_rate=self._get_standardized_float(self._add_random_variation(0.0005, 25.0)),  # kg per day
+                ideal_temp_range=(-80.0, 30.0),  # degree Celsius
+                min_food_per_day=self._get_standardized_float(self._add_random_variation(0.2, 10.0)),  # kg per day
+                feeding_rate=self._add_random_variation(0.8, 15.0),  # kg per day
+                avg_steps_taken=self._get_standardized_float(self._add_random_variation(avg_steps_taken, 20.0)),
+                avg_foot_area=self._m2_to_km2(self._add_random_variation(avg_foot_area, 15.0)),
+                plot=plot,
+                predators=[],        # No predators initially
+                consumable_flora=[]  # Will be set when flora is added
+            )
+        
+        return None
+
 
 
 
