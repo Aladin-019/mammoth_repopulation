@@ -1,11 +1,13 @@
 from app.models.Plot.PlotGrid import PlotGrid
 from app.models.Plot.Plot import Plot
 from app.models.Climate.Climate import Climate
+from app.models.Flora.Grass import Grass
+from app.models.Flora.Shrub import Shrub
+from app.models.Flora.Tree import Tree
+from app.models.Flora.Moss import Moss
+from app.models.Flora.Flora import Flora
 
 class GridInitializer:
-    def _create_flora_for_biome(self, flora_name, biome, plot):
-        # Stub for testing
-        return None
     def _add_northern_taiga_plot_id(self, plot_id):
         # Stub for testing
         pass
@@ -220,6 +222,129 @@ class GridInitializer:
 
         return base_value * random_multiplier
 
+    def _create_flora_for_biome(self, flora_name: str, biome: str, plot: Plot) -> Flora:
+        """Create a flora object with appropriate parameters for the biome and flora subtype.
+            Necessary values are automatically scaled to current plot size and randomized.
+
+            base_mass = mass of all flora per km^2, which is used to calculate population 
+            of only Tree and Shrub flora. Total mass for these are calculated internally.
+
+            Grass and Moss do not use population, but rather total mass directly as their 
+            populations are hard to quantify.
+
+        Args:
+            flora_name: 'grass', 'shrub', 'tree', 'moss'
+            biome: biome type 
+            plot: the Plot object to which this flora will belong
+        Returns:
+            Flora: The created flora object
+        """
+        if flora_name == 'grass':
+            if biome == 'southern taiga':
+                base_mass = 12000.0
+            elif biome == 'northern taiga':
+                base_mass = 16000.0
+            elif biome == 'southern tundra':
+                base_mass = 12000.0
+            else:  # northern tundra
+                base_mass = 4000.0
+
+            return Grass(
+                name='Grass',
+                description='Hardy grass adapted to various conditions',
+                total_mass=self._get_standardized_float(self._add_random_variation(base_mass, 20.0)),
+                population=1,  # grass doesnt use population, value is irrelevant
+                ideal_growth_rate=self._get_standardized_float(self._add_random_variation(10.0, 5.0)),
+                ideal_temp_range=(-60.0, 30.0),      # degree Celsius
+                ideal_uv_range=(10.0, 50_000.0),     # J/m^2/day
+                ideal_hydration_range=(0.01, 0.5),   # kg/m^2/day
+                ideal_soil_temp_range=(-5.0, 30.0),  # Not used for grass (shallow roots)
+                consumers=[],  # No consumers initially
+                root_depth=1,  # Shallow roots for grasses
+                plot=plot
+            )
+        elif flora_name == 'shrub':
+            avg_mass = 10.0   # kg (average mass per shrub)
+            if biome == 'southern taiga':
+                base_mass = 20000.0
+            elif biome == 'northern taiga':
+                base_mass = 14000.0
+            elif biome == 'southern tundra':
+                base_mass = 20000.0 
+            else:  # northern tundra
+                base_mass = 5000.0
+
+            base_population = base_mass / avg_mass
+
+            return Shrub(
+                name='Shrub',
+                description='Low-growing shrub adapted to various conditions',
+                avg_mass=self._add_random_variation(avg_mass, 20.0),
+                population=self._get_standardized_population(self._add_random_variation(base_population, 25.0)),
+                ideal_growth_rate=self._get_standardized_float(self._add_random_variation(10.0, 5.0)),
+                ideal_temp_range=(-60.0, 30.0),     # degree Celsius
+                ideal_uv_range=(10.0, 50_000.0),    # J/m^2/day
+                ideal_hydration_range=(0.01, 0.5),  # kg/m^2/day
+                ideal_soil_temp_range=(-5.0, 20.0), # Not used for shrubs (shallow roots)
+                consumers=[],  # No consumers initially
+                root_depth=1,  # Shallow root depth for shrubs
+                plot=plot
+            )
+        elif flora_name == 'tree':
+            avg_mass = 2400.0   # kg (average mass per tree)
+            if biome == 'southern taiga':
+                base_mass = 10000.0
+            elif biome == 'northern taiga':
+                base_mass = 4000.0
+            elif biome == 'southern tundra':
+                base_mass = 50.0
+            else:  # northern tundra
+                base_mass = 0.0
+
+            base_population = base_mass / avg_mass
+
+            return Tree(
+                name='Pine Tree',
+                description='Coniferous tree adapted to taiga conditions',
+                avg_mass=self._add_random_variation(avg_mass, 25.0),
+                population=self._get_standardized_population(self._add_random_variation(base_population, 30.0)),
+                ideal_growth_rate=self._get_standardized_float(self._add_random_variation(10.0, 5.0)),
+                ideal_temp_range=(-60.0, 30.0),     # degree Celsius
+                ideal_uv_range=(10.0, 50_000.0),    # J/m^2/day
+                ideal_hydration_range=(0.01, 0.5),  # kg/m^2/day
+                ideal_soil_temp_range=(5.0, 20.0),  # degree Celsius
+                consumers=[],  # No consumers initially
+                root_depth=3,  # Deep roots for trees
+                plot=plot,
+                single_tree_canopy_cover=self._m2_to_km2(self._add_random_variation(28.0, 15.0)),
+                coniferous=True
+            )
+        elif flora_name == 'moss':
+            if biome == 'southern taiga':
+                base_mass = 8000.0
+            elif biome == 'northern taiga':
+                base_mass = 12000.0
+            elif biome == 'southern tundra':
+                base_mass = 16000.0
+            else:  # northern tundra
+                base_mass = 26000.0
+
+            return Moss(
+                name='Moss',
+                description='Low-growing moss adapted to cold conditions',
+                total_mass=self._get_standardized_float(self._add_random_variation(base_mass, 20.0)),
+                population=1,  # moss doesnt use population, value is irrelevant
+                ideal_growth_rate=self._get_standardized_float(self._add_random_variation(10.0, 5.0)),
+                ideal_temp_range=(-80.0, 40.0),      # degree Celsius
+                ideal_uv_range=(10.0, 50_000.0),     # J/m^2/day
+                ideal_hydration_range=(0.01, 0.5),   # kg/m^2/day
+                ideal_soil_temp_range=(-15.0, 15.0), # Not used for moss (shallow roots)
+                consumers=[],  # No consumers initially
+                root_depth=1,  # Shallow roots for moss
+                plot=plot
+            )
+        
+        return None
 
 
 
