@@ -185,47 +185,16 @@ class TestGridInitializer(unittest.TestCase):
         gi._get_standardized_float = lambda base: base
         gi._get_standardized_population = lambda base: int(base)
         gi._m2_to_km2 = lambda area: area / 1_000_000
-        from app.interfaces.flora_plot_info import FloraPlotInformation
-        # Minimal concrete subclass for testing
-        class TestFloraPlotInformation(FloraPlotInformation):
+        from app.models.Plot.Plot import Plot
+        from unittest.mock import Mock
+        mock_climate = Mock()
+        mock_climate.__class__.__name__ = "Climate"
+        class DummyPlot(Plot):
             def __init__(self):
-                pass
-            def get_plot_area(self):
-                return 1.0
-            def get_biome(self):
-                return 'southern taiga'
-            def get_all_fauna(self):
-                return []
-            def get_all_flora(self):
-                return []
-            def get_avg_snow_height(self):
-                return 0.0
-            def get_current_melt_water_mass(self):
-                return 0.0
-            def get_current_rainfall(self):
-                return 0.0
-            def get_current_snowfall(self):
-                return 0.0
-            def get_current_soil_temp(self):
-                return 0.0
-            def get_current_temperature(self):
-                return 0.0
-            def get_current_uv(self):
-                return 0.0
-            def get_plot_id(self):
-                return 1
-            def get_previous_snow_height(self):
-                return 0.0
-        plot = TestFloraPlotInformation()
-        # Test all flora types and biomes
+                super().__init__(Id=0, avg_snow_height=0.1, climate=mock_climate, plot_area=1.0)
+        plot = DummyPlot()
         flora_types = ['grass', 'shrub', 'tree', 'moss']
         biomes = ['southern taiga', 'northern taiga', 'southern tundra', 'northern tundra']
-        expected_classes = {
-            'grass': 'Grass',
-            'shrub': 'Shrub',
-            'tree': 'Tree',
-            'moss': 'Moss',
-        }
         for flora_type in flora_types:
             for biome in biomes:
                 flora = gi._create_flora_for_biome(flora_type, biome, plot)
@@ -279,6 +248,82 @@ class TestGridInitializer(unittest.TestCase):
         plot = object()
         flora = gi._create_flora_for_biome('not_a_flora', 'southern taiga', plot)
         self.assertIsNone(flora)
+
+    def test__create_prey_for_biome_all_types(self):
+        gi = GridInitializer()
+        # Patch random and standardization methods for deterministic output
+        gi._add_random_variation = lambda base, percent=15.0: float(base)
+        gi._get_standardized_float = lambda base: float(base)
+        gi._get_standardized_population = lambda base: int(base)
+        gi._m2_to_km2 = lambda area: float(area) / 1_000_000
+        from app.models.Fauna.Prey import Prey
+        from app.models.Plot.Plot import Plot
+        from unittest.mock import Mock
+        mock_climate = Mock()
+        mock_climate.__class__.__name__ = "Climate"
+        class DummyPlot(Plot):
+            def __init__(self):
+                super().__init__(Id=0, avg_snow_height=0.1, climate=mock_climate, plot_area=1.0)
+        plot = DummyPlot()
+        prey_types = ['deer', 'mammoth']
+        biomes = ['southern taiga', 'northern taiga', 'southern tundra', 'northern tundra']
+        for prey_type in prey_types:
+            for biome in biomes:
+                prey = gi._create_prey_for_biome(prey_type, biome, plot)
+                self.assertIsNotNone(prey, f"Expected prey for {prey_type} in {biome}")
+                self.assertIsInstance(prey, Prey)
+                self.assertTrue(hasattr(prey, 'name'))
+                self.assertTrue(hasattr(prey, 'description'))
+                self.assertTrue(hasattr(prey, 'population'))
+                # Check population and mass attributes
+                self.assertIsInstance(prey.population, int)
+                self.assertGreaterEqual(prey.population, 0)
+                self.assertTrue(hasattr(prey, 'avg_mass'))
+                self.assertGreater(prey.avg_mass, 0)
+                # Check ideal growth rate and ranges
+                self.assertTrue(hasattr(prey, 'ideal_growth_rate'))
+                self.assertIsInstance(prey.ideal_growth_rate, float)
+                self.assertTrue(hasattr(prey, 'ideal_temp_range'))
+                self.assertIsInstance(prey.ideal_temp_range, tuple)
+                self.assertEqual(len(prey.ideal_temp_range), 2)
+                self.assertTrue(hasattr(prey, 'min_food_per_day'))
+                self.assertIsInstance(prey.min_food_per_day, float)
+                self.assertGreater(prey.min_food_per_day, 0)
+                # Check feeding rate
+                self.assertTrue(hasattr(prey, 'feeding_rate'))
+                self.assertIsInstance(prey.feeding_rate, float)
+                self.assertGreater(prey.feeding_rate, 0)
+                # Check steps and foot area
+                self.assertTrue(hasattr(prey, 'avg_steps_taken'))
+                self.assertIsInstance(prey.avg_steps_taken, float)
+                self.assertGreater(prey.avg_steps_taken, 0)
+                self.assertTrue(hasattr(prey, 'avg_foot_area'))
+                self.assertIsInstance(prey.avg_foot_area, float)
+                self.assertGreater(prey.avg_foot_area, 0)
+                # Check Plot
+                self.assertTrue(hasattr(prey, 'plot'))
+                self.assertEqual(prey.plot, plot)
+                # Check predators and consumable flora lists
+                self.assertTrue(hasattr(prey, 'predators'))
+                self.assertIsInstance(prey.predators, list)
+                self.assertEqual(len(prey.predators), 0) # No predators at creation
+                self.assertTrue(hasattr(prey, 'consumable_flora'))
+                self.assertIsInstance(prey.consumable_flora, list)
+                self.assertEqual(len(prey.consumable_flora), 0) # No consumable flora at creation
+
+    def test__create_prey_for_biome_invalid_type(self):
+        gi = GridInitializer()
+        from app.models.Plot.Plot import Plot
+        from unittest.mock import Mock
+        mock_climate = Mock()
+        mock_climate.__class__.__name__ = "Climate"
+        class DummyPlot(Plot):
+            def __init__(self):
+                super().__init__(Id=0, avg_snow_height=0.1, climate=mock_climate, plot_area=1.0)
+        plot = DummyPlot()
+        prey = gi._create_prey_for_biome('not_a_prey', 'southern taiga', plot)
+        self.assertIsNone(prey)
+
 
 if __name__ == "__main__":
     unittest.main()
