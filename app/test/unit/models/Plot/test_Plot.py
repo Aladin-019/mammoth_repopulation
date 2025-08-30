@@ -401,10 +401,10 @@ class TestPlot(unittest.TestCase):
         # mock fauna to create trampling effect (20% of plot area)
         mock_fauna = Mock()
         mock_fauna.get_total_mass.return_value = 100.0  # Living fauna
-        mock_fauna.get_avg_feet_area.return_value = 0.1  # 0.1 km² per individual
+        mock_fauna.get_avg_foot_area.return_value = 0.1  # 0.1 km² per individual
         mock_fauna.get_avg_steps_taken.return_value = 1000.0  # 1000 steps
         mock_fauna.get_population.return_value = 2  # 2 individuals
-        mock_fauna.get_avg_feet_area.return_value = 0.0001  # 0.0001 km² per individual
+        mock_fauna.get_avg_foot_area.return_value = 0.0001  # 0.0001 km² per individual
         mock_fauna.get_avg_steps_taken.return_value = 1000.0  # 1000 steps  
         mock_fauna.get_population.return_value = 2  # 2 individuals
         
@@ -449,9 +449,6 @@ class TestPlot(unittest.TestCase):
         self.assertIn("day must be non-negative", str(context.exception))
     
 
-    
-
-    
     def test_get_current_melt_water_mass_valid(self):
         """Test calculating meltwater mass from SSRD with valid day."""
         result = self.plot.get_current_melt_water_mass(1)
