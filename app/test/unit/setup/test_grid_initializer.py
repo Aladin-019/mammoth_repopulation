@@ -178,5 +178,99 @@ class TestGridInitializer(unittest.TestCase):
         for _ in range(10):
             self.assertAlmostEqual(gi._add_random_variation(base, 0), base)
 
+    def test__create_flora_for_biome_all_types(self):
+        gi = GridInitializer()
+        # Patch random methods for deterministic output
+        gi._add_random_variation = lambda base, percent=15.0: base
+        gi._get_standardized_float = lambda base: base
+        gi._get_standardized_population = lambda base: int(base)
+        gi._m2_to_km2 = lambda area: area / 1_000_000
+        from app.interfaces.flora_plot_info import FloraPlotInformation
+        # Minimal concrete subclass for testing
+        class TestFloraPlotInformation(FloraPlotInformation):
+            def __init__(self):
+                pass
+            def get_plot_area(self):
+                return 1.0
+            def get_biome(self):
+                return 'southern taiga'
+            def get_all_fauna(self):
+                return []
+            def get_all_flora(self):
+                return []
+            def get_avg_snow_height(self):
+                return 0.0
+            def get_current_melt_water_mass(self):
+                return 0.0
+            def get_current_rainfall(self):
+                return 0.0
+            def get_current_snowfall(self):
+                return 0.0
+            def get_current_soil_temp(self):
+                return 0.0
+            def get_current_temperature(self):
+                return 0.0
+            def get_current_uv(self):
+                return 0.0
+            def get_plot_id(self):
+                return 1
+            def get_previous_snow_height(self):
+                return 0.0
+        plot = TestFloraPlotInformation()
+        # Test all flora types and biomes
+        flora_types = ['grass', 'shrub', 'tree', 'moss']
+        biomes = ['southern taiga', 'northern taiga', 'southern tundra', 'northern tundra']
+        expected_classes = {
+            'grass': 'Grass',
+            'shrub': 'Shrub',
+            'tree': 'Tree',
+            'moss': 'Moss',
+        }
+        for flora_type in flora_types:
+            for biome in biomes:
+                flora = gi._create_flora_for_biome(flora_type, biome, plot)
+                self.assertIsNotNone(flora, f"Expected flora for {flora_type} in {biome}")
+                self.assertTrue(hasattr(flora, 'name'))
+                self.assertTrue(hasattr(flora, 'description'))
+                # Check population and mass attributes
+                self.assertIsInstance(flora.population, int)
+                self.assertGreaterEqual(flora.population, 0)
+                if hasattr(flora, 'total_mass'):
+                    self.assertGreaterEqual(flora.total_mass, 0)
+                if hasattr(flora, 'avg_mass'):
+                    self.assertGreater(flora.avg_mass, 0)
+                # Check growth and ideal ranges
+                self.assertGreater(flora.ideal_growth_rate, 0)
+                self.assertIsInstance(flora.ideal_temp_range, tuple)
+                self.assertEqual(len(flora.ideal_temp_range), 2)
+                self.assertIsInstance(flora.ideal_uv_range, tuple)
+                self.assertEqual(len(flora.ideal_uv_range), 2)
+                self.assertIsInstance(flora.ideal_hydration_range, tuple)
+                self.assertEqual(len(flora.ideal_hydration_range), 2)
+                self.assertIsInstance(flora.ideal_soil_temp_range, tuple)
+                self.assertEqual(len(flora.ideal_soil_temp_range), 2)
+                # Check consumers list
+                self.assertIsInstance(flora.consumers, list)
+                self.assertEqual(len(flora.consumers), 0) # No consumers at creation
+                # Check Plot
+                self.assertTrue(hasattr(flora, 'plot'))
+                self.assertEqual(flora.plot, plot)
+                # Check root depth
+                self.assertTrue(hasattr(flora, 'root_depth'))
+                if flora_type in ['tree']:
+                    self.assertEqual(flora.root_depth, 3)
+                else:
+                    self.assertEqual(flora.root_depth, 1)
+                # Check Tree specific attributes
+                if flora_type == 'tree':
+                    self.assertGreaterEqual(flora.single_tree_canopy_cover, 0)
+                    self.assertEqual(flora.coniferous, True)
+
+    def test__create_flora_for_biome_invalid_type(self):
+        gi = GridInitializer()
+        plot = object()
+        flora = gi._create_flora_for_biome('not_a_flora', 'southern taiga', plot)
+        self.assertIsNone(flora)
+
 if __name__ == "__main__":
     unittest.main()
