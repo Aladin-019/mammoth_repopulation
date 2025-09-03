@@ -106,8 +106,8 @@ class TestGridInitializer(unittest.TestCase):
             def add_fauna(self, fauna):
                 self.fauna.append(fauna)
         # Patch creation methods
-        gi._create_prey_for_biome = lambda name, biome, plot: DummyPrey(name)
-        gi._create_predator_for_biome = lambda name, biome, prey_list, plot: DummyPredator(name)
+        gi._create_prey = lambda name, plot: DummyPrey(name)
+        gi._create_predator = lambda name, prey_list, plot: DummyPredator(name)
         gi._establish_food_chain_relationships = lambda plot: None
         gi._update_predator_prey_lists = lambda plot: None
         plot = DummyPlot()
@@ -131,8 +131,8 @@ class TestGridInitializer(unittest.TestCase):
                 self.fauna = []
             def add_fauna(self, fauna):
                 self.fauna.append(fauna)
-        gi._create_prey_for_biome = lambda name, biome, plot: DummyPrey(name)
-        gi._create_predator_for_biome = lambda name, biome, prey_list, plot: None
+        gi._create_prey = lambda name, plot: DummyPrey(name)
+        gi._create_predator = lambda name, prey_list, plot: None
         gi._establish_food_chain_relationships = lambda plot: None
         gi._update_predator_prey_lists = lambda plot: None
         plot = DummyPlot()
@@ -249,7 +249,7 @@ class TestGridInitializer(unittest.TestCase):
         flora = gi._create_flora_for_biome('not_a_flora', 'southern taiga', plot)
         self.assertIsNone(flora)
 
-    def test__create_prey_for_biome_all_types(self):
+    def test__create_prey_all_types(self):
         gi = GridInitializer()
         # Patch random and standardization methods for deterministic output
         gi._add_random_variation = lambda base, percent=15.0: float(base)
@@ -266,52 +266,50 @@ class TestGridInitializer(unittest.TestCase):
                 super().__init__(Id=0, avg_snow_height=0.1, climate=mock_climate, plot_area=1.0)
         plot = DummyPlot()
         prey_types = ['deer', 'mammoth']
-        biomes = ['southern taiga', 'northern taiga', 'southern tundra', 'northern tundra']
         for prey_type in prey_types:
-            for biome in biomes:
-                prey = gi._create_prey_for_biome(prey_type, biome, plot)
-                self.assertIsNotNone(prey, f"Expected prey for {prey_type} in {biome}")
-                self.assertIsInstance(prey, Prey)
-                self.assertTrue(hasattr(prey, 'name'))
-                self.assertTrue(hasattr(prey, 'description'))
-                self.assertTrue(hasattr(prey, 'population'))
-                # Check population and mass attributes
-                self.assertIsInstance(prey.population, int)
-                self.assertGreaterEqual(prey.population, 0)
-                self.assertTrue(hasattr(prey, 'avg_mass'))
-                self.assertGreater(prey.avg_mass, 0)
-                # Check ideal growth rate and ranges
-                self.assertTrue(hasattr(prey, 'ideal_growth_rate'))
-                self.assertIsInstance(prey.ideal_growth_rate, float)
-                self.assertTrue(hasattr(prey, 'ideal_temp_range'))
-                self.assertIsInstance(prey.ideal_temp_range, tuple)
-                self.assertEqual(len(prey.ideal_temp_range), 2)
-                self.assertTrue(hasattr(prey, 'min_food_per_day'))
-                self.assertIsInstance(prey.min_food_per_day, float)
-                self.assertGreater(prey.min_food_per_day, 0)
-                # Check feeding rate
-                self.assertTrue(hasattr(prey, 'feeding_rate'))
-                self.assertIsInstance(prey.feeding_rate, float)
-                self.assertGreater(prey.feeding_rate, 0)
-                # Check steps and foot area
-                self.assertTrue(hasattr(prey, 'avg_steps_taken'))
-                self.assertIsInstance(prey.avg_steps_taken, float)
-                self.assertGreater(prey.avg_steps_taken, 0)
-                self.assertTrue(hasattr(prey, 'avg_foot_area'))
-                self.assertIsInstance(prey.avg_foot_area, float)
-                self.assertGreater(prey.avg_foot_area, 0)
-                # Check Plot
-                self.assertTrue(hasattr(prey, 'plot'))
-                self.assertEqual(prey.plot, plot)
-                # Check predators and consumable flora lists
-                self.assertTrue(hasattr(prey, 'predators'))
-                self.assertIsInstance(prey.predators, list)
-                self.assertEqual(len(prey.predators), 0) # No predators at creation
-                self.assertTrue(hasattr(prey, 'consumable_flora'))
-                self.assertIsInstance(prey.consumable_flora, list)
-                self.assertEqual(len(prey.consumable_flora), 0) # No consumable flora at creation
+            prey = gi._create_prey(prey_type, plot)
+            self.assertIsNotNone(prey, f"Expected prey: {prey_type}")
+            self.assertIsInstance(prey, Prey)
+            self.assertTrue(hasattr(prey, 'name'))
+            self.assertTrue(hasattr(prey, 'description'))
+            self.assertTrue(hasattr(prey, 'population'))
+            # Check population and mass attributes
+            self.assertIsInstance(prey.population, int)
+            self.assertGreaterEqual(prey.population, 0)
+            self.assertTrue(hasattr(prey, 'avg_mass'))
+            self.assertGreater(prey.avg_mass, 0)
+            # Check ideal growth rate and ranges
+            self.assertTrue(hasattr(prey, 'ideal_growth_rate'))
+            self.assertIsInstance(prey.ideal_growth_rate, float)
+            self.assertTrue(hasattr(prey, 'ideal_temp_range'))
+            self.assertIsInstance(prey.ideal_temp_range, tuple)
+            self.assertEqual(len(prey.ideal_temp_range), 2)
+            self.assertTrue(hasattr(prey, 'min_food_per_day'))
+            self.assertIsInstance(prey.min_food_per_day, float)
+            self.assertGreater(prey.min_food_per_day, 0)
+            # Check feeding rate
+            self.assertTrue(hasattr(prey, 'feeding_rate'))
+            self.assertIsInstance(prey.feeding_rate, float)
+            self.assertGreater(prey.feeding_rate, 0)
+            # Check steps and foot area
+            self.assertTrue(hasattr(prey, 'avg_steps_taken'))
+            self.assertIsInstance(prey.avg_steps_taken, float)
+            self.assertGreater(prey.avg_steps_taken, 0)
+            self.assertTrue(hasattr(prey, 'avg_foot_area'))
+            self.assertIsInstance(prey.avg_foot_area, float)
+            self.assertGreater(prey.avg_foot_area, 0)
+            # Check Plot
+            self.assertTrue(hasattr(prey, 'plot'))
+            self.assertEqual(prey.plot, plot)
+            # Check predators and consumable flora lists
+            self.assertTrue(hasattr(prey, 'predators'))
+            self.assertIsInstance(prey.predators, list)
+            self.assertEqual(len(prey.predators), 0) # No predators at creation
+            self.assertTrue(hasattr(prey, 'consumable_flora'))
+            self.assertIsInstance(prey.consumable_flora, list)
+            self.assertEqual(len(prey.consumable_flora), 0) # No consumable flora at creation
 
-    def test__create_prey_for_biome_invalid_type(self):
+    def test__create_prey_invalid_type(self):
         gi = GridInitializer()
         from app.models.Plot.Plot import Plot
         from unittest.mock import Mock
@@ -321,7 +319,7 @@ class TestGridInitializer(unittest.TestCase):
             def __init__(self):
                 super().__init__(Id=0, avg_snow_height=0.1, climate=mock_climate, plot_area=1.0)
         plot = DummyPlot()
-        prey = gi._create_prey_for_biome('not_a_prey', 'southern taiga', plot)
+        prey = gi._create_prey('not_a_prey', plot)
         self.assertIsNone(prey)
 
 

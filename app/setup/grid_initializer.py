@@ -7,14 +7,16 @@ from app.models.Flora.Tree import Tree
 from app.models.Flora.Moss import Moss
 from app.models.Flora.Flora import Flora
 from app.models.Fauna.Prey import Prey
+from app.models.Fauna.Predator import Predator
+from typing import List
 
 class GridInitializer:
     def _add_northern_taiga_plot_id(self, plot_id):
         # Stub for testing
         pass
-    def _create_predator_for_biome(self, predator_name, biome, prey_list, plot):
+    def _create_predator(self, predator_name: str, prey_list: List[Prey], plot: Plot) -> Predator:
         # Stub for testing
-        return None
+        pass
     def _establish_food_chain_relationships(self, plot):
         # Stub for testing
         pass
@@ -170,14 +172,14 @@ class GridInitializer:
                 # Don't add mammoths yet - we do this after all plots are created
                 continue
             else:
-                prey = self._create_prey_for_biome(prey_name, biome, plot)
+                prey = self._create_prey(prey_name, plot)
                 if prey:
                     prey.plot = plot
                     plot.add_fauna(prey)
                     prey_list.append(prey)
 
         for predator_name in predator_names:
-            predator = self._create_predator_for_biome(predator_name, biome, prey_list, plot)
+            predator = self._create_predator(predator_name, prey_list, plot)
             if predator:
                 predator.plot = plot
                 plot.add_fauna(predator)
@@ -344,7 +346,7 @@ class GridInitializer:
         
         return None
     
-    def _create_prey_for_biome(self, prey_name: str, biome: str, plot: Plot) -> Prey:
+    def _create_prey(self, prey_name: str, plot: Plot) -> Prey:
         """Create a prey object with appropriate parameters for the biome."""
         if prey_name == 'deer':
             base_population = 0.01   # deer per km^2
@@ -388,7 +390,6 @@ class GridInitializer:
             )
         
         return None
-
 
 
 
