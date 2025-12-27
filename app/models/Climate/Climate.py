@@ -17,10 +17,10 @@ logger = logging.getLogger(__name__)
 
 # Sensitivity constants for snow depth
 # **** These are currently set higher than normal for testing purposes ****
-SOIL_SENSITIVITY = 50.0        # degrees C per meter of snow change
-AIR_SENSITIVITY = 20.0          # degrees C per meter of snow change
-MAX_DAILY_SOIL_DELTA = 30.0     # max daily soil temp change
-MAX_DAILY_AIR_DELTA = 15.0    # max daily air temp change
+SOIL_SENSITIVITY = 6.0        # degrees C per meter of snow change
+AIR_SENSITIVITY = 2.0          # degrees C per meter of snow change
+MAX_DAILY_SOIL_DELTA = 4.0     # max daily soil temp change
+MAX_DAILY_AIR_DELTA = 1.5    # max daily air temp change
 
 # Raw climate data file paths for different biomes
 BIOME_FILE_MAP = {
@@ -66,13 +66,14 @@ class Climate:
     """
     _class_loaders = {}
     
-    def __init__(self, biome: str, plot: PlotInformation):
+    def __init__(self, biome: str, plot: Optional[PlotInformation] = None):
         """
         Initialize a Climate instance.
         
         Args:
             biome (str): The biome type of the plot.
-            plot (PlotInformation): The plot information object containing environmental data.
+            plot (PlotInformation, optional): The plot information object containing environmental data.
+                Can be None initially and set later.
         Raises:
             ValueError: If any input parameters are invalid.
             TypeError: If any input parameters have incorrect types.
@@ -89,7 +90,7 @@ class Climate:
         if biome not in BIOME_FILE_MAP:
             raise ValueError(f"Unknown biome: {biome}. Available biomes: {list(BIOME_FILE_MAP.keys())}")
         
-        if not isinstance(plot, PlotInformation):
+        if plot is not None and not isinstance(plot, PlotInformation):
             raise TypeError(f"Plot must be an instance of PlotInformation, got: {type(plot)}")
         
         try:
@@ -108,7 +109,22 @@ class Climate:
             }
         except Exception as e:
             raise RuntimeError(f"Failed to initialize Climate: {e}")
-
+    
+    def set_plot(self, plot: PlotInformation) -> None:
+        """
+        Set the plot reference after Climate is created.
+        
+        Args:
+            plot (PlotInformation): The plot information object to associate with this climate.
+        Raises:
+            TypeError: If plot is not an instance of PlotInformation.
+        """
+        if not isinstance(plot, PlotInformation):
+            raise TypeError(f"Plot must be an instance of PlotInformation, got: {type(plot)}")
+        
+        self.plot = plot
+        logger.debug(f"Plot reference set for Climate object {id(self)}")
+    
     def set_biome(self, new_biome: str) -> None:
         """Set the biome for this climate instance."""
         if not isinstance(new_biome, str):
@@ -191,6 +207,12 @@ class Climate:
             raise ValueError(f"Day must be between 1 and 365, got: {day}")
         
         try:
+            # Check if plot is available
+            if self.plot is None:
+                logger.warning(f"No plot available for temperature calculation on day {day}, using fallback value")
+                return self._get_fallback_value('temperature', day)
+            
+            # Calculate daily environmental effects on air temperature
             delta_snow_height = self.plot.delta_snow_height()
             daily_air_temp_offset = self._2mtemp_change_from_snow_delta(delta_snow_height)
             
@@ -227,6 +249,12 @@ class Climate:
             raise ValueError(f"Day must be between 1 and 365, got: {day}")
         
         try:
+            # Check if plot is available
+            if self.plot is None:
+                logger.warning(f"No plot available for soil temperature calculation on day {day}, using fallback value")
+                return self._get_fallback_value('soil_temp', day)
+            
+            # Calculate daily environmental effects on soil temperature
             delta_snow_height = self.plot.delta_snow_height()
             daily_soil_temp_offset = self._soil_temp_change_from_snow_delta(delta_snow_height)
             
@@ -418,11 +446,15 @@ class Climate:
         Check if the plot is in steppe conditions based on flora mass composition and permafrost.
         
         Mammoth steppe conditions are characterized by:
-        - High grass dominance (≥25%) for grazing
-        - Minimal tree coverage (≤45%) for open landscape (number higher due to high mass of trees)
-        - Moderate shrub coverage (≤20%) for diversity
-        - Significant moss/lichen coverage (≤10%) for ground cover
+        - High grass dominance (≥45%) for grazing (extremely high requirement)
+        - Minimal tree coverage (≤20%) for open landscape (very low tree coverage)
+        - Moderate shrub coverage (≤10%) for diversity (very low shrub coverage)
+        - Significant moss/lichen coverage (≤3%) for ground cover (very low moss coverage)
         - Valid permafrost conditions
+        
+        These conditions are so strict that they can only be achieved through significant
+        environmental changes (like mammoth activity), not from initial flora composition.
+        
         Returns:
             bool: True if steppe conditions are met, False otherwise.
         """
@@ -446,10 +478,11 @@ class Climate:
                 logger.warning(f"Flora mass ratios don't sum to 1.0, got: {total_ratio}")
                 return False
             
-            if (grass_ratio >= 0.25 and  # Grass should be dominant
-                tree_ratio <= 0.45 and   # Trees should be minimal for open steppe (mass ratio higher due to high mass of trees)
-                shrub_ratio <= 0.2 and   # Shrubs can be moderate
-                moss_ratio <= 0.1):      # Moss/lichen can be significant but not overwhelming
+            # Extremely strict conditions - only plots with significant environmental changes should qualify
+            if (grass_ratio >= 0.65 and  # Grass should be extremely dominant
+                tree_ratio <= 0.02 and   # Trees should be very minimal
+                shrub_ratio <= 0.25 and  # Shrubs should be very minimal
+                moss_ratio <= 0.08):     # Moss/lichen should be very minimal
                 logger.info(f"Steppe conditions met: grass={grass_ratio:.2f}, tree={tree_ratio:.2f}, shrub={shrub_ratio:.2f}, moss={moss_ratio:.2f}")
                 return True
             return False
@@ -457,7 +490,7 @@ class Climate:
         except Exception as e:
             logger.error(f"Error determining steppe conditions: {e}")
             return False
-
+    
     def is_permafrost(self) -> bool:
         """
         Check if the plot is in permafrost conditions based on soil temperature.
@@ -469,7 +502,7 @@ class Climate:
         try:
             # Check consecutive frozen days (720 days = 2 years)
             #if self.consecutive_frozen_soil_days >= 720:
-            if self.consecutive_frozen_soil_days >= 5:   # for testing - even more lenient
+            if self.consecutive_frozen_soil_days >= 20:   # Increased from 5 to 60 days (2 months) for more realistic permafrost
                 return True
             return False
             

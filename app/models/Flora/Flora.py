@@ -228,7 +228,12 @@ class Flora():
         return self.description
 
     def get_total_mass(self) -> float:
+        """Get the total mass of all individuals of this flora species."""
         return self.total_mass
+    
+    def get_population(self) -> int:
+        """Get the population count of this flora species."""
+        return self.population
     
     def get_avg_mass(self) -> float:
         """Get the average mass per individual."""
@@ -275,9 +280,14 @@ class Flora():
         
         current_temp = self.plot.get_current_temperature(day)
         current_uv = self.plot.get_current_uv(day)
-        current_rainfall = self.plot.get_current_rainfall(day)
+        # if self.plot.get_plot_id() == 1980:    # 1980 is mammoth plot ID
+        #     print(f"Flora {self.name} current UV: {current_uv:.4f}")
+        current_rainfall_m_per_hr = self.plot.get_current_rainfall(day)
+        current_rainfall_kg_per_m2_per_day = current_rainfall_m_per_hr * 24.0 * 1000
         current_melt_water_mass = self.plot.get_current_melt_water_mass(day)
-        current_hydration = current_rainfall + current_melt_water_mass
+        current_hydration = current_rainfall_kg_per_m2_per_day + current_melt_water_mass
+        # if self.plot.get_plot_id() == 1980:    # 1980 is mammoth plot ID
+        #     print(f"Flora {self.name} current hydration: {current_hydration:.4f} kg/m²/day")
         
         if self.root_depth >= 3:
             current_soil_temp = self.plot.get_current_soil_temp(day)
@@ -305,7 +315,7 @@ class Flora():
         Args:
             environmental_conditions (dict): Current environmental values 
         Returns:
-            float: Average penalty from 0 (ideal) to -2 (worst)
+            float: Average penalty from 0 (ideal) to -1 (worst)
         """
         self._validate_instance(environmental_conditions, dict, "environmental_conditions")
         self._validate_not_none(environmental_conditions, "environmental_conditions")
@@ -314,10 +324,12 @@ class Flora():
             environmental_conditions['temperature'], 
             self.ideal_temp_range
         )
+        
         penalty_uv = self.distance_from_ideal(
             environmental_conditions['uv'], 
             self.ideal_uv_range
         )
+        
         penalty_hydration = self.distance_from_ideal(
             environmental_conditions['hydration'], 
             self.ideal_hydration_range
@@ -332,7 +344,28 @@ class Flora():
             penalty_avg = (penalty_temp + penalty_uv + penalty_hydration + penalty_soil_temp) / 4
         else:
             penalty_avg = (penalty_temp + penalty_uv + penalty_hydration) / 3
-        
+
+        # # DEBUG: Show UV penalty calculation details (moved here to show actual UV used)
+        # if self.plot.get_plot_id() == 1980:    # 1980 is mammoth plot ID
+        #     current_uv = environmental_conditions['uv']
+        #     uv_min, uv_max = self.ideal_uv_range
+        #     print(f"🔍 DEBUG: {self.name} UV penalty calculation:")
+        #     print(f"   Current UV (after canopy shading): {current_uv:.4f}")
+        #     print(f"   Ideal UV range: ({uv_min:.1f}, {uv_max:.1f})")
+        #     print(f"   UV penalty result: {penalty_uv:.4f}")
+        #     print(f"   Is within range? {uv_min <= current_uv <= uv_max}")
+
+        # if self.plot.get_plot_id() == 1980:    # 1980 is mammoth plot ID
+        #     # debug logging
+        #     print(f"***** Flora environmental penalties: *****")
+        #     print(f"Flora {self.name} environmental penalties: "
+        #         f"temp={penalty_temp:.4f}, uv={penalty_uv:.4f}, "
+        #         f"hydration={penalty_hydration:.4f}, ")
+        #     if self.root_depth >= 3:
+        #         print(f"soil_temp={penalty_soil_temp:.4f}")
+        #     else:
+        #         print("soil_temp=N/A")
+
         return penalty_avg
 
     def _calculate_base_growth_rate(self, environmental_penalty: float) -> float:
@@ -340,14 +373,14 @@ class Flora():
         Calculate the base growth rate adjusted for environmental conditions in kg/day.
         
         Args:
-            environmental_penalty (float): Environmental penalty from 0 to -2,
-                which is used to adjust ideal growth rate between -1 and 1.
+            environmental_penalty (float): Environmental penalty from 0 to -1,
+                which is used to calculate the base growth rate between 0 and ideal_growth_rate.
         Returns:
             float: Adjusted base growth rate in kg/day
         """
         self._validate_instance(environmental_penalty, float, "environmental_penalty")
-        
-        return self.ideal_growth_rate * (1 + environmental_penalty)
+
+        return self.ideal_growth_rate * (1 + environmental_penalty/50)
 
     def _update_mass_from_growth_and_consumption(self, base_growth_rate: float, consumption_rate: float) -> None:
         """
@@ -360,6 +393,9 @@ class Flora():
         self._validate_instance(base_growth_rate, float, "base_growth_rate")
         self._validate_instance(consumption_rate, float, "consumption_rate")
         
+        # if self.plot.get_plot_id() == 1980:    # 1980 is mammoth plot ID
+        #     print(f"Flora {self.name} base growth rate: {base_growth_rate:.4f} kg/day")
+
         # Update mass
         actual_growth_rate = base_growth_rate - consumption_rate
         new_mass = self.total_mass + self.total_mass * actual_growth_rate
@@ -388,7 +424,19 @@ class Flora():
         
         canopy_coverage_ratio = min(total_canopy_cover / plot_area, 1.0)
         
+        # # DEBUG: Show canopy shading calculation
+        # if self.plot.get_plot_id() == 1980:    # 1980 is mammoth plot ID
+        #     original_uv = environmental_conditions['uv']
+        #     print(f"🔍 DEBUG: {self.name} canopy shading calculation:")
+        #     print(f"   Original UV: {original_uv:.4f}")
+        #     print(f"   Total canopy cover: {total_canopy_cover:.6f} km²")
+        #     print(f"   Plot area: {plot_area:.6f} km²")
+        #     print(f"   Canopy coverage ratio: {canopy_coverage_ratio:.6f}")
+        
         new_uv = environmental_conditions['uv'] * canopy_coverage_ratio
+        
+        # if self.plot.get_plot_id() == 1980:    # 1980 is mammoth plot ID
+        #     print(f"   New UV after shading: {new_uv:.4f}")
         
         shaded_conditions = environmental_conditions.copy()
         shaded_conditions['uv'] = new_uv
@@ -439,8 +487,7 @@ class Flora():
 
         # How far from center in units of "ideal range width"
         normalized_distance = (abs(current_value - mid) / width)
-        return -min(normalized_distance, 2.0)  # Cap distance at 2.0
-    
+        return -min(normalized_distance, 1.0)  # Cap distance at -1.0
 
     def total_consumption_rate(self) -> float:
         """
@@ -455,7 +502,9 @@ class Flora():
                 if fauna.get_name() == consumer.get_name():
                     total_rate += fauna.population * fauna.get_feeding_rate()
                     break
-
+        if self.plot.get_plot_id() == 1980:    # 1980 is mammoth plot ID
+            print(f"Flora {self.name} total consumption rate: {total_rate:.4f} kg/day")
+            #print(f"Flora {self.name} total consumption rate: {total_rate/2934.6:.4f} kg/day/km^2")
         return total_rate
     
     def capacity_penalty(self) -> None:

@@ -53,9 +53,9 @@ for loc, day_map in rain_data.items():
         mean = sum(rain_vals) / len(rain_vals)
         var = sum((val - mean) ** 2 for val in rain_vals) / len(rain_vals)
         rows.append((day, mean, var))
-        print(f"{loc}: {day} → Mean = {mean:.4f} mm/hr, Variance = {var:.4f}")
+        print(f"{loc}: {day} → Mean = {mean:.4f} m/hr, Variance = {var:.4f}")
 
-    df = pd.DataFrame(rows, columns=["Date", "Mean_Large_Scale_Rain_mmhr", "Variance_Large_Scale_Rain_mmhr"])
+    df = pd.DataFrame(rows, columns=["Date", "Mean_Large_Scale_Rain_mhr", "Variance_Large_Scale_Rain_mhr"])
     df.to_csv(f"{loc}_daily_large_scale_rain_stats.csv", index=False)
 
 print("\nFinished.")

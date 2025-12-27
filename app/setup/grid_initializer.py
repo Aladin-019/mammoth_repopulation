@@ -14,9 +14,6 @@ class GridInitializer:
     def _add_northern_taiga_plot_id(self, plot_id):
         # Stub for testing
         pass
-    def _create_predator(self, predator_name: str, prey_list: List[Prey], plot: Plot) -> Predator:
-        # Stub for testing
-        pass
     def _establish_food_chain_relationships(self, plot):
         # Stub for testing
         pass
@@ -368,7 +365,7 @@ class GridInitializer:
                 predators=[],        # No predators initially
                 consumable_flora=[]  # Will be set when flora is added
             )
-        elif prey_name == 'mammoth':
+        elif prey_name == 'Mammoth':
             base_population = 0.01  # mammoths per km^2
             avg_mass = 6000.0  # kg per mammoth
             avg_foot_area = 0.12  # m^2
@@ -391,5 +388,25 @@ class GridInitializer:
         
         return None
 
+    def _create_predator(self, predator_name: str, plot: Plot) -> Predator:
+        """Create a predator object with appropriate parameters for the biome."""
+        if predator_name == 'wolf':
+            base_population = 0.01  # wolves per km^2
+            return Predator(
+                name='Wolf',
+                description='Wolf adapted to various biomes',
+                population=self._get_standardized_population(self._add_random_variation(base_population, 15.0)),
+                avg_mass=self._add_random_variation(45.0, 15.0),  # kg per wolf
+                ideal_growth_rate=self._get_standardized_float(self._add_random_variation(0.0001, 15.0)),  # kg per day
+                ideal_temp_range=(-80.0, 60.0),  # degree Celsius
+                min_food_per_day=self._get_standardized_float(self._add_random_variation(0.05, 5.0)),  # kg per day
+                feeding_rate=self._add_random_variation(0.1, 10.0),  # kg per day
+                avg_steps_taken=self._get_standardized_float(self._add_random_variation(20000.0, 15.0)),
+                avg_foot_area=self._m2_to_km2(self._add_random_variation(0.006, 10.0)),
+                plot=plot,
+                prey=[] # No prey initially
+            )
+        
+        return None
 
 

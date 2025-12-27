@@ -22,3 +22,7 @@ class PlotInformation(ABC):
     @abstractmethod
     def get_previous_snow_height(self) -> float:
         pass
+
+    @abstractmethod
+    def get_plot_id(self) -> int:
+        pass

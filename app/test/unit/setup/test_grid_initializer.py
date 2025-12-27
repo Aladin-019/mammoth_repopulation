@@ -1,11 +1,18 @@
 import unittest
 from app.setup.grid_initializer import GridInitializer
+from app.models.Plot.Plot import Plot
+from app.models.Plot.PlotGrid import PlotGrid
+from app.models.Fauna.Prey import Prey
+from app.models.Fauna.Predator import Predator
+from unittest.mock import Mock
 
 class TestGridInitializer(unittest.TestCase):
+    def setUp(self):
+        self.gi = GridInitializer()
+
     def test_default_resolution_and_area(self):
-        gi = GridInitializer()
-        self.assertAlmostEqual(gi.plot_area_km2, 1304.25, places=2)
-        self.assertAlmostEqual(gi.standardization_factor, 1304.25, places=2)
+        self.assertAlmostEqual(self.gi.plot_area_km2, 1304.25, places=2)
+        self.assertAlmostEqual(self.gi.standardization_factor, 1304.25, places=2)
 
     def test_custom_resolution_and_area(self):
         gi = GridInitializer(lat_step=1.0, lon_step=1.0)
@@ -14,13 +21,11 @@ class TestGridInitializer(unittest.TestCase):
         self.assertAlmostEqual(gi.standardization_factor, expected_area, places=2)
 
     def test_biome_defaults_keys(self):
-        gi = GridInitializer()
         expected_biomes = {'southern taiga', 'northern taiga', 'southern tundra', 'northern tundra'}
-        self.assertEqual(set(gi.biome_defaults.keys()), expected_biomes)
+        self.assertEqual(set(self.gi.biome_defaults.keys()), expected_biomes)
 
     def test_biome_defaults_structure(self):
-        gi = GridInitializer()
-        for biome, defaults in gi.biome_defaults.items():
+        for biome, defaults in self.gi.biome_defaults.items():
             self.assertIn('flora', defaults)
             self.assertIn('prey', defaults)
             self.assertIn('predators', defaults)
@@ -29,10 +34,9 @@ class TestGridInitializer(unittest.TestCase):
             self.assertIsInstance(defaults['predators'], list)
 
     def test_update_resolution(self):
-        gi = GridInitializer()
-        gi.update_resolution(1.0, 1.0)
-        self.assertAlmostEqual(gi.plot_area_km2, 111.0 * 47.0, places=2)
-        self.assertAlmostEqual(gi.standardization_factor, 111.0 * 47.0, places=2)
+        self.gi.update_resolution(1.0, 1.0)
+        self.assertAlmostEqual(self.gi.plot_area_km2, 111.0 * 47.0, places=2)
+        self.assertAlmostEqual(self.gi.standardization_factor, 111.0 * 47.0, places=2)
 
     def test_get_resolution_info(self):
         gi = GridInitializer(lat_step=0.5, lon_step=0.5)
@@ -44,39 +48,31 @@ class TestGridInitializer(unittest.TestCase):
         self.assertAlmostEqual(info['standardization_factor'], gi.standardization_factor, places=2)
 
     def test_get_plot_grid_returns_plotgrid(self):
-        gi = GridInitializer()
-        grid = gi.get_plot_grid()
-        from app.models.Plot.PlotGrid import PlotGrid
+        grid = self.gi.get_plot_grid()
         self.assertIsInstance(grid, PlotGrid)
 
     def test_create_plot_from_biome(self):
-        gi = GridInitializer()
-        plot = gi.create_plot_from_biome('southern taiga')
-        from app.models.Plot.Plot import Plot
+        plot = self.gi.create_plot_from_biome('southern taiga')
         self.assertIsInstance(plot, Plot)
         self.assertEqual(plot.climate.get_biome(), 'southern taiga')
-        self.assertEqual(plot.plot_area, gi.plot_area_km2)
+        self.assertEqual(plot.plot_area, self.gi.plot_area_km2)
 
     def test_create_plot_from_biome_invalid_biome(self):
-        gi = GridInitializer()
         with self.assertRaises(ValueError) as cm:
-            gi.create_plot_from_biome('not_a_biome')
+            self.gi.create_plot_from_biome('not_a_biome')
         self.assertIn("Unknown biome", str(cm.exception))
 
     def test_create_plot_from_biome_non_string(self):
-        gi = GridInitializer()
         with self.assertRaises(TypeError):
-            gi.create_plot_from_biome(123)
+            self.gi.create_plot_from_biome(123)
 
     def test_create_plot_from_biome_negative_plot_counter(self):
-        gi = GridInitializer()
-        gi.plot_counter = -1
+        self.gi.plot_counter = -1
         with self.assertRaises(ValueError) as cm:
-            gi.create_plot_from_biome('southern taiga')
+            self.gi.create_plot_from_biome('southern taiga')
         self.assertIn("cannot be negative", str(cm.exception))
 
     def test__add_default_flora_adds_flora(self):
-        gi = GridInitializer()
         class DummyFlora:
             pass
         class DummyPlot:
@@ -85,13 +81,12 @@ class TestGridInitializer(unittest.TestCase):
             def add_flora(self, flora):
                 self.flora.append(flora)
         # Patch _create_flora_for_biome to return DummyFlora
-        gi._create_flora_for_biome = lambda name, biome, plot: DummyFlora()
+        self.gi._create_flora_for_biome = lambda name, biome, plot: DummyFlora()
         plot = DummyPlot()
-        gi._add_default_flora(plot, 'southern taiga')
-        self.assertEqual(len(plot.flora), len(gi.biome_defaults['southern taiga']['flora']))
+        self.gi._add_default_flora(plot, 'southern taiga')
+        self.assertEqual(len(plot.flora), len(self.gi.biome_defaults['southern taiga']['flora']))
 
     def test__add_default_fauna_adds_prey_and_predators(self):
-        gi = GridInitializer()
         class DummyPrey:
             def __init__(self, name):
                 self.name = name
@@ -106,14 +101,14 @@ class TestGridInitializer(unittest.TestCase):
             def add_fauna(self, fauna):
                 self.fauna.append(fauna)
         # Patch creation methods
-        gi._create_prey = lambda name, plot: DummyPrey(name)
-        gi._create_predator = lambda name, prey_list, plot: DummyPredator(name)
-        gi._establish_food_chain_relationships = lambda plot: None
-        gi._update_predator_prey_lists = lambda plot: None
+        self.gi._create_prey = lambda name, plot: DummyPrey(name)
+        self.gi._create_predator = lambda name, prey_list, plot: DummyPredator(name)
+        self.gi._establish_food_chain_relationships = lambda plot: None
+        self.gi._update_predator_prey_lists = lambda plot: None
         plot = DummyPlot()
-        gi._add_default_fauna(plot, 'southern taiga')
-        prey_names = [n for n in gi.biome_defaults['southern taiga']['prey'] if n != 'mammoth']
-        predator_names = gi.biome_defaults['southern taiga']['predators']
+        self.gi._add_default_fauna(plot, 'southern taiga')
+        prey_names = [n for n in self.gi.biome_defaults['southern taiga']['prey'] if n != 'mammoth']
+        predator_names = self.gi.biome_defaults['southern taiga']['predators']
         prey_count = sum(isinstance(f, DummyPrey) for f in plot.fauna)
         predator_count = sum(isinstance(f, DummyPredator) for f in plot.fauna)
         self.assertEqual(prey_count, len(prey_names))
@@ -122,7 +117,6 @@ class TestGridInitializer(unittest.TestCase):
         self.assertSetEqual(set(f.name for f in plot.fauna), set(prey_names + predator_names))
 
     def test__add_default_fauna_excludes_mammoth(self):
-        gi = GridInitializer()
         class DummyPrey:
             def __init__(self, name):
                 self.name = name
@@ -131,12 +125,12 @@ class TestGridInitializer(unittest.TestCase):
                 self.fauna = []
             def add_fauna(self, fauna):
                 self.fauna.append(fauna)
-        gi._create_prey = lambda name, plot: DummyPrey(name)
-        gi._create_predator = lambda name, prey_list, plot: None
-        gi._establish_food_chain_relationships = lambda plot: None
-        gi._update_predator_prey_lists = lambda plot: None
+        self.gi._create_prey = lambda name, plot: DummyPrey(name)
+        self.gi._create_predator = lambda name, prey_list, plot: None
+        self.gi._establish_food_chain_relationships = lambda plot: None
+        self.gi._update_predator_prey_lists = lambda plot: None
         plot = DummyPlot()
-        gi._add_default_fauna(plot, 'southern taiga')
+        self.gi._add_default_fauna(plot, 'southern taiga')
         names = [f.name for f in plot.fauna]
         self.assertNotIn('mammoth', names)
 
@@ -157,36 +151,30 @@ class TestGridInitializer(unittest.TestCase):
         self.assertEqual(gi._get_standardized_population(-2), 0)
 
     def test__m2_to_km2(self):
-        gi = GridInitializer()
-        self.assertAlmostEqual(gi._m2_to_km2(1_000_000), 1.0)
-        self.assertAlmostEqual(gi._m2_to_km2(500_000), 0.5)
-        self.assertAlmostEqual(gi._m2_to_km2(0), 0.0)
-        self.assertAlmostEqual(gi._m2_to_km2(-1_000_000), -1.0)
+        self.assertAlmostEqual(self.gi._m2_to_km2(1_000_000), 1.0)
+        self.assertAlmostEqual(self.gi._m2_to_km2(500_000), 0.5)
+        self.assertAlmostEqual(self.gi._m2_to_km2(0), 0.0)
+        self.assertAlmostEqual(self.gi._m2_to_km2(-1_000_000), -1.0)
 
     def test__add_random_variation_within_bounds(self):
-        gi = GridInitializer()
         base = 100.0
         percent = 15.0
         for _ in range(20):
-            varied = gi._add_random_variation(base, percent)
+            varied = self.gi._add_random_variation(base, percent)
             self.assertGreaterEqual(varied, base * (1 - percent/100.0))
             self.assertLessEqual(varied, base * (1 + percent/100.0))
 
     def test__add_random_variation_zero_percent(self):
-        gi = GridInitializer()
         base = 100.0
         for _ in range(10):
-            self.assertAlmostEqual(gi._add_random_variation(base, 0), base)
+            self.assertAlmostEqual(self.gi._add_random_variation(base, 0), base)
 
     def test__create_flora_for_biome_all_types(self):
-        gi = GridInitializer()
         # Patch random and standardization methods for deterministic output
-        gi._add_random_variation = lambda base, percent=15.0: base
-        gi._get_standardized_float = lambda base: base
-        gi._get_standardized_population = lambda base: int(base)
-        gi._m2_to_km2 = lambda area: area / 1_000_000
-        from app.models.Plot.Plot import Plot
-        from unittest.mock import Mock
+        self.gi._add_random_variation = lambda base, percent=15.0: base
+        self.gi._get_standardized_float = lambda base: base * self.gi.standardization_factor
+        self.gi._get_standardized_population = lambda base: int(base * self.gi.standardization_factor)
+        self.gi._m2_to_km2 = lambda area: area / 1_000_000
         mock_climate = Mock()
         mock_climate.__class__.__name__ = "Climate"
         class DummyPlot(Plot):
@@ -197,10 +185,13 @@ class TestGridInitializer(unittest.TestCase):
         biomes = ['southern taiga', 'northern taiga', 'southern tundra', 'northern tundra']
         for flora_type in flora_types:
             for biome in biomes:
-                flora = gi._create_flora_for_biome(flora_type, biome, plot)
+                flora = self.gi._create_flora_for_biome(flora_type, biome, plot)
                 self.assertIsNotNone(flora, f"Expected flora for {flora_type} in {biome}")
                 self.assertTrue(hasattr(flora, 'name'))
+                self.assertTrue(isinstance(flora.name, str))
                 self.assertTrue(hasattr(flora, 'description'))
+                self.assertTrue(isinstance(flora.description, str))
+                self.assertTrue(len(flora.description) > 0)
                 # Check population and mass attributes
                 self.assertIsInstance(flora.population, int)
                 self.assertGreaterEqual(flora.population, 0)
@@ -244,21 +235,16 @@ class TestGridInitializer(unittest.TestCase):
                     self.assertEqual(flora.coniferous, True)
 
     def test__create_flora_for_biome_invalid_type(self):
-        gi = GridInitializer()
         plot = object()
-        flora = gi._create_flora_for_biome('not_a_flora', 'southern taiga', plot)
+        flora = self.gi._create_flora_for_biome('not_a_flora', 'southern taiga', plot)
         self.assertIsNone(flora)
 
     def test__create_prey_all_types(self):
-        gi = GridInitializer()
         # Patch random and standardization methods for deterministic output
-        gi._add_random_variation = lambda base, percent=15.0: float(base)
-        gi._get_standardized_float = lambda base: float(base)
-        gi._get_standardized_population = lambda base: int(base)
-        gi._m2_to_km2 = lambda area: float(area) / 1_000_000
-        from app.models.Fauna.Prey import Prey
-        from app.models.Plot.Plot import Plot
-        from unittest.mock import Mock
+        self.gi._add_random_variation = lambda base, percent=15.0: float(base)
+        self.gi._get_standardized_float = lambda base: float(base * self.gi.standardization_factor)
+        self.gi._get_standardized_population = lambda base: int(base * self.gi.standardization_factor)
+        self.gi._m2_to_km2 = lambda area: float(area) / 1_000_000
         mock_climate = Mock()
         mock_climate.__class__.__name__ = "Climate"
         class DummyPlot(Plot):
@@ -267,13 +253,15 @@ class TestGridInitializer(unittest.TestCase):
         plot = DummyPlot()
         prey_types = ['deer', 'mammoth']
         for prey_type in prey_types:
-            prey = gi._create_prey(prey_type, plot)
+            prey = self.gi._create_prey(prey_type, plot)
             self.assertIsNotNone(prey, f"Expected prey: {prey_type}")
             self.assertIsInstance(prey, Prey)
             self.assertTrue(hasattr(prey, 'name'))
             self.assertTrue(hasattr(prey, 'description'))
-            self.assertTrue(hasattr(prey, 'population'))
+            self.assertIsInstance(prey.description, str)
+            self.assertTrue(len(prey.description) > 0)
             # Check population and mass attributes
+            self.assertTrue(hasattr(prey, 'population'))
             self.assertIsInstance(prey.population, int)
             self.assertGreaterEqual(prey.population, 0)
             self.assertTrue(hasattr(prey, 'avg_mass'))
@@ -311,8 +299,6 @@ class TestGridInitializer(unittest.TestCase):
 
     def test__create_prey_invalid_type(self):
         gi = GridInitializer()
-        from app.models.Plot.Plot import Plot
-        from unittest.mock import Mock
         mock_climate = Mock()
         mock_climate.__class__.__name__ = "Climate"
         class DummyPlot(Plot):
@@ -321,6 +307,67 @@ class TestGridInitializer(unittest.TestCase):
         plot = DummyPlot()
         prey = gi._create_prey('not_a_prey', plot)
         self.assertIsNone(prey)
+
+    def test_create_predator_wolf_returns_predator(self):
+        gi = GridInitializer()
+        gi._add_random_variation = lambda base, percent=15.0: float(base)
+        gi._get_standardized_float = lambda base: float(base * gi.standardization_factor)
+        gi._get_standardized_population = lambda base: int(base * gi.standardization_factor)
+        gi._m2_to_km2 = lambda area: float(area) / 1_000_000
+        mock_climate = Mock()
+        mock_climate.__class__.__name__ = "Climate"
+        plot = Plot(Id=0, avg_snow_height=0.1, climate=mock_climate, plot_area=1.0)
+        predator = gi._create_predator('wolf', plot)
+        self.assertIsNotNone(predator)
+        self.assertIsInstance(predator, Predator)
+        self.assertTrue(hasattr(predator, 'name'))
+        self.assertEqual(predator.name, 'Wolf')
+        self.assertTrue(hasattr(predator, 'description'))
+        self.assertIsInstance(predator.description, str)
+        self.assertTrue(len(predator.description) > 0)
+        # Check population and mass attributes
+        self.assertTrue(hasattr(predator, 'population'))
+        self.assertIsInstance(predator.population, int)
+        self.assertGreater(predator.population, 0)
+        self.assertTrue(hasattr(predator, 'avg_mass'))
+        self.assertIsInstance(predator.avg_mass, float)
+        self.assertGreater(predator.avg_mass, 0)
+        # Check ideal growth rate and ranges
+        self.assertTrue(hasattr(predator, 'ideal_growth_rate'))
+        self.assertIsInstance(predator.ideal_growth_rate, float)
+        self.assertGreater(predator.ideal_growth_rate, 0)
+        self.assertTrue(hasattr(predator, 'min_food_per_day'))
+        self.assertIsInstance(predator.min_food_per_day, float)
+        self.assertGreater(predator.min_food_per_day, 0)
+        self.assertTrue(hasattr(predator, 'feeding_rate'))
+        self.assertIsInstance(predator.feeding_rate, float)
+        self.assertGreater(predator.feeding_rate, 0)
+        # Check steps and foot area
+        self.assertTrue(hasattr(predator, 'avg_steps_taken'))
+        self.assertIsInstance(predator.avg_steps_taken, float)
+        self.assertGreater(predator.avg_steps_taken, 0)
+        self.assertTrue(hasattr(predator, 'avg_foot_area'))
+        self.assertIsInstance(predator.avg_foot_area, float)
+        self.assertGreater(predator.avg_foot_area, 0)
+        # Check Plot
+        self.assertTrue(hasattr(predator, 'plot'))
+        self.assertEqual(predator.plot, plot)
+        # Check prey list
+        self.assertTrue(hasattr(predator, 'prey'))
+        self.assertIsInstance(predator.prey, list)
+        self.assertEqual(predator.prey, [])
+
+    def test_create_predator_unknown_returns_none(self):
+        gi = GridInitializer()
+        gi._add_random_variation = lambda base, percent=15.0: float(base)
+        gi._get_standardized_float = lambda base: float(base)
+        gi._get_standardized_population = lambda base: int(base)
+        gi._m2_to_km2 = lambda area: float(area) / 1_000_000
+        mock_climate = Mock()
+        mock_climate.__class__.__name__ = "Climate"
+        plot = Plot(Id=0, avg_snow_height=0.1, climate=mock_climate, plot_area=1.0)
+        predator = gi._create_predator('unknown', [], plot)
+        self.assertIsNone(predator)
 
 
 if __name__ == "__main__":

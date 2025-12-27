@@ -41,6 +41,19 @@ class Tree(Flora):
         """Get the total canopy cover from all trees of this species in km^2"""
         return self.single_tree_canopy_cover * self.population
     
+    def _apply_canopy_shading(self, environmental_conditions: dict) -> dict:
+        """
+        Trees override this method to return unmodified conditions.
+        Trees don't get canopy shading - they provide it to other flora.
+        
+        Args:
+            environmental_conditions (dict): Current environmental values   
+        Returns:
+            dict: Unmodified environmental conditions (no canopy shading for trees)
+        """
+        # Trees don't get canopy shading - return conditions unchanged
+        return environmental_conditions
+    
     def capacity_penalty(self) -> None:
         """
         Apply a penalty to tree mass if the plot is over tree capacity.

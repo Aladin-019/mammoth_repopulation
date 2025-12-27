@@ -7,31 +7,32 @@ from app.interfaces.flora_plot_info import FloraPlotInformation
 class Shrub(Flora):
     """
     Represents a shrub species.
-    Shrubs are destroyed by trampling of large fauna.
+    Shrubs are destroyed by trampling of mammoths only - smaller prey like deer cannot trample shrubs.
     They are affected by canopy cover, which reduces UV exposure.
     """
     
-    # amount of shrub area trampled by large herbivores (probability they will trample if encountered)
+    # amount of shrub area trampled by mammoths (probability they will trample if encountered)
+    # Only mammoths are large enough to trample shrubs - smaller prey cannot
     STOMPING_RATE = 0.85
 
     def __init__(self, name: str, description: str, avg_mass: float, population: int,
                  ideal_growth_rate: float, ideal_temp_range: Tuple[float, float],
                  ideal_uv_range: Tuple[float, float], ideal_hydration_range: Tuple[float, float],
                  ideal_soil_temp_range: Tuple[float, float], consumers: List[Fauna], 
-                 root_depth: int, plot: FloraPlotInformation, shrub_area: float = 1.0):
+                 root_depth: int, plot: FloraPlotInformation, shrub_area_m2: float = 1.0):
                 
         super().__init__(name, description, avg_mass, population, ideal_growth_rate, 
                         ideal_temp_range, ideal_uv_range, ideal_hydration_range,
                         ideal_soil_temp_range, consumers, root_depth, plot)
         
-        self._validate_positive_number(shrub_area, "shrub_area")
-        self._validate_instance(shrub_area, float, "shrub_area")
-        self.shrub_area = shrub_area
+        self._validate_positive_number(shrub_area_m2, "shrub_area_m2")
+        self._validate_instance(shrub_area_m2, float, "shrub_area_m2")
+        self.shrub_area = shrub_area_m2 / 1_000_000.0   # to km^2
 
     def update_flora_mass(self, day: int) -> None:
         """
         Update the mass of the shrub.
-        Shrubs can be stomped out by large herbivores and has sunlight reduced
+        Shrubs can be stomped out by mammoths only and has sunlight reduced
         by tree canopy cover.
         """
         self._validate_instance(day, int, "day")
@@ -55,14 +56,31 @@ class Shrub(Flora):
 
     def _apply_trampling_reduction(self) -> None:
         """
-        Apply reduction in shrub mass due to trampling by prey.
-        The trampling effect is proportional to how much of the plot is trampled.
+        Apply reduction in shrub mass due to trampling by mammoths only.
+        Only mammoths are large enough to trample shrubs - smaller prey like deer cannot.
+        The trampling effect is proportional to how much of the plot is trampled by mammoths.
         """
         self._validate_not_none(self.plot, "plot")
         
-        trampled_ratio = self.plot.get_area_trampled_ratio()
+        # Check if there are any mammoths on the plot - only mammoths can trample shrubs
+        has_mammoths = any(fauna.get_name().lower() == 'mammoth' and fauna.get_total_mass() > 0 
+                          for fauna in self.plot.get_all_fauna())
         
-        trampling_damage = self.STOMPING_RATE * trampled_ratio
+        if not has_mammoths:
+            return  # No mammoths, no shrub trampling
+        
+        # Calculate only mammoth trampling area and ratio
+        mammoth_trampled_area = 0.0
+        for fauna in self.plot.get_all_fauna():
+            if fauna.get_name().lower() == 'mammoth' and fauna.get_total_mass() > 0:
+                individual_trampled = fauna.get_avg_feet_area() * fauna.get_avg_steps_taken()
+                mammoth_trampled_area += individual_trampled * fauna.get_population()
+        
+        # Cap at plot area and calculate ratio
+        mammoth_trampled_area = min(mammoth_trampled_area, self.plot.get_plot_area())
+        mammoth_trampled_ratio = mammoth_trampled_area / self.plot.get_plot_area()
+        
+        trampling_damage = self.STOMPING_RATE * mammoth_trampled_ratio
         
         if trampling_damage > 0:
             # Reduce mass by trampling damage

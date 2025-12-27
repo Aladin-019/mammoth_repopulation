@@ -1,8 +1,5 @@
 import unittest
-import pandas as pd
-from io import StringIO
 import os
-import logging
 from app.data.climate_loaders.TemperatureLoader import TemperatureLoader
 
 class TestTemperatureLoader(unittest.TestCase):
