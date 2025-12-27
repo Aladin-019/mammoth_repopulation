@@ -66,13 +66,14 @@ class Climate:
     """
     _class_loaders = {}
     
-    def __init__(self, biome: str, plot: PlotInformation):
+    def __init__(self, biome: str, plot: Optional[PlotInformation] = None):
         """
         Initialize a Climate instance.
         
         Args:
             biome (str): The biome type of the plot.
-            plot (PlotInformation): The plot information object containing environmental data.
+            plot (PlotInformation, optional): The plot information object containing environmental data.
+                                            Can be None initially and set later with set_plot().
         Raises:
             ValueError: If any input parameters are invalid.
             TypeError: If any input parameters have incorrect types.
@@ -89,7 +90,7 @@ class Climate:
         if biome not in BIOME_FILE_MAP:
             raise ValueError(f"Unknown biome: {biome}. Available biomes: {list(BIOME_FILE_MAP.keys())}")
         
-        if not isinstance(plot, PlotInformation):
+        if plot is not None and not isinstance(plot, PlotInformation):
             raise TypeError(f"Plot must be an instance of PlotInformation, got: {type(plot)}")
         
         try:
@@ -108,6 +109,12 @@ class Climate:
             }
         except Exception as e:
             raise RuntimeError(f"Failed to initialize Climate: {e}")
+
+    def set_plot(self, plot: PlotInformation) -> None:
+        """Set the plot for this climate instance."""
+        if not isinstance(plot, PlotInformation):
+            raise TypeError(f"Plot must be an instance of PlotInformation, got: {type(plot)}")
+        self.plot = plot
 
     def set_biome(self, new_biome: str) -> None:
         """Set the biome for this climate instance."""

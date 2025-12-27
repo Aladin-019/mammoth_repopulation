@@ -37,6 +37,8 @@ class PlotGrid:
         self.max_row = float('-inf')
         self.min_col = float('inf')
         self.max_col = float('-inf')
+        self._initial_blended_grid: Optional[np.ndarray] = None  # Store the initial blended grid
+        self._initial_biomes: Dict[Tuple[int, int], str] = {}  # Store initial biome for each plot
     
     def add_plot(self, row: int, col: int, plot: Plot) -> None:
         """
@@ -210,13 +212,12 @@ class PlotGrid:
         for plot in self.plots.values():
             plot.remove_extinct_species()
 
-        # Handle migration
+        # Handle migration (only call once, migrate_species already loops over all plots)
         if day % 5 == 0:  # every 5th day
-            for plot in self.plots.values():
-                self.migrate_species()
+            self.migrate_species()
 
     def visualize_biomes(self, biome_colors: Dict[str, str], figsize: Tuple[int, int] = (12, 8), 
-                        save_path: Optional[str] = None) -> None:
+                        save_path: Optional[str] = None, ax: Optional = None, day: Optional[int] = None):
         """
         Visualize the grid with different colors for different biomes.
         
@@ -224,54 +225,106 @@ class PlotGrid:
             biome_colors (Dict[str, str]): Dictionary mapping biome names to colors
             figsize (Tuple[int, int]): Figure size for matplotlib
             save_path (Optional[str]): Path to save the image
+            ax: Optional matplotlib axis to update (for real-time visualization)
+            day: Optional day number to display in title
+        
+        Returns:
+            The matplotlib axis for reuse in subsequent calls
         """
         if not MATPLOTLIB_AVAILABLE:
             print("Matplotlib is not available. Cannot create visualization.")
-            return
+            return None
             
         if not self.plots:
             print("No plots to visualize")
-            return
+            return None
         
         # 2D array for the visualization
         rows = self.max_row - self.min_row + 1
         cols = self.max_col - self.min_col + 1
-        grid = np.full((rows, cols), -1, dtype=int)  # -1 for empty cells
+        grid = np.full((rows, cols), -1, dtype=int)  # -1 for empty cells (water)
         
-        biome_to_int = {biome: i for i, biome in enumerate(biome_colors.keys())}
+        biome_to_int = {biome: i + 1 for i, biome in enumerate(biome_colors.keys())}  # +1 because 0 is water
         
-        # Fill grid with biome data from plots
-        for (row, col), plot in self.plots.items():
-            grid_row = row - self.min_row
-            grid_col = col - self.min_col
-            biome = plot.get_climate().get_biome()
-            grid[grid_row, grid_col] = biome_to_int.get(biome, len(biome_to_int) - 1)
-        # Blend biome borders for realism
-        grid = self._blend_biome_borders(grid, rows, cols, blend_prob=0.2)
+        # Create new figure/axis if not provided (for initial display)
+        create_new = (ax is None)
+        
+        # On first visualization (whenever _initial_blended_grid is None), create and store the blended grid
+        if self._initial_blended_grid is None:
+            # Fill grid with biome data from plots
+            for (row, col), plot in self.plots.items():
+                grid_row = row - self.min_row
+                grid_col = col - self.min_col
+                biome = plot.get_climate().get_biome()
+                grid[grid_row, grid_col] = biome_to_int.get(biome, len(biome_colors))
+                # Store initial biome for comparison later
+                self._initial_biomes[(row, col)] = biome
+            
+            # Blend biome borders for initial realistic visualization
+            grid = self._blend_biome_borders(grid, rows, cols, blend_prob=0.2)
+            # Store the blended grid for reuse
+            self._initial_blended_grid = grid.copy()
+        elif self._initial_blended_grid is not None:
+            # Use stored blended grid and update only cells where biome has changed
+            grid = self._initial_blended_grid.copy()
+            for (row, col), plot in self.plots.items():
+                grid_row = row - self.min_row
+                grid_col = col - self.min_col
+                current_biome = plot.get_climate().get_biome()
+                # Check if biome has changed from initial
+                initial_biome = self._initial_biomes.get((row, col))
+                if initial_biome is not None and current_biome != initial_biome:
+                    # Biome changed - update this cell to new biome color (no blending)
+                    grid[grid_row, grid_col] = biome_to_int.get(current_biome, len(biome_colors))
+                    # Update stored initial biome for this plot
+                    self._initial_biomes[(row, col)] = current_biome
+        else:
+            # Fallback: fill grid with current biome data (shouldn't happen normally)
+            for (row, col), plot in self.plots.items():
+                grid_row = row - self.min_row
+                grid_col = col - self.min_col
+                biome = plot.get_climate().get_biome()
+                grid[grid_row, grid_col] = biome_to_int.get(biome, len(biome_colors))
+        if create_new:
+            fig, ax = plt.subplots(figsize=figsize)
+        else:
+            ax.clear()
+            fig = ax.figure
 
-        fig, ax = plt.subplots(figsize=figsize)
-
-        # Custom colormap
-        colors = list(biome_colors.values())
+        # Custom colormap - add dark blue for water/empty cells
+        water_color = '#001F5C'  # Dark blue ocean color
+        colors = [water_color] + list(biome_colors.values())  # Water is index 0
         cmap = mcolors.ListedColormap(colors)
+        
+        # Replace -1 (empty cells) with 0 (water color index)
+        # Biome indices are already 1-based (from biome_to_int mapping above)
+        grid[grid == -1] = 0
+        
+        # Plot the grid with water shown as dark blue
+        im = ax.imshow(grid, cmap=cmap, aspect='equal', origin='lower', vmin=0, vmax=len(colors)-1)
 
-        # Plot the grid
-        im = ax.imshow(grid, cmap=cmap, aspect='equal', origin='lower')
-
-        # Colorbar and biome labels
-        cbar = plt.colorbar(im, ax=ax, ticks=range(len(biome_colors)))
-        cbar.set_ticklabels(list(biome_colors.keys()))
-        cbar.set_label('Biome Type')
-        ax.set_title('Siberia Biome Distribution')
+        # Colorbar and biome labels (only create colorbar on first call)
+        if create_new:
+            # Adjust ticks and labels for water + biomes
+            cbar_ticks = range(len(colors))
+            cbar_labels = ['Water'] + list(biome_colors.keys())
+            cbar = plt.colorbar(im, ax=ax, ticks=cbar_ticks)
+            cbar.set_ticklabels(cbar_labels)
+            cbar.set_label('Biome Type')
+        
+        # Update title with day if provided
+        title = 'Eastern Siberia Biome Distribution'
+        if day is not None:
+            title = f'Eastern Siberia Biome Distribution - Day {day}'
+        ax.set_title(title)
         ax.set_xlabel('Column')
         ax.set_ylabel('Row')
 
         # Grid lines
         ax.grid(True, which='both', color='black', linewidth=0.5, alpha=0.3)
-        ax.set_xticks(range(cols))
-        ax.set_yticks(range(rows))
-        ax.set_xticklabels(range(self.min_col, self.max_col + 1))
-        ax.set_yticklabels(range(self.min_row, self.max_row + 1))
+        # Remove axis tick labels (no numbers on axes)
+        ax.set_xticks([])
+        ax.set_yticks([])
 
         plt.tight_layout()
 
@@ -279,15 +332,21 @@ class PlotGrid:
             plt.savefig(save_path, dpi=300, bbox_inches='tight')
             print(f"Biome visualization saved to {save_path}")
 
-        plt.show()
+        if create_new:
+            plt.show()
+            return ax  # Return axis for reuse in subsequent calls
+        else:
+            plt.draw()  # Update existing plot
+            return ax  # Return the same axis
 
     def _blend_biome_borders(self, grid, rows, cols, blend_prob=0.2):
         """
         Helps blend biome borders in visualize_biomes for more realistic transitions.
         For each border plot (adjacent to a different biome), with probability blend_prob,
         assign the plot the biome of a neighbor.
+        Water cells (value -1) are never changed and are never used as blending targets.
         Args:
-            grid: 2D numpy array of biome indices
+            grid: 2D numpy array of biome indices (-1 for water, >= 1 for biomes)
             rows: number of rows in grid
             cols: number of columns in grid
             blend_prob: probability to blend a border plot
@@ -295,23 +354,29 @@ class PlotGrid:
             grid: blended 2D numpy array
         """
         import random
+        WATER_VALUE = -1
         blended_grid = grid.copy()
         for r in range(rows):
             for c in range(cols):
                 biome_idx = grid[r, c]
-                # Check neighbors for different biome
+                # Skip water cells - they should never change
+                if biome_idx == WATER_VALUE:
+                    continue
+                
+                # Check neighbors for different biome (excluding water)
                 neighbor_biomes = set()
                 for dr in [-1, 0, 1]:
                     for dc in [-1, 0, 1]:
                         nr, nc = r + dr, c + dc
                         if 0 <= nr < rows and 0 <= nc < cols and (dr != 0 or dc != 0):
                             neighbor_biome = grid[nr, nc]
-                            if neighbor_biome != biome_idx:
+                            # Only consider non-water neighbors that differ
+                            if neighbor_biome != biome_idx and neighbor_biome != WATER_VALUE:
                                 neighbor_biomes.add(neighbor_biome)
                 if neighbor_biomes:
                     # Border plot detected
                     if random.random() < blend_prob:
-                        # Assign biome of a random neighbor
+                        # Assign biome of a random neighbor (never water)
                         blended_grid[r, c] = random.choice(list(neighbor_biomes))
         return blended_grid
     

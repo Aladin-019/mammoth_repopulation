@@ -1,0 +1,7 @@
+pandas
+numpy
+geopandas
+shapely
+matplotlib
+# pygrib - only needed for processing GRIB files into CSV (not needed to run simulation)
+

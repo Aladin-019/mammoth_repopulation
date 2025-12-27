@@ -141,7 +141,8 @@ class GridInitializer:
         climate.set_plot(plot)
         
         self._add_default_flora(plot, biome)
-        self._add_default_fauna(plot, biome)
+        # Fauna creation removed for testing - can be re-added later
+        # self._add_default_fauna(plot, biome)
         
         return plot
 
