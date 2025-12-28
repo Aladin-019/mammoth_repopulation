@@ -1,5 +1,6 @@
 from .Flora import Flora
-from ..Fauna import Fauna
+# FAUNA TEMPORARILY DISABLED - Focus on flora only
+# from ..Fauna import Fauna
 from typing import List, Tuple
 from app.interfaces.flora_plot_info import FloraPlotInformation
 
@@ -17,7 +18,7 @@ class Shrub(Flora):
     def __init__(self, name: str, description: str, avg_mass: float, population: int,
                  ideal_growth_rate: float, ideal_temp_range: Tuple[float, float],
                  ideal_uv_range: Tuple[float, float], ideal_hydration_range: Tuple[float, float],
-                 ideal_soil_temp_range: Tuple[float, float], consumers: List[Fauna], 
+                 ideal_soil_temp_range: Tuple[float, float], consumers: List,  # consumers: List[Fauna] when fauna enabled 
                  root_depth: int, plot: FloraPlotInformation, shrub_area: float = 1.0):
                 
         super().__init__(name, description, avg_mass, population, ideal_growth_rate, 

@@ -1,6 +1,8 @@
 import logging
 from typing import List, Optional, Tuple
-from app.models import Fauna, Flora, Climate
+# FAUNA TEMPORARILY DISABLED - Focus on flora only
+# from app.models import Fauna
+from app.models import Flora, Climate
 from app.interfaces.flora_plot_info import FloraPlotInformation
 
 logger = logging.getLogger(__name__)
@@ -132,28 +134,34 @@ class Plot(FloraPlotInformation):
         except Exception as e:
             raise RuntimeError(f"Failed to add flora {flora.name} to plot {self.Id}: {e}")
     
+    # FAUNA TEMPORARILY DISABLED - Focus on flora only
+    # Keep as stub to satisfy interfaces, but don't actually add fauna
     def add_fauna(self, fauna):
-        """Add fauna to the plot, preventing duplicates by name."""
-        self._validate_not_none(fauna, "fauna")
-        self._validate_instance(fauna, 'Fauna', "fauna")
-        if any(f.name == fauna.name for f in self.fauna):
-            raise ValueError(f"Fauna with name '{fauna.name}' already exists in plot {self.Id}.")
-        try:
-            self.fauna.append(fauna)
-        except Exception as e:
-            raise RuntimeError(f"Failed to add fauna {fauna.name} to plot {self.Id}: {e}")
+        """Add fauna to the plot, preventing duplicates by name. DISABLED - fauna not currently used."""
+        # FAUNA TEMPORARILY DISABLED
+        # self._validate_not_none(fauna, "fauna")
+        # self._validate_instance(fauna, 'Fauna', "fauna")
+        # if any(f.name == fauna.name for f in self.fauna):
+        #     raise ValueError(f"Fauna with name '{fauna.name}' already exists in plot {self.Id}.")
+        # try:
+        #     self.fauna.append(fauna)
+        # except Exception as e:
+        #     raise RuntimeError(f"Failed to add fauna {fauna.name} to plot {self.Id}: {e}")
+        pass  # Stub - fauna not currently used
     
-    def get_a_fauna(self, name: str) -> Optional[Fauna]:
-        """Get a specific fauna by name."""
-        self._validate_instance(name, str, "name")
-        
-        try:
-            for fauna in self.fauna:
-                if fauna.name == name:
-                    return fauna
-            return None
-        except Exception as e:
-            raise RuntimeError(f"Failed to get fauna {name} from plot {self.Id}: {e}")
+    def get_a_fauna(self, name: str):  # -> Optional[Fauna]:  # Type hint disabled since Fauna import is commented
+        """Get a specific fauna by name. DISABLED - returns None since fauna not currently used."""
+        # FAUNA TEMPORARILY DISABLED
+        # self._validate_instance(name, str, "name")
+        # 
+        # try:
+        #     for fauna in self.fauna:
+        #         if fauna.name == name:
+        #             return fauna
+        #     return None
+        # except Exception as e:
+        #     raise RuntimeError(f"Failed to get fauna {name} from plot {self.Id}: {e}")
+        return None  # Stub - fauna not currently used
     
     def get_a_flora(self, name: str) -> Optional[Flora]:
         """Get a specific flora by name."""
@@ -168,8 +176,10 @@ class Plot(FloraPlotInformation):
             raise RuntimeError(f"Failed to get flora {name} from plot {self.Id}: {e}")
         
     def get_all_fauna(self) -> list:
-        """Get all fauna on the plot."""
-        return self.fauna
+        """Get all fauna on the plot. DISABLED - returns empty list since fauna not currently used."""
+        # FAUNA TEMPORARILY DISABLED
+        # return self.fauna
+        return []  # Stub - return empty list since fauna not currently used
     
     def get_all_flora(self) -> list:
         """Get all flora on the plot."""
@@ -179,7 +189,8 @@ class Plot(FloraPlotInformation):
         """Remove any flora or fauna with mass <= 0 from the plot."""
         self.flora = [flora for flora in self.flora if flora.get_total_mass() > 0]
         
-        self.fauna = [fauna for fauna in self.fauna if fauna.get_total_mass() > 0]
+        # FAUNA TEMPORARILY DISABLED
+        # self.fauna = [fauna for fauna in self.fauna if fauna.get_total_mass() > 0]
 
     def get_climate(self) -> 'Climate':
         """Get the climate object associated with this plot."""
@@ -313,24 +324,28 @@ class Plot(FloraPlotInformation):
         """
         Calculate the total area trampled by all fauna on the plot in km^2
         This is a private method to avoid duplicate calculations.
+        DISABLED - returns 0.0 since fauna not currently used.
         
         Returns:
-            float: Total trampled area in km²
+            float: Total trampled area in km² (currently 0.0)
         Raises:
             RuntimeError: If calculation fails.
         """
-        try:
-            total_trampled_area = 0.0
-            
-            for fauna in self.fauna:
-                if fauna.get_total_mass() > 0:  # Only count living fauna
-                    individual_trampled = fauna.get_avg_foot_area() * fauna.get_avg_steps_taken()
-                    total_trampled_area += individual_trampled * fauna.get_population()
-            
-            # Cap the trampled area at the plot area
-            return min(total_trampled_area, self.plot_area)
-        except Exception as e:
-            raise RuntimeError(f"Failed to calculate total trampled area: {e}")
+        # FAUNA TEMPORARILY DISABLED - trampling requires fauna
+        return 0.0
+        
+        # try:
+        #     total_trampled_area = 0.0
+        #     
+        #     for fauna in self.fauna:
+        #         if fauna.get_total_mass() > 0:  # Only count living fauna
+        #             individual_trampled = fauna.get_avg_foot_area() * fauna.get_avg_steps_taken()
+        #             total_trampled_area += individual_trampled * fauna.get_population()
+        #     
+        #     # Cap the trampled area at the plot area
+        #     return min(total_trampled_area, self.plot_area)
+        # except Exception as e:
+        #     raise RuntimeError(f"Failed to calculate total trampled area: {e}")
     
     def get_total_trampled_area(self) -> float:
         """
@@ -502,26 +517,24 @@ class Plot(FloraPlotInformation):
         _, _, _, moss_mass = self.get_flora_masses()
         return moss_mass > (self.plot_area * MAX_MOSS_DENSITY)
     
+    # FAUNA TEMPORARILY DISABLED
     def over_prey_capacity(self) -> bool:
         """
         Check if prey mass exceeds absolute maximum density per km^2.
-        Based on maximum herbivore density that could be supported.
-        precondition: calculate_fauna_masses() must be called first (for current timestep)
-
-        Returns:
-            bool: True if prey mass exceeds maximum density, False otherwise.
+        DISABLED - returns False since fauna not currently used.
         """
-        prey_mass = sum(fauna.get_total_mass() for fauna in self.fauna if fauna.__class__.__name__ == "Prey")
-        return prey_mass > (self.plot_area * MAX_PREY_DENSITY)
+        # FAUNA TEMPORARILY DISABLED
+        # prey_mass = sum(fauna.get_total_mass() for fauna in self.fauna if fauna.__class__.__name__ == "Prey")
+        # return prey_mass > (self.plot_area * MAX_PREY_DENSITY)
+        return False  # Stub - fauna not currently used
     
+    # FAUNA TEMPORARILY DISABLED
     def over_predator_capacity(self) -> bool:
         """
         Check if predator mass exceeds absolute maximum density per km^2.
-        Based on maximum predator density that could be supported.
-        precondition: calculate_fauna_masses() must be called first (for current timestep)
-
-        Returns:
-            bool: True if predator mass exceeds maximum density, False otherwise.
+        DISABLED - returns False since fauna not currently used.
         """
-        predator_mass = sum(fauna.get_total_mass() for fauna in self.fauna if fauna.__class__.__name__ == "Predator")
-        return predator_mass > (self.plot_area * MAX_PREDATOR_DENSITY)
+        # FAUNA TEMPORARILY DISABLED
+        # predator_mass = sum(fauna.get_total_mass() for fauna in self.fauna if fauna.__class__.__name__ == "Predator")
+        # return predator_mass > (self.plot_area * MAX_PREDATOR_DENSITY)
+        return False  # Stub - fauna not currently used

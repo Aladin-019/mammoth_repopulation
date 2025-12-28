@@ -149,22 +149,25 @@ class PlotGrid:
                         # If cannot construct, skip migration and do not subtract mass
                         pass
 
+    # FAUNA TEMPORARILY DISABLED - migration requires fauna
     def migrate_species(self) -> None:
         """
         Simulate species migration between neighboring plots.
-        This allows for dynamic ecosystem changes and species spread.
+        DISABLED - fauna not currently used.
         """
-        for (row, col), plot in self.plots.items():
-            neighbors = self.get_neighbors(row, col)
-            for fauna in plot.get_all_fauna()[:]:
-                if fauna.get_total_mass() > 0 and neighbors:
-                    target_plot = np.random.choice(neighbors)
-                    if hasattr(fauna, 'update_prey_mass'):
-                        if np.random.random() < P_PREY_MIGRATION:
-                            self._migrate_fauna(fauna, target_plot, 'over_prey_capacity', PREY_MIGRATION_RATIO)
-                    elif hasattr(fauna, 'update_predator_mass'):
-                        if np.random.random() < P_PREDATOR_MIGRATION:
-                            self._migrate_fauna(fauna, target_plot, 'over_predator_capacity', PREDATOR_MIGRATION_RATIO)
+        # FAUNA TEMPORARILY DISABLED
+        # for (row, col), plot in self.plots.items():
+        #     neighbors = self.get_neighbors(row, col)
+        #     for fauna in plot.get_all_fauna()[:]:
+        #         if fauna.get_total_mass() > 0 and neighbors:
+        #             target_plot = np.random.choice(neighbors)
+        #             if hasattr(fauna, 'update_prey_mass'):
+        #                 if np.random.random() < P_PREY_MIGRATION:
+        #                     self._migrate_fauna(fauna, target_plot, 'over_prey_capacity', PREY_MIGRATION_RATIO)
+        #             elif hasattr(fauna, 'update_predator_mass'):
+        #                 if np.random.random() < P_PREDATOR_MIGRATION:
+        #                     self._migrate_fauna(fauna, target_plot, 'over_predator_capacity', PREDATOR_MIGRATION_RATIO)
+        pass  # Stub - fauna not currently used
 
     def update_all_plots(self, day: int) -> None:
         """
@@ -198,23 +201,25 @@ class PlotGrid:
                 for flora in plot.get_all_flora():
                     flora.update_flora_mass(day)
 
-            if day % 2 == 0:
-                for fauna in plot.get_all_fauna():
-                    if hasattr(fauna, 'update_prey_mass'):
-                        fauna.update_prey_mass(day)
-
-            if day % 2 == 1 and day > 1:
-                for fauna in plot.get_all_fauna():
-                    if hasattr(fauna, 'update_predator_mass'):
-                        fauna.update_predator_mass(day)
+            # FAUNA TEMPORARILY DISABLED - Focus on flora only
+            # if day % 2 == 0:
+            #     for fauna in plot.get_all_fauna():
+            #         if hasattr(fauna, 'update_prey_mass'):
+            #             fauna.update_prey_mass(day)
+            # 
+            # if day % 2 == 1 and day > 1:
+            #     for fauna in plot.get_all_fauna():
+            #         if hasattr(fauna, 'update_predator_mass'):
+            #             fauna.update_predator_mass(day)
         
         # Clean up all extinct species
         for plot in self.plots.values():
             plot.remove_extinct_species()
 
+        # FAUNA TEMPORARILY DISABLED - migration requires fauna
         # Handle migration (only call once, migrate_species already loops over all plots)
-        if day % 5 == 0:  # every 5th day
-            self.migrate_species()
+        # if day % 5 == 0:  # every 5th day
+        #     self.migrate_species()
 
     def visualize_biomes(self, biome_colors: Dict[str, str], figsize: Tuple[int, int] = (12, 8), 
                         save_path: Optional[str] = None, ax: Optional = None, day: Optional[int] = None):

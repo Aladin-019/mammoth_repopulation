@@ -420,50 +420,50 @@ class Climate:
 
         return soil_temp_delta
     
+    # MAMMOTH STEPPE TEMPORARILY DISABLED - Requires megafauna (mammoths) to maintain steppe conditions
+    # Re-enable when fauna is reintroduced
     def is_steppe(self) -> bool:
         """
         Check if the plot is in steppe conditions based on flora mass composition and permafrost.
+        DISABLED - Mammoth steppe requires megafauna to maintain, not currently implemented.
         
-        Mammoth steppe conditions are characterized by:
-        - High grass dominance (≥25%) for grazing
-        - Minimal tree coverage (≤45%) for open landscape (number higher due to high mass of trees)
-        - Moderate shrub coverage (≤20%) for diversity
-        - Significant moss/lichen coverage (≤10%) for ground cover
-        - Valid permafrost conditions
         Returns:
-            bool: True if steppe conditions are met, False otherwise.
+            bool: False (always, since steppe not currently supported without fauna)
         """
-        try:
-            # Check permafrost conditions (reduced requirement for testing)
-            if not self.is_permafrost():
-                logger.debug(f"Steppe conditions require valid permafrost. Current consecutive frozen days: {self.consecutive_frozen_soil_days}")
-                return False
-            
-            flora_mass_composition = self.plot.get_flora_mass_composition()
-            
-            if not flora_mass_composition or len(flora_mass_composition) != 4:
-                logger.warning(f"Invalid flora mass composition: {flora_mass_composition}")
-                return False
-            
-            grass_ratio, shrub_ratio, tree_ratio, moss_ratio = flora_mass_composition
-            
-            # Validate flora ratios
-            total_ratio = grass_ratio + shrub_ratio + tree_ratio + moss_ratio
-            if abs(total_ratio - 1.0) > 0.01:  # allow small floating point errors
-                logger.warning(f"Flora mass ratios don't sum to 1.0, got: {total_ratio}")
-                return False
-            
-            if (grass_ratio >= 0.25 and  # Grass should be dominant
-                tree_ratio <= 0.45 and   # Trees should be minimal for open steppe (mass ratio higher due to high mass of trees)
-                shrub_ratio <= 0.2 and   # Shrubs can be moderate
-                moss_ratio <= 0.1):      # Moss/lichen can be significant but not overwhelming
-                logger.info(f"Steppe conditions met: grass={grass_ratio:.2f}, tree={tree_ratio:.2f}, shrub={shrub_ratio:.2f}, moss={moss_ratio:.2f}")
-                return True
-            return False
-            
-        except Exception as e:
-            logger.error(f"Error determining steppe conditions: {e}")
-            return False
+        # MAMMOTH STEPPE TEMPORARILY DISABLED
+        # Mammoth steppe is a biome maintained by megafauna. Without fauna, this check is premature.
+        # try:
+        #     # Check permafrost conditions (reduced requirement for testing)
+        #     if not self.is_permafrost():
+        #         logger.debug(f"Steppe conditions require valid permafrost. Current consecutive frozen days: {self.consecutive_frozen_soil_days}")
+        #         return False
+        #     
+        #     flora_mass_composition = self.plot.get_flora_mass_composition()
+        #     
+        #     if not flora_mass_composition or len(flora_mass_composition) != 4:
+        #         logger.warning(f"Invalid flora mass composition: {flora_mass_composition}")
+        #         return False
+        #     
+        #     grass_ratio, shrub_ratio, tree_ratio, moss_ratio = flora_mass_composition
+        #     
+        #     # Validate flora ratios
+        #     total_ratio = grass_ratio + shrub_ratio + tree_ratio + moss_ratio
+        #     if abs(total_ratio - 1.0) > 0.01:  # allow small floating point errors
+        #         logger.warning(f"Flora mass ratios don't sum to 1.0, got: {total_ratio}")
+        #         return False
+        #     
+        #     if (grass_ratio >= 0.25 and  # Grass should be dominant
+        #         tree_ratio <= 0.45 and   # Trees should be minimal for open steppe (mass ratio higher due to high mass of trees)
+        #         shrub_ratio <= 0.2 and   # Shrubs can be moderate
+        #         moss_ratio <= 0.1):      # Moss/lichen can be significant but not overwhelming
+        #         logger.info(f"Steppe conditions met: grass={grass_ratio:.2f}, tree={tree_ratio:.2f}, shrub={shrub_ratio:.2f}, moss={moss_ratio:.2f}")
+        #         return True
+        #     return False
+        #     
+        # except Exception as e:
+        #     logger.error(f"Error determining steppe conditions: {e}")
+        #     return False
+        return False  # Stub - steppe requires fauna to maintain
 
     def is_permafrost(self) -> bool:
         """

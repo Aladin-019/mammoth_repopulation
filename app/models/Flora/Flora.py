@@ -1,6 +1,11 @@
 import logging
-from ..Fauna import Fauna
-from typing import List, Tuple, Union
+# FAUNA TEMPORARILY DISABLED - Focus on flora only
+# from ..Fauna import Fauna
+from typing import List, Tuple, Union, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    # Only import for type checking, not at runtime
+    from ..Fauna import Fauna
 from app.interfaces.flora_plot_info import FloraPlotInformation
 
 logger = logging.getLogger(__name__)
@@ -142,7 +147,7 @@ class Flora():
     def __init__(self, name: str, description: str, avg_mass: float, population: int,
                  ideal_growth_rate: float, ideal_temp_range: Tuple[float, float],
                  ideal_uv_range: Tuple[float, float], ideal_hydration_range: Tuple[float, float],
-                 ideal_soil_temp_range: Tuple[float, float], consumers: List[Fauna], root_depth: int,
+                 ideal_soil_temp_range: Tuple[float, float], consumers: List, root_depth: int,  # consumers: List[Fauna] when fauna enabled
                  plot: FloraPlotInformation):
         """
         Represents a flora species.
@@ -195,7 +200,11 @@ class Flora():
         self._validate_range_tuple(ideal_soil_temp_range, "ideal_soil_temp_range")
         
         self._validate_instance(consumers, list, "consumers")
-        self._validate_list(consumers, "consumers", Fauna)
+        # FAUNA TEMPORARILY DISABLED - allow empty list for consumers
+        # self._validate_list(consumers, "consumers", Fauna)
+        if consumers and len(consumers) > 0:
+            # If consumers provided, warn that fauna is disabled
+            logger.warning("Fauna is temporarily disabled. Consumers list should be empty.")
         
         self._validate_instance(root_depth, int, "root_depth")
         self._validate_integer_range(root_depth, "root_depth", 1, 4)
@@ -445,18 +454,20 @@ class Flora():
     def total_consumption_rate(self) -> float:
         """
         Calculate the total consumption rate of all consumers that depend on this flora in kg/day.
-        Only consumers present on the plot are considered.
+        DISABLED - returns 0.0 since fauna not currently used.
         """
-        total_rate = 0.0
-        plot_fauna = self.plot.get_all_fauna()
-
-        for consumer in self.consumers:
-            for fauna in plot_fauna:
-                if fauna.get_name() == consumer.get_name():
-                    total_rate += fauna.population * fauna.get_feeding_rate()
-                    break
-
-        return total_rate
+        # FAUNA TEMPORARILY DISABLED
+        # total_rate = 0.0
+        # plot_fauna = self.plot.get_all_fauna()
+        # 
+        # for consumer in self.consumers:
+        #     for fauna in plot_fauna:
+        #         if fauna.get_name() == consumer.get_name():
+        #             total_rate += fauna.population * fauna.get_feeding_rate()
+        #             break
+        # 
+        # return total_rate
+        return 0.0  # Stub - fauna not currently used, so no consumption
     
     def capacity_penalty(self) -> None:
         """
