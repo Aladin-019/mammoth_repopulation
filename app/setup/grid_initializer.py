@@ -6,10 +6,11 @@ from app.models.Flora.Shrub import Shrub
 from app.models.Flora.Tree import Tree
 from app.models.Flora.Moss import Moss
 from app.models.Flora.Flora import Flora
-# FAUNA TEMPORARILY DISABLED - Focus on flora only
-# from app.models.Fauna.Prey import Prey
+# Re-enabling fauna - mammoths only for now
+from app.models.Fauna.Prey import Prey
+# Predators not yet enabled
 # from app.models.Fauna.Predator import Predator
-from typing import List
+from typing import List, Optional
 from app.globals import *
 
 class GridInitializer:
@@ -21,8 +22,19 @@ class GridInitializer:
         # Stub for testing - fauna not currently used
         pass
     def _establish_food_chain_relationships(self, plot):
-        # Stub for testing
-        pass
+        """Set up which flora each prey consumes. Mammoths eat grass, shrub, and moss."""
+        for fauna in plot.get_all_fauna():
+            if fauna.get_name() == 'Mammoth':
+                # Mammoths are herbivores - they eat grass, shrub, and moss
+                consumable_flora = []
+                for flora in plot.get_all_flora():
+                    if flora.get_name() in ['Grass', 'Shrub', 'Moss']:
+                        consumable_flora.append(flora)
+                fauna.consumable_flora = consumable_flora
+                # Also update flora to know about mammoths as consumers
+                for flora in consumable_flora:
+                    if fauna not in flora.consumers:
+                        flora.consumers.append(fauna)
     def _update_predator_prey_lists(self, plot):
         # Stub for testing
         pass
@@ -62,27 +74,28 @@ class GridInitializer:
         print(f"Grid Initializer: Resolution {lat_step}°×{lon_step}°.\nPlot area = {self.plot_area_km2:.1f} km^2")
         print(f"Standardization: plots are {self.standardization_factor:.1f}x larger than 1 km^2 plots")
 
-        # Default flora and fauna for each biome (fauna temporarily disabled)
+        # Default flora and fauna for each biome
+        # Note: Mammoths are NOT added by default - they must be added manually to specific plots
         self.biome_defaults = {
             'southern taiga': {
                 'flora': ['tree', 'shrub', 'grass', 'moss'],
-                # 'prey': ['deer', 'mammoth'],  # FAUNA TEMPORARILY DISABLED
-                # 'predators': ['wolf']  # FAUNA TEMPORARILY DISABLED
+                'prey': [],  # Mammoths will be added manually to specific plots
+                # 'predators': []  # Predators not yet enabled
             },
             'northern taiga': {
                 'flora': ['tree', 'shrub', 'grass', 'moss'],
-                # 'prey': ['deer', 'mammoth'],  # FAUNA TEMPORARILY DISABLED
-                # 'predators': ['wolf']  # FAUNA TEMPORARILY DISABLED
+                'prey': [],  # Mammoths will be added manually to specific plots
+                # 'predators': []  # Predators not yet enabled
             },
             'southern tundra': {
                 'flora': ['shrub', 'grass', 'moss'],
-                # 'prey': ['deer', 'mammoth'],  # FAUNA TEMPORARILY DISABLED
-                # 'predators': ['wolf']  # FAUNA TEMPORARILY DISABLED
+                'prey': [],  # Mammoths will be added manually to specific plots
+                # 'predators': []  # Predators not yet enabled
             },
             'northern tundra': {
                 'flora': ['shrub', 'grass', 'moss'],
-                # 'prey': ['deer', 'mammoth'],  # FAUNA TEMPORARILY DISABLED
-                # 'predators': ['wolf']  # FAUNA TEMPORARILY DISABLED
+                'prey': [],  # Mammoths will be added manually to specific plots
+                # 'predators': []  # Predators not yet enabled
             }
         }
 
@@ -145,7 +158,7 @@ class GridInitializer:
         climate.set_plot(plot)
         
         self._add_default_flora(plot, biome)
-        # Fauna creation removed for testing - can be re-added later
+        # Don't add mammoths by default - they will be added to specific locations
         # self._add_default_fauna(plot, biome)
         
         return plot
@@ -163,38 +176,22 @@ class GridInitializer:
             if flora:
                 plot.add_flora(flora)
 
-    # FAUNA TEMPORARILY DISABLED
     def _add_default_fauna(self, plot: Plot, biome: str) -> None:
-        """Add default fauna to the plot based on biome. DISABLED - fauna not currently used."""
-        # FAUNA TEMPORARILY DISABLED - entire method commented out
-        # if biome not in self.biome_defaults:
-        #     return
-        #     
-        # prey_names = self.biome_defaults[biome]['prey']
-        # predator_names = self.biome_defaults[biome]['predators']
-        # 
-        # prey_list = []
-        # for prey_name in prey_names:
-        #     if prey_name == 'mammoth':
-        #         # Don't add mammoths yet - we do this after all plots are created
-        #         continue
-        #     else:
-        #         prey = self._create_prey(prey_name, plot)
-        #         if prey:
-        #             prey.plot = plot
-        #             plot.add_fauna(prey)
-        #             prey_list.append(prey)
-        # 
-        # for predator_name in predator_names:
-        #     predator = self._create_predator(predator_name, prey_list, plot)
-        #     if predator:
-        #         predator.plot = plot
-        #         plot.add_fauna(predator)
-        # 
-        # self._establish_food_chain_relationships(plot)
-        # 
-        # self._update_predator_prey_lists(plot)
-        pass  # Stub - fauna not currently used
+        """Add default fauna to the plot based on biome. Currently only mammoths."""
+        if biome not in self.biome_defaults:
+            return
+            
+        prey_names = self.biome_defaults[biome]['prey']
+        
+        # Add mammoths only (no other prey or predators for now)
+        for prey_name in prey_names:
+            if prey_name == 'mammoth':
+                mammoth = self._create_prey(prey_name, plot)
+                if mammoth:
+                    mammoth.plot = plot
+                    plot.add_fauna(mammoth)
+                    # Set up food chain: mammoths eat all flora (grass, shrub, moss)
+                    self._establish_food_chain_relationships(plot)
 
     def _get_standardized_float(self, base_float: float) -> float:
         """Convert from base 1km^2 to standardized value based on current plot size."""
@@ -354,53 +351,61 @@ class GridInitializer:
         
         return None
     
-    # FAUNA TEMPORARILY DISABLED
-    def _create_prey(self, prey_name: str, plot: Plot):  # -> Prey:  # Type hint disabled since Fauna import is commented
-        """Create a prey object with appropriate parameters for the biome. DISABLED - fauna not currently used."""
-        # FAUNA TEMPORARILY DISABLED - entire method commented out
-        # if prey_name == 'deer':
-        #     base_population = 0.01   # deer per km^2
-        #     avg_mass = 150.0         # kg (per animal)
-        #     avg_foot_area = 0.002    # m^2
-        #     avg_steps_taken = 80000  # steps per day
-        #     return Prey(
-        #         name='Deer',
-        #         description='Deer adapted to various biomes',
-        #         population=self._get_standardized_population(self._add_random_variation(base_population, 20.0)),
-        #         avg_mass=self._add_random_variation(avg_mass, 15.0),
-        #         ideal_growth_rate=self._get_standardized_float(self._add_random_variation(0.0005, 15.0)),
-        #         ideal_temp_range=(-40.0, 30.0),  # degree Celsius
-        #         min_food_per_day=self._get_standardized_float(self._add_random_variation(0.05, 5.0)),  # kg per day
-        #         feeding_rate=self._add_random_variation(0.1, 10.0),  # kg per day
-        #         avg_steps_taken=self._get_standardized_float(self._add_random_variation(avg_steps_taken, 15.0)),
-        #         avg_foot_area=self._m2_to_km2(self._add_random_variation(avg_foot_area, 10.0)),
-        #         plot=plot,
-        #         predators=[],        # No predators initially
-        #         consumable_flora=[]  # Will be set when flora is added
-        #     )
-        # elif prey_name == 'mammoth':
-        #     base_population = 0.01  # mammoths per km^2
-        #     avg_mass = 6000.0  # kg per mammoth
-        #     avg_foot_area = 0.12  # m^2
-        #     avg_steps_taken = 80000  # steps per day
-        #     return Prey(
-        #         name='Mammoth',
-        #         description='Woolly mammoth adapted to cold steppe conditions',
-        #         population=self._get_standardized_population(self._add_random_variation(base_population, 30.0)),
-        #         avg_mass=self._add_random_variation(avg_mass, 20.0),
-        #         ideal_growth_rate=self._get_standardized_float(self._add_random_variation(0.0005, 25.0)),  # kg per day
-        #         ideal_temp_range=(-80.0, 30.0),  # degree Celsius
-        #         min_food_per_day=self._get_standardized_float(self._add_random_variation(0.2, 10.0)),  # kg per day
-        #         feeding_rate=self._add_random_variation(0.8, 15.0),  # kg per day
-        #         avg_steps_taken=self._get_standardized_float(self._add_random_variation(avg_steps_taken, 20.0)),
-        #         avg_foot_area=self._m2_to_km2(self._add_random_variation(avg_foot_area, 15.0)),
-        #         plot=plot,
-        #         predators=[],        # No predators initially
-        #         consumable_flora=[]  # Will be set when flora is added
-        #     )
-        # 
-        # return None
-        return None  # Stub - fauna not currently used
+    def _create_prey(self, prey_name: str, plot: Plot, population_per_km2: Optional[float] = None) -> Prey:
+        """
+        Create a prey object. Currently only supports mammoths.
+        
+        Args:
+            prey_name: Name of the prey ('mammoth')
+            plot: The plot to add the prey to
+            population_per_km2: Optional population density per km^2. If None, uses default (0.01).
+        """
+        if prey_name == 'mammoth':
+            # Default population if not specified
+            if population_per_km2 is None:
+                base_population = 0.01  # mammoths per km^2 (default)
+            else:
+                base_population = population_per_km2
+            
+            avg_mass = 6000.0  # kg per mammoth
+            avg_foot_area = 0.12  # m^2
+            avg_steps_taken = 80000  # steps per day
+            return Prey(
+                name='Mammoth',
+                description='Woolly mammoth adapted to cold steppe conditions',
+                population=self._get_standardized_population(self._add_random_variation(base_population, 30.0)),
+                avg_mass=self._add_random_variation(avg_mass, 20.0),
+                ideal_growth_rate=self._get_standardized_float(self._add_random_variation(2.0, 25.0)),  # kg per day
+                ideal_temp_range=(-80.0, 30.0),  # degree Celsius
+                min_food_per_day=self._get_standardized_float(self._add_random_variation(0.2, 10.0)),  # kg per day
+                feeding_rate=self._add_random_variation(0.8, 15.0),  # kg per day
+                avg_steps_taken=self._get_standardized_float(self._add_random_variation(avg_steps_taken, 20.0)),
+                avg_foot_area=self._m2_to_km2(self._add_random_variation(avg_foot_area, 15.0)),
+                plot=plot,
+                predators=[],        # No predators for now
+                consumable_flora=[]  # Will be set when flora is added
+            )
+        
+        return None
+    
+    def add_mammoth_to_plot(self, plot: Plot, population_per_km2: float = 0.01) -> Prey:
+        """
+        Add a mammoth to a specific plot with the specified population density.
+        
+        Args:
+            plot: The plot to add mammoths to
+            population_per_km2: Population density in mammoths per km^2 (default: 0.01)
+        
+        Returns:
+            The created mammoth Prey object
+        """
+        mammoth = self._create_prey('mammoth', plot, population_per_km2=population_per_km2)
+        if mammoth:
+            mammoth.plot = plot
+            plot.add_fauna(mammoth)
+            # Set up food chain: mammoths eat all flora (grass, shrub, moss)
+            self._establish_food_chain_relationships(plot)
+        return mammoth
 
 
 

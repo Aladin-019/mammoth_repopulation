@@ -170,6 +170,32 @@ def visualize_biomes_interactive(plot_grid: PlotGrid):
     plot_grid.visualize_biomes(biome_colors, figsize=(14, 10))
 
 
+def add_mammoths_to_location(plot_grid, initializer, row: int, col: int, population_per_km2: float = 0.01):
+    """
+    Add mammoths to a specific plot location.
+    
+    Args:
+        plot_grid: The PlotGrid to add mammoths to
+        initializer: The GridInitializer instance (needed for helper methods)
+        row: Row coordinate of the plot
+        col: Column coordinate of the plot
+        population_per_km2: Population density in mammoths per km^2 (default: 0.01)
+    
+    Returns:
+        The mammoth Prey object if successful, None otherwise
+    """
+    plot = plot_grid.get_plot(row, col)
+    if plot is None:
+        print(f"Warning: No plot found at row={row}, col={col}")
+        return None
+    
+    mammoth = initializer.add_mammoth_to_plot(plot, population_per_km2=population_per_km2)
+    if mammoth:
+        print(f"Added mammoths to plot at row={row}, col={col} with population density {population_per_km2} per km^2")
+        print(f"  Actual population: {mammoth.population} mammoths")
+    return mammoth
+
+
 def main():
     """Main function to run the simulation."""
     print("=" * 50)
@@ -178,6 +204,19 @@ def main():
     
     # Create Siberia grid focused on eastern third with higher resolution
     plot_grid, grid_cells = create_siberia_grid(resolution=0.55, lon_min=130.0, lon_max=180.0)
+    
+    # Create initializer to use for adding mammoths (must match grid resolution)
+    from app.setup.grid_initializer import GridInitializer
+    initializer = GridInitializer(lat_step=0.55, lon_step=0.55)
+    
+    # Add mammoths to a specific location (center of the grid, for example)
+    min_row, max_row, min_col, max_col = plot_grid.get_grid_dimensions()
+    center_row = (min_row + max_row) // 2
+    center_col = (min_col + max_col) // 2
+    
+    # Add mammoths with population density of 0.01 per km^2 (adjust as needed)
+    # You can change the location (row, col) and population_per_km2 as desired
+    add_mammoths_to_location(plot_grid, initializer, center_row, center_col, population_per_km2=0.01)
     
     # Run simulation with real-time visualization (300 days for longer simulation)
     run_simulation(plot_grid, num_days=300, visualize=True)

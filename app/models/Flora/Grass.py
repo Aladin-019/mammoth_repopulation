@@ -1,6 +1,6 @@
 from .Flora import Flora
-# FAUNA TEMPORARILY DISABLED - Focus on flora only
-# from ..Fauna import Fauna
+# Re-enabling fauna - mammoths only for now
+from ..Fauna import Fauna
 from typing import List, Tuple
 from app.interfaces.flora_plot_info import FloraPlotInformation
 
@@ -16,7 +16,7 @@ class Grass(Flora):
     def __init__(self, name: str, description: str, total_mass: float, population: int,
                  ideal_growth_rate: float, ideal_temp_range: Tuple[float, float],
                  ideal_uv_range: Tuple[float, float], ideal_hydration_range: Tuple[float, float],
-                 ideal_soil_temp_range: Tuple[float, float], consumers: List,  # consumers: List[Fauna] when fauna enabled 
+                 ideal_soil_temp_range: Tuple[float, float], consumers: List[Fauna], 
                  root_depth: int, plot: FloraPlotInformation):
         
         # Grass uses total mass directly, so we pass a dummy avg_mass to satisfy the base class

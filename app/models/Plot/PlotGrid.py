@@ -13,11 +13,11 @@ except ImportError:
 
 
 # Migration probabilities
-P_PREY_MIGRATION = 0.5
+P_PREY_MIGRATION = 0.8
 P_PREDATOR_MIGRATION = 0.2
 
 # Migration mass ratios
-PREY_MIGRATION_RATIO = 0.3
+PREY_MIGRATION_RATIO = 0.5
 PREDATOR_MIGRATION_RATIO = 0.3
 
 
@@ -149,25 +149,24 @@ class PlotGrid:
                         # If cannot construct, skip migration and do not subtract mass
                         pass
 
-    # FAUNA TEMPORARILY DISABLED - migration requires fauna
     def migrate_species(self) -> None:
         """
         Simulate species migration between neighboring plots.
-        DISABLED - fauna not currently used.
+        Currently supports prey (mammoths) migration only.
         """
-        # FAUNA TEMPORARILY DISABLED
-        # for (row, col), plot in self.plots.items():
-        #     neighbors = self.get_neighbors(row, col)
-        #     for fauna in plot.get_all_fauna()[:]:
-        #         if fauna.get_total_mass() > 0 and neighbors:
-        #             target_plot = np.random.choice(neighbors)
-        #             if hasattr(fauna, 'update_prey_mass'):
-        #                 if np.random.random() < P_PREY_MIGRATION:
-        #                     self._migrate_fauna(fauna, target_plot, 'over_prey_capacity', PREY_MIGRATION_RATIO)
-        #             elif hasattr(fauna, 'update_predator_mass'):
-        #                 if np.random.random() < P_PREDATOR_MIGRATION:
-        #                     self._migrate_fauna(fauna, target_plot, 'over_predator_capacity', PREDATOR_MIGRATION_RATIO)
-        pass  # Stub - fauna not currently used
+        for (row, col), plot in self.plots.items():
+            neighbors = self.get_neighbors(row, col)
+            for fauna in plot.get_all_fauna()[:]:  # Use [:] to avoid modifying list while iterating
+                if fauna.get_total_mass() > 0 and neighbors:
+                    target_plot = np.random.choice(neighbors)
+                    if hasattr(fauna, 'update_prey_mass'):
+                        # Prey (mammoths) migration
+                        if np.random.random() < P_PREY_MIGRATION:
+                            self._migrate_fauna(fauna, target_plot, 'over_prey_capacity', PREY_MIGRATION_RATIO)
+                    # Predators not yet enabled
+                    # elif hasattr(fauna, 'update_predator_mass'):
+                    #     if np.random.random() < P_PREDATOR_MIGRATION:
+                    #         self._migrate_fauna(fauna, target_plot, 'over_predator_capacity', PREDATOR_MIGRATION_RATIO)
 
     def update_all_plots(self, day: int) -> None:
         """
@@ -201,12 +200,13 @@ class PlotGrid:
                 for flora in plot.get_all_flora():
                     flora.update_flora_mass(day)
 
-            # FAUNA TEMPORARILY DISABLED - Focus on flora only
-            # if day % 2 == 0:
-            #     for fauna in plot.get_all_fauna():
-            #         if hasattr(fauna, 'update_prey_mass'):
-            #             fauna.update_prey_mass(day)
-            # 
+            # Update prey (mammoths) on even days
+            if day % 2 == 0:
+                for fauna in plot.get_all_fauna():
+                    if hasattr(fauna, 'update_prey_mass'):
+                        fauna.update_prey_mass(day)
+            
+            # Predators not yet enabled
             # if day % 2 == 1 and day > 1:
             #     for fauna in plot.get_all_fauna():
             #         if hasattr(fauna, 'update_predator_mass'):
@@ -222,10 +222,9 @@ class PlotGrid:
             for plot in self.plots.values():
                 plot.check_and_update_biome()
 
-        # FAUNA TEMPORARILY DISABLED - migration requires fauna
         # Handle migration (only call once, migrate_species already loops over all plots)
-        # if day % 5 == 0:  # every 5th day
-        #     self.migrate_species()
+        if day % 5 == 0:  # every 5th day
+            self.migrate_species()
 
     def visualize_biomes(self, biome_colors: Dict[str, str], figsize: Tuple[int, int] = (12, 8), 
                         save_path: Optional[str] = None, ax: Optional = None, day: Optional[int] = None):
