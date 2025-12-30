@@ -5,11 +5,13 @@ import numpy as np
 try:
     import matplotlib.pyplot as plt
     import matplotlib.colors as mcolors
+    from matplotlib.patches import Rectangle
     MATPLOTLIB_AVAILABLE = True
 except ImportError:
     MATPLOTLIB_AVAILABLE = False
     plt = None
     mcolors = None
+    Rectangle = None
 
 
 # Migration probabilities
@@ -308,6 +310,39 @@ class PlotGrid:
         
         # Plot the grid with water shown as dark blue
         im = ax.imshow(grid, cmap=cmap, aspect='equal', origin='lower', vmin=0, vmax=len(colors)-1)
+
+        # Add borders around plots with mammoths
+        mammoth_border_color = '#FF0000'  # Red border for mammoths
+        mammoth_border_width = 2.0
+        mammoth_count = 0
+        
+        for (row, col), plot in self.plots.items():
+            grid_row = row - self.min_row
+            grid_col = col - self.min_col
+            
+            # Check if plot has mammoths (any fauna with name 'Mammoth' and mass > 0)
+            has_mammoths = False
+            for fauna in plot.get_all_fauna():
+                if fauna.get_name() == 'Mammoth' and fauna.get_total_mass() > 0:
+                    has_mammoths = True
+                    mammoth_count += 1
+                    break
+            
+            if has_mammoths:
+                # Draw border around this cell
+                # Rectangle coordinates: (left, bottom), width, height
+                # For imshow with origin='lower', x is column, y is row
+                # Each cell spans from (col-0.5, row-0.5) to (col+0.5, row+0.5)
+                rect = Rectangle(
+                    (grid_col - 0.5, grid_row - 0.5),  # bottom-left corner
+                    1.0,  # width
+                    1.0,  # height
+                    linewidth=mammoth_border_width,
+                    edgecolor=mammoth_border_color,
+                    facecolor='none',  # No fill, just border
+                    zorder=10  # Draw on top
+                )
+                ax.add_patch(rect)
 
         # Colorbar and biome labels (only create colorbar on first call)
         if create_new:

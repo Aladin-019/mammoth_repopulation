@@ -209,14 +209,21 @@ def main():
     from app.setup.grid_initializer import GridInitializer
     initializer = GridInitializer(lat_step=0.55, lon_step=0.55)
     
-    # Add mammoths to a specific location (center of the grid, for example)
-    min_row, max_row, min_col, max_col = plot_grid.get_grid_dimensions()
-    center_row = (min_row + max_row) // 2
-    center_col = (min_col + max_col) // 2
-    
-    # Add mammoths with population density of 0.01 per km^2 (adjust as needed)
-    # You can change the location (row, col) and population_per_km2 as desired
-    add_mammoths_to_location(plot_grid, initializer, center_row, center_col, population_per_km2=0.01)
+    # Add mammoths to a specific location (use an actual plot coordinate, not the center)
+    # Get all plot coordinates and pick one from the middle of the list
+    plot_coords = plot_grid.get_plot_coordinates()
+    if plot_coords:
+        # Sort by row then col to get a consistent ordering
+        plot_coords_sorted = sorted(plot_coords)
+        # Pick a plot from the middle of the sorted list
+        center_idx = len(plot_coords_sorted) // 2
+        center_row, center_col = plot_coords_sorted[center_idx]
+        
+        # Add mammoths with population density of 0.01 per km^2 (adjust as needed)
+        # You can change the location (row, col) and population_per_km2 as desired
+        add_mammoths_to_location(plot_grid, initializer, center_row, center_col, population_per_km2=0.01)
+    else:
+        print("Warning: No plots found in the grid. Cannot add mammoths.")
     
     # Run simulation with real-time visualization (300 days for longer simulation)
     run_simulation(plot_grid, num_days=300, visualize=True)

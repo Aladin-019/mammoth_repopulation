@@ -25,6 +25,45 @@ class Prey(Fauna):
         
         self.predators = predators  # predators of this prey
         self.consumable_flora = consumable_flora  # flora that this prey consumes
+    
+    @classmethod
+    def from_existing_with_mass(cls, source_fauna, migrating_mass: float, plot: PlotInformation = None):
+        """
+        Create a new Prey instance from an existing one, with population calculated from migrating_mass.
+        Overrides parent method to handle Prey-specific parameters (predators, consumable_flora).
+        
+        Args:
+            source_fauna (Prey): The prey to copy attributes from
+            migrating_mass (float): The total mass for the new prey
+            plot (PlotInformation, optional): The plot for the new prey (defaults to source_fauna.plot)
+        Returns:
+            Prey: New prey instance
+        """
+        if not isinstance(source_fauna, Prey):
+            raise TypeError(f"source_fauna must be a Prey instance, got {type(source_fauna)}")
+        
+        avg_mass = source_fauna.avg_mass
+        # Ensure at least 1 individual if mass > 0
+        population = max(1, int(migrating_mass / avg_mass)) if avg_mass > 0 else 1
+        
+        # Use source_fauna's plot if plot is not provided
+        target_plot = plot if plot is not None else source_fauna.plot
+        
+        return cls(
+            name=source_fauna.name,
+            description=source_fauna.description,
+            population=population,
+            avg_mass=avg_mass,
+            ideal_temp_range=source_fauna.ideal_temp_range,
+            min_food_per_day=source_fauna.min_food_per_day / source_fauna.population if source_fauna.population > 0 else source_fauna.min_food_per_day,
+            ideal_growth_rate=source_fauna.ideal_growth_rate,
+            feeding_rate=source_fauna.feeding_rate,
+            avg_steps_taken=source_fauna.avg_steps_taken,
+            avg_foot_area=source_fauna.avg_foot_area,
+            plot=target_plot,
+            predators=source_fauna.predators,  # Copy predators list
+            consumable_flora=source_fauna.consumable_flora  # Copy consumable_flora list
+        )
 
     def total_consumption_rate(self) -> float:
         """
