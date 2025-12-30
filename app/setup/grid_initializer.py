@@ -10,6 +10,7 @@ from app.models.Flora.Flora import Flora
 # from app.models.Fauna.Prey import Prey
 # from app.models.Fauna.Predator import Predator
 from typing import List
+from app.globals import *
 
 class GridInitializer:
     def _add_northern_taiga_plot_id(self, plot_id):
@@ -61,27 +62,27 @@ class GridInitializer:
         print(f"Grid Initializer: Resolution {lat_step}°×{lon_step}°.\nPlot area = {self.plot_area_km2:.1f} km^2")
         print(f"Standardization: plots are {self.standardization_factor:.1f}x larger than 1 km^2 plots")
 
-        # Default flora and fauna for each biome
+        # Default flora and fauna for each biome (fauna temporarily disabled)
         self.biome_defaults = {
             'southern taiga': {
                 'flora': ['tree', 'shrub', 'grass', 'moss'],
-                'prey': ['deer', 'mammoth'],
-                'predators': ['wolf']
+                # 'prey': ['deer', 'mammoth'],  # FAUNA TEMPORARILY DISABLED
+                # 'predators': ['wolf']  # FAUNA TEMPORARILY DISABLED
             },
             'northern taiga': {
                 'flora': ['tree', 'shrub', 'grass', 'moss'],
-                'prey': ['deer', 'mammoth'],
-                'predators': ['wolf']
+                # 'prey': ['deer', 'mammoth'],  # FAUNA TEMPORARILY DISABLED
+                # 'predators': ['wolf']  # FAUNA TEMPORARILY DISABLED
             },
             'southern tundra': {
                 'flora': ['shrub', 'grass', 'moss'],
-                'prey': ['deer', 'mammoth'],
-                'predators': ['wolf']
+                # 'prey': ['deer', 'mammoth'],  # FAUNA TEMPORARILY DISABLED
+                # 'predators': ['wolf']  # FAUNA TEMPORARILY DISABLED
             },
             'northern tundra': {
                 'flora': ['shrub', 'grass', 'moss'],
-                'prey': ['deer', 'mammoth'],
-                'predators': ['wolf']
+                # 'prey': ['deer', 'mammoth'],  # FAUNA TEMPORARILY DISABLED
+                # 'predators': ['wolf']  # FAUNA TEMPORARILY DISABLED
             }
         }
 
@@ -112,7 +113,8 @@ class GridInitializer:
     
     def create_plot_from_biome(self, biome: str) -> Plot:
         """
-        Create a plot with appropriate flora and fauna for the given biome.
+        Create a plot with appropriate flora for the given biome.
+        (Fauna functionality is temporarily disabled)
         """
         # Create climate for this plot - Plot=None initially to avoid circular reference
         climate = Climate(biome, None)
@@ -161,35 +163,38 @@ class GridInitializer:
             if flora:
                 plot.add_flora(flora)
 
+    # FAUNA TEMPORARILY DISABLED
     def _add_default_fauna(self, plot: Plot, biome: str) -> None:
-        """Add default fauna to the plot based on biome."""
-        if biome not in self.biome_defaults:
-            return
-            
-        prey_names = self.biome_defaults[biome]['prey']
-        predator_names = self.biome_defaults[biome]['predators']
-        
-        prey_list = []
-        for prey_name in prey_names:
-            if prey_name == 'mammoth':
-                # Don't add mammoths yet - we do this after all plots are created
-                continue
-            else:
-                prey = self._create_prey(prey_name, plot)
-                if prey:
-                    prey.plot = plot
-                    plot.add_fauna(prey)
-                    prey_list.append(prey)
-
-        for predator_name in predator_names:
-            predator = self._create_predator(predator_name, prey_list, plot)
-            if predator:
-                predator.plot = plot
-                plot.add_fauna(predator)
-        
-        self._establish_food_chain_relationships(plot)
-        
-        self._update_predator_prey_lists(plot)
+        """Add default fauna to the plot based on biome. DISABLED - fauna not currently used."""
+        # FAUNA TEMPORARILY DISABLED - entire method commented out
+        # if biome not in self.biome_defaults:
+        #     return
+        #     
+        # prey_names = self.biome_defaults[biome]['prey']
+        # predator_names = self.biome_defaults[biome]['predators']
+        # 
+        # prey_list = []
+        # for prey_name in prey_names:
+        #     if prey_name == 'mammoth':
+        #         # Don't add mammoths yet - we do this after all plots are created
+        #         continue
+        #     else:
+        #         prey = self._create_prey(prey_name, plot)
+        #         if prey:
+        #             prey.plot = plot
+        #             plot.add_fauna(prey)
+        #             prey_list.append(prey)
+        # 
+        # for predator_name in predator_names:
+        #     predator = self._create_predator(predator_name, prey_list, plot)
+        #     if predator:
+        #         predator.plot = plot
+        #         plot.add_fauna(predator)
+        # 
+        # self._establish_food_chain_relationships(plot)
+        # 
+        # self._update_predator_prey_lists(plot)
+        pass  # Stub - fauna not currently used
 
     def _get_standardized_float(self, base_float: float) -> float:
         """Convert from base 1km^2 to standardized value based on current plot size."""
@@ -244,20 +249,20 @@ class GridInitializer:
         """
         if flora_name == 'grass':
             if biome == 'southern taiga':
-                base_mass = 12000.0
+                base_mass = S_TAIGA_GRASS_MASS
             elif biome == 'northern taiga':
-                base_mass = 16000.0
+                base_mass = N_TAIGA_GRASS_MASS
             elif biome == 'southern tundra':
-                base_mass = 12000.0
+                base_mass = S_TUNDRA_GRASS_MASS
             else:  # northern tundra
-                base_mass = 4000.0
+                base_mass = N_TUNDRA_GRASS_MASS
 
             return Grass(
                 name='Grass',
                 description='Hardy grass adapted to various conditions',
-                total_mass=self._get_standardized_float(self._add_random_variation(base_mass, 20.0)),
+                total_mass=self._get_standardized_float(self._add_random_variation(base_mass, 5.0)),
                 population=1,  # grass doesnt use population, value is irrelevant
-                ideal_growth_rate=self._get_standardized_float(self._add_random_variation(10.0, 5.0)),
+                ideal_growth_rate=self._add_random_variation(0.01, 5.0),
                 ideal_temp_range=(-60.0, 30.0),      # degree Celsius
                 ideal_uv_range=(10.0, 50_000.0),     # J/m^2/day
                 ideal_hydration_range=(0.01, 0.5),   # kg/m^2/day
@@ -269,22 +274,22 @@ class GridInitializer:
         elif flora_name == 'shrub':
             avg_mass = 10.0   # kg (average mass per shrub)
             if biome == 'southern taiga':
-                base_mass = 20000.0
+                base_mass = S_TAIGA_SHRUB_MASS
             elif biome == 'northern taiga':
-                base_mass = 14000.0
+                base_mass = N_TAIGA_SHRUB_MASS
             elif biome == 'southern tundra':
-                base_mass = 20000.0 
+                base_mass = S_TUNDRA_SHRUB_MASS
             else:  # northern tundra
-                base_mass = 5000.0
+                base_mass = N_TUNDRA_SHRUB_MASS
 
             base_population = base_mass / avg_mass
 
             return Shrub(
                 name='Shrub',
                 description='Low-growing shrub adapted to various conditions',
-                avg_mass=self._add_random_variation(avg_mass, 20.0),
-                population=self._get_standardized_population(self._add_random_variation(base_population, 25.0)),
-                ideal_growth_rate=self._get_standardized_float(self._add_random_variation(10.0, 5.0)),
+                avg_mass=self._add_random_variation(avg_mass, 5.0),
+                population=self._get_standardized_population(self._add_random_variation(base_population, 5.0)),
+                ideal_growth_rate=self._add_random_variation(0.01, 5.0),
                 ideal_temp_range=(-60.0, 30.0),     # degree Celsius
                 ideal_uv_range=(10.0, 50_000.0),    # J/m^2/day
                 ideal_hydration_range=(0.01, 0.5),  # kg/m^2/day
@@ -296,22 +301,22 @@ class GridInitializer:
         elif flora_name == 'tree':
             avg_mass = 2400.0   # kg (average mass per tree)
             if biome == 'southern taiga':
-                base_mass = 10000.0
+                base_mass = S_TAIGA_TREE_MASS
             elif biome == 'northern taiga':
-                base_mass = 4000.0
+                base_mass = N_TAIGA_TREE_MASS
             elif biome == 'southern tundra':
-                base_mass = 50.0
+                base_mass = S_TUNDRA_TREE_MASS
             else:  # northern tundra
-                base_mass = 0.0
+                base_mass = N_TUNDRA_TREE_MASS
 
             base_population = base_mass / avg_mass
 
             return Tree(
                 name='Pine Tree',
                 description='Coniferous tree adapted to taiga conditions',
-                avg_mass=self._add_random_variation(avg_mass, 25.0),
-                population=self._get_standardized_population(self._add_random_variation(base_population, 30.0)),
-                ideal_growth_rate=self._get_standardized_float(self._add_random_variation(10.0, 5.0)),
+                avg_mass=self._add_random_variation(avg_mass, 5.0),
+                population=self._get_standardized_population(self._add_random_variation(base_population, 5.0)),
+                ideal_growth_rate=self._add_random_variation(0.01, 5.0),
                 ideal_temp_range=(-60.0, 30.0),     # degree Celsius
                 ideal_uv_range=(10.0, 50_000.0),    # J/m^2/day
                 ideal_hydration_range=(0.01, 0.5),  # kg/m^2/day
@@ -324,20 +329,20 @@ class GridInitializer:
             )
         elif flora_name == 'moss':
             if biome == 'southern taiga':
-                base_mass = 8000.0
+                base_mass = S_TAIGA_MOSS_MASS
             elif biome == 'northern taiga':
-                base_mass = 12000.0
+                base_mass = N_TAIGA_MOSS_MASS
             elif biome == 'southern tundra':
-                base_mass = 16000.0
+                base_mass = S_TUNDRA_MOSS_MASS
             else:  # northern tundra
-                base_mass = 26000.0
+                base_mass = N_TUNDRA_MOSS_MASS
 
             return Moss(
                 name='Moss',
                 description='Low-growing moss adapted to cold conditions',
-                total_mass=self._get_standardized_float(self._add_random_variation(base_mass, 20.0)),
+                total_mass=self._get_standardized_float(self._add_random_variation(base_mass, 5.0)),
                 population=1,  # moss doesnt use population, value is irrelevant
-                ideal_growth_rate=self._get_standardized_float(self._add_random_variation(10.0, 5.0)),
+                ideal_growth_rate=self._add_random_variation(0.01, 5.0),
                 ideal_temp_range=(-80.0, 40.0),      # degree Celsius
                 ideal_uv_range=(10.0, 50_000.0),     # J/m^2/day
                 ideal_hydration_range=(0.01, 0.5),   # kg/m^2/day

@@ -177,10 +177,10 @@ def main():
     print("=" * 50)
     
     # Create Siberia grid focused on eastern third with higher resolution
-    plot_grid, grid_cells = create_siberia_grid(resolution=0.75, lon_min=120.0, lon_max=180.0)
+    plot_grid, grid_cells = create_siberia_grid(resolution=0.55, lon_min=130.0, lon_max=180.0)
     
-    # Run simulation with real-time visualization (30 days for longer simulation)
-    run_simulation(plot_grid, num_days=30, visualize=True)
+    # Run simulation with real-time visualization (300 days for longer simulation)
+    run_simulation(plot_grid, num_days=300, visualize=True)
 
 
 if __name__ == "__main__":

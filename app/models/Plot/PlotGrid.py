@@ -215,6 +215,12 @@ class PlotGrid:
         # Clean up all extinct species
         for plot in self.plots.values():
             plot.remove_extinct_species()
+        
+        # Check and update biomes based on flora ratios (only on days when flora has updated)
+        # This prevents checking on even days when flora hasn't changed, avoiding unnecessary oscillations
+        if day % 2 == 1:
+            for plot in self.plots.values():
+                plot.check_and_update_biome()
 
         # FAUNA TEMPORARILY DISABLED - migration requires fauna
         # Handle migration (only call once, migrate_species already loops over all plots)
@@ -254,42 +260,39 @@ class PlotGrid:
         # Create new figure/axis if not provided (for initial display)
         create_new = (ax is None)
         
-        # On first visualization (whenever _initial_blended_grid is None), create and store the blended grid
-        if self._initial_blended_grid is None:
-            # Fill grid with biome data from plots
+        # Fill grid with current biome data from plots
+        for (row, col), plot in self.plots.items():
+            grid_row = row - self.min_row
+            grid_col = col - self.min_col
+            biome = plot.get_climate().get_biome()
+            grid[grid_row, grid_col] = biome_to_int.get(biome, len(biome_colors))
+        
+        # Apply border blending on initial render only (for realistic smooth transitions)
+        if create_new and self._initial_blended_grid is None:
+            # Store initial biomes before blending
             for (row, col), plot in self.plots.items():
-                grid_row = row - self.min_row
-                grid_col = col - self.min_col
-                biome = plot.get_climate().get_biome()
-                grid[grid_row, grid_col] = biome_to_int.get(biome, len(biome_colors))
-                # Store initial biome for comparison later
-                self._initial_biomes[(row, col)] = biome
-            
-            # Blend biome borders for initial realistic visualization
+                self._initial_biomes[(row, col)] = plot.get_climate().get_biome()
+            # Apply blending to create smooth biome borders
             grid = self._blend_biome_borders(grid, rows, cols, blend_prob=0.2)
-            # Store the blended grid for reuse
+            # Convert water from -1 to 0 and store the blended grid
+            grid[grid == -1] = 0
             self._initial_blended_grid = grid.copy()
         elif self._initial_blended_grid is not None:
-            # Use stored blended grid and update only cells where biome has changed
+            # Use stored blended grid as base and only update changed cells
             grid = self._initial_blended_grid.copy()
             for (row, col), plot in self.plots.items():
                 grid_row = row - self.min_row
                 grid_col = col - self.min_col
                 current_biome = plot.get_climate().get_biome()
-                # Check if biome has changed from initial
                 initial_biome = self._initial_biomes.get((row, col))
                 if initial_biome is not None and current_biome != initial_biome:
-                    # Biome changed - update this cell to new biome color (no blending)
+                    # Biome changed - update this cell to new biome
                     grid[grid_row, grid_col] = biome_to_int.get(current_biome, len(biome_colors))
-                    # Update stored initial biome for this plot
                     self._initial_biomes[(row, col)] = current_biome
         else:
-            # Fallback: fill grid with current biome data (shouldn't happen normally)
-            for (row, col), plot in self.plots.items():
-                grid_row = row - self.min_row
-                grid_col = col - self.min_col
-                biome = plot.get_climate().get_biome()
-                grid[grid_row, grid_col] = biome_to_int.get(biome, len(biome_colors))
+            # First call but not create_new - just convert water
+            grid[grid == -1] = 0
+        
         if create_new:
             fig, ax = plt.subplots(figsize=figsize)
         else:
@@ -301,8 +304,7 @@ class PlotGrid:
         colors = [water_color] + list(biome_colors.values())  # Water is index 0
         cmap = mcolors.ListedColormap(colors)
         
-        # Replace -1 (empty cells) with 0 (water color index)
-        # Biome indices are already 1-based (from biome_to_int mapping above)
+        # Ensure water is 0 (should already be done above, but double-check)
         grid[grid == -1] = 0
         
         # Plot the grid with water shown as dark blue

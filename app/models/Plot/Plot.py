@@ -7,6 +7,8 @@ from app.interfaces.flora_plot_info import FloraPlotInformation
 
 logger = logging.getLogger(__name__)
 
+from app.globals import *
+
 # Physical constants for snow melting calculations
 ETA = 0.75
 RHO_SNOW = 100.0
@@ -538,3 +540,68 @@ class Plot(FloraPlotInformation):
         # predator_mass = sum(fauna.get_total_mass() for fauna in self.fauna if fauna.__class__.__name__ == "Predator")
         # return predator_mass > (self.plot_area * MAX_PREDATOR_DENSITY)
         return False  # Stub - fauna not currently used
+    
+    def _determine_biome_from_flora(self) -> Optional[str]:
+        """
+        Determine the appropriate biome based on current flora mass composition.
+        Uses simplified logic based on typical ratios from grid_initializer:
+        """
+        try:
+            grass_ratio, shrub_ratio, tree_ratio, moss_ratio = self.get_flora_mass_composition()
+            current_flora_ratios = (grass_ratio, shrub_ratio, tree_ratio, moss_ratio)
+            total_mass = sum(self.get_flora_masses())
+            
+            # If no flora, don't change biome
+            if total_mass == 0:
+                return None
+            
+            s_taiga_ratios = (S_TAIGA_GRASS_MASS / S_TAIGA_TOTAL_MASS, S_TAIGA_SHRUB_MASS / S_TAIGA_TOTAL_MASS, S_TAIGA_TREE_MASS / S_TAIGA_TOTAL_MASS, S_TAIGA_MOSS_MASS / S_TAIGA_TOTAL_MASS)
+            n_taiga_ratios = (N_TAIGA_GRASS_MASS / N_TAIGA_TOTAL_MASS, N_TAIGA_SHRUB_MASS / N_TAIGA_TOTAL_MASS, N_TAIGA_TREE_MASS / N_TAIGA_TOTAL_MASS, N_TAIGA_MOSS_MASS / N_TAIGA_TOTAL_MASS)
+            s_tundra_ratios = (S_TUNDRA_GRASS_MASS / S_TUNDRA_TOTAL_MASS, S_TUNDRA_SHRUB_MASS / S_TUNDRA_TOTAL_MASS, S_TUNDRA_TREE_MASS / S_TUNDRA_TOTAL_MASS, S_TUNDRA_MOSS_MASS / S_TUNDRA_TOTAL_MASS)
+            n_tundra_ratios = (N_TUNDRA_GRASS_MASS / N_TUNDRA_TOTAL_MASS, N_TUNDRA_SHRUB_MASS / N_TUNDRA_TOTAL_MASS, N_TUNDRA_TREE_MASS / N_TUNDRA_TOTAL_MASS, N_TUNDRA_MOSS_MASS / N_TUNDRA_TOTAL_MASS)
+            
+            # Calculate Euclidean distance between current ratios and each biome's ideal ratios
+            def distance(ratios1, ratios2):
+                return sum((a - b) ** 2 for a, b in zip(ratios1, ratios2)) ** 0.5
+            
+            biome_distances = [
+                ('southern taiga', distance(current_flora_ratios, s_taiga_ratios)),
+                ('northern taiga', distance(current_flora_ratios, n_taiga_ratios)),
+                ('southern tundra', distance(current_flora_ratios, s_tundra_ratios)),
+                ('northern tundra', distance(current_flora_ratios, n_tundra_ratios))
+            ]
+            
+            # Find the biome with the smallest distance
+            closest_biome = min(biome_distances, key=lambda x: x[1])[0]
+            
+            # Only return if biome has changed
+            current_biome = self.climate.get_biome()
+            if closest_biome != current_biome:
+                logger.debug(f"Plot {self.Id}: Flora ratios indicate biome change from {current_biome} to {closest_biome} "
+                           f"(current ratios: grass={grass_ratio:.3f}, shrub={shrub_ratio:.3f}, tree={tree_ratio:.3f}, moss={moss_ratio:.3f})")
+                return closest_biome
+            
+            return None
+        except Exception as e:
+            logger.error(f"Failed to determine biome from flora for plot {self.Id}: {e}")
+            return None
+    
+    def check_and_update_biome(self) -> bool:
+        """
+        Check flora ratios and update biome if they indicate a significant, sustained change.
+        Uses more conservative thresholds to prevent oscillation and misclassification.
+        
+        Returns:
+            bool: True if biome was changed, False otherwise
+        """
+        try:
+            new_biome = self._determine_biome_from_flora()
+            if new_biome:
+                # Only update if the change is significant (not just noise)
+                # This helps prevent misclassification due to rounding/randomization effects
+                self.climate.set_biome(new_biome)
+                return True
+            return False
+        except Exception as e:
+            logger.error(f"Failed to check and update biome for plot {self.Id}: {e}")
+            return False
