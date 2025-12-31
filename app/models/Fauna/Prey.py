@@ -1,6 +1,9 @@
 from .Fauna import Fauna
 from typing import List, Tuple
 from app.interfaces.plot_info import PlotInformation
+import logging
+
+logger = logging.getLogger(__name__)
 
 class Prey(Fauna):
     """
@@ -173,7 +176,11 @@ class Prey(Fauna):
         """
         self._validate_instance(environmental_penalty, float, "environmental_penalty")
 
-        return self.ideal_growth_rate + self.ideal_growth_rate * (1 + environmental_penalty/2)
+        # Growth rate should be a small percentage, adjusted by environmental conditions
+        # environmental_penalty ranges from 0 (ideal) to -1 (worst)
+        # Formula: ideal_growth_rate * (1 + environmental_penalty/2)
+        # This gives: ideal_growth_rate * 1.0 (best) to ideal_growth_rate * 0.5 (worst)
+        return self.ideal_growth_rate * (1 + environmental_penalty/2)
 
     def _update_mass_from_growth_and_consumption(self, base_growth_rate: float, consumption_rate: float) -> None:
         """

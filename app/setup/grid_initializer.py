@@ -375,7 +375,7 @@ class GridInitializer:
                 description='Woolly mammoth adapted to cold steppe conditions',
                 population=self._get_standardized_population(self._add_random_variation(base_population, 30.0)),
                 avg_mass=self._add_random_variation(avg_mass, 20.0),
-                ideal_growth_rate=self._get_standardized_float(self._add_random_variation(2.0, 25.0)),  # kg per day
+                ideal_growth_rate=self._add_random_variation(0.1, 25.0),
                 ideal_temp_range=(-80.0, 30.0),  # degree Celsius
                 min_food_per_day=self._get_standardized_float(self._add_random_variation(0.2, 10.0)),  # kg per day
                 feeding_rate=self._add_random_variation(0.8, 15.0),  # kg per day
