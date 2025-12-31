@@ -341,15 +341,15 @@ class TestClimate(unittest.TestCase):
         self.assertIsInstance(result, float)
         self.assertEqual(result, 0.0)  # -0.0 * 20.0 = 0.0°C
         
-        # Test clamping at maximum negative value (MAX_DAILY_AIR_DELTA = 1.5)
+        # Test clamping at maximum negative value (MAX_DAILY_AIR_DELTA = 15.0)
         result = Climate._2mtemp_change_from_snow_delta(1.0)
         self.assertIsInstance(result, float)
-        self.assertEqual(result, -1.5)  # -1.0 * 2.0 = -2.0, clamped to -1.5
+        self.assertEqual(result, -15.0)  # -1.0 * 20.0 = -20.0, clamped to -15.0
         
-        # Test clamping at maximum positive value (MAX_DAILY_AIR_DELTA = 1.5)
+        # Test clamping at maximum positive value (MAX_DAILY_AIR_DELTA = 15.0)
         result = Climate._2mtemp_change_from_snow_delta(-1.0)
         self.assertIsInstance(result, float)
-        self.assertEqual(result, 1.5)  # -(-1.0) * 2.0 = 2.0, clamped to 1.5
+        self.assertEqual(result, 15.0)  # -(-1.0) * 20.0 = 20.0, clamped to 15.0
 
     def test_soil_temp_change_from_snow_delta_static_method(self):
         """Test the static _soil_temp_change_from_snow_delta method."""
@@ -369,15 +369,15 @@ class TestClimate(unittest.TestCase):
         self.assertIsInstance(result, float)
         self.assertEqual(result, 0.0)  # 0.0 * 50.0 = 0.0°C
         
-        # Test clamping at maximum positive value (MAX_DAILY_SOIL_DELTA = 3.0)
+        # Test clamping at maximum positive value (MAX_DAILY_SOIL_DELTA = 30.0)
         result = Climate._soil_temp_change_from_snow_delta(1.0)
         self.assertIsInstance(result, float)
-        self.assertEqual(result, 3.0)  # 1.0 * 5.0 = 5.0, clamped to 3.0
+        self.assertEqual(result, 30.0)  # 1.0 * 50.0 = 50.0, clamped to 30.0
         
-        # Test clamping at maximum negative value (MAX_DAILY_SOIL_DELTA = 3.0)
+        # Test clamping at maximum negative value (MAX_DAILY_SOIL_DELTA = 30.0)
         result = Climate._soil_temp_change_from_snow_delta(-1.0)
         self.assertIsInstance(result, float)
-        self.assertEqual(result, -3.0)  # -1.0 * 5.0 = -5.0, clamped to -3.0
+        self.assertEqual(result, -30.0)  # -1.0 * 50.0 = -50.0, clamped to -30.0
 
     def test_load_climate_loader_caching(self):
         """Test that climate loaders are cached."""

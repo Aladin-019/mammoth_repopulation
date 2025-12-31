@@ -213,7 +213,8 @@ class TestMoss(unittest.TestCase):
         self.assertIn('temperature', conditions)
         self.assertIn('uv', conditions)
         self.assertIn('hydration', conditions)
-        self.assertIn('soil_temperature', conditions)
+        # Moss has root_depth=1, so it doesn't include soil_temperature
+        self.assertNotIn('soil_temperature', conditions)
     
     def test_moss_specific_behavior(self):
         """Test that moss applies canopy shading."""

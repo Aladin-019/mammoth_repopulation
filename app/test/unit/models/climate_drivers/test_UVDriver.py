@@ -24,7 +24,7 @@ class TestUVDriver(unittest.TestCase):
     @patch("numpy.random.normal", return_value=88.0)
     def test_generate_daily_uv_with_offset(self, mock_normal):
         """Test UV generation with biome offset."""
-        result = self.climate_driver.generate_daily_uv("Saskatoon", 2, biome_offset=2.0)
+        result = self.climate_driver.generate_daily_uv("Saskatoon", 2, offset=2.0)
         self.assertEqual(result, 88.0)
         mock_normal.assert_called_once_with(2.8 + 2.0, np.sqrt(0.3))  # 2.8 + 2 offset
 

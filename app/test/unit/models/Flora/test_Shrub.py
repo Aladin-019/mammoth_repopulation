@@ -40,7 +40,7 @@ class TestShrub(unittest.TestCase):
                 return 0.0
             def get_previous_snow_height(self) -> float:
                 return 0.0
-            def get_area_trampled_percent(self) -> float:
+            def get_area_trampled_ratio(self) -> float:
                 return 0.1  # 10% trampled
             def over_shrub_capacity(self) -> bool:
                 return False
@@ -64,7 +64,7 @@ class TestShrub(unittest.TestCase):
         self.valid_params = {
             'name': 'Test Shrub',
             'description': 'some test shrub species',
-            'total_mass': 100.0,
+            'avg_mass': 2.0,  # 100.0 total_mass / 50 population = 2.0 avg_mass
             'population': 50,
             'ideal_growth_rate': 5.0,
             'ideal_temp_range': (10.0, 30.0),
@@ -178,7 +178,7 @@ class TestShrub(unittest.TestCase):
                 return 0.0
             def get_previous_snow_height(self) -> float:
                 return 0.0
-            def get_area_trampled_percent(self) -> float:
+            def get_area_trampled_ratio(self) -> float:
                 return 0.0  # No trampling
             def over_shrub_capacity(self) -> bool:
                 return False
@@ -220,7 +220,7 @@ class TestShrub(unittest.TestCase):
                 return 0.0
             def get_previous_snow_height(self) -> float:
                 return 0.0
-            def get_area_trampled_percent(self) -> float:
+            def get_area_trampled_ratio(self) -> float:
                 return 0.1
             def over_shrub_capacity(self) -> bool:
                 return False
@@ -259,7 +259,7 @@ class TestShrub(unittest.TestCase):
                 return 0.0
             def get_previous_snow_height(self) -> float:
                 return 0.0
-            def get_area_trampled_percent(self) -> float:
+            def get_area_trampled_ratio(self) -> float:
                 return 0.1
             def over_shrub_capacity(self) -> bool:
                 return True
@@ -294,7 +294,8 @@ class TestShrub(unittest.TestCase):
         self.assertIn('temperature', conditions)
         self.assertIn('uv', conditions)
         self.assertIn('hydration', conditions)
-        self.assertIn('soil_temperature', conditions)
+        # Shrub has root_depth=2, so it doesn't include soil_temperature
+        self.assertNotIn('soil_temperature', conditions)
     
     def test_shrub_specific_behavior(self):
         """Test that shrub applies canopy shading."""
@@ -343,7 +344,7 @@ class TestShrub(unittest.TestCase):
                 return 0.0
             def get_previous_snow_height(self) -> float:
                 return 0.0
-            def get_area_trampled_percent(self) -> float:
+            def get_area_trampled_ratio(self) -> float:
                 return 0.2  # 20% trampled
             def over_shrub_capacity(self) -> bool:
                 return False
@@ -359,7 +360,7 @@ class TestShrub(unittest.TestCase):
     
     def test_stomping_rate_class_variable(self):
         """Test that STOMPING_RATE class variable is accessible."""
-        self.assertEqual(Shrub.STOMPING_RATE, 0.5)
+        self.assertEqual(Shrub.STOMPING_RATE, 0.85)
     
     def test_shrub_area_validation(self):
         """Test shrub_area validation."""

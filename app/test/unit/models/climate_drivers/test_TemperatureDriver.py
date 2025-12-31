@@ -24,7 +24,7 @@ class TestTemperatureDriver(unittest.TestCase):
     # Test with biome offset
     @patch("numpy.random.normal", return_value=88.0)
     def test_generate_daily_temp_with_offset(self, mock_normal):
-        result = self.climate_driver.generate_daily_temp("Saskatoon", 2, biome_offset=2.0)
+        result = self.climate_driver.generate_daily_temp("Saskatoon", 2, offset=2.0)
         self.assertEqual(result, 88.0)
         mock_normal.assert_called_once_with(-13.0, np.sqrt(3.0))  # -15 + 2 offset
 

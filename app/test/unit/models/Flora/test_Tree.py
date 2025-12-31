@@ -62,7 +62,7 @@ class TestTree(unittest.TestCase):
         self.valid_params = {
             'name': 'Test Tree',
             'description': 'some test tree species',
-            'total_mass': 100.0,
+            'avg_mass': 10.0,  # 100.0 total_mass / 10 population = 10.0 avg_mass
             'population': 10,
             'ideal_growth_rate': 5.0,
             'ideal_temp_range': (10.0, 30.0),

@@ -215,7 +215,8 @@ class TestGrass(unittest.TestCase):
         self.assertIn('temperature', conditions)
         self.assertIn('uv', conditions)
         self.assertIn('hydration', conditions)
-        self.assertIn('soil_temperature', conditions)
+        # Grass has root_depth=1, so it doesn't include soil_temperature
+        self.assertNotIn('soil_temperature', conditions)
     
     def test_grass_specific_behavior(self):
         """Test that grass applies canopy shading."""

@@ -60,7 +60,7 @@ class TestFlora(unittest.TestCase):
         self.valid_params = {
             'name': 'Test Grass',
             'description': 'A test grass species',
-            'total_mass': 100.0,
+            'avg_mass': 2.0,  # 100.0 total_mass / 50 population = 2.0 avg_mass
             'population': 50,
             'ideal_growth_rate': 5.0,
             'ideal_temp_range': (10.0, 30.0),
@@ -68,7 +68,7 @@ class TestFlora(unittest.TestCase):
             'ideal_hydration_range': (5.0, 20.0),
             'ideal_soil_temp_range': (5.0, 25.0),
             'consumers': [self.mock_fauna],
-            'root_depth': 2,
+            'root_depth': 3,  # Set to 3 to include soil_temperature in environmental conditions
             'plot': self.mock_plot
         }
         
@@ -88,7 +88,7 @@ class TestFlora(unittest.TestCase):
         self.assertEqual(flora.ideal_hydration_range, (5.0, 20.0))
         self.assertEqual(flora.ideal_soil_temp_range, (5.0, 25.0))
         self.assertEqual(flora.consumers, [self.mock_fauna])
-        self.assertEqual(flora.root_depth, 2)
+        self.assertEqual(flora.root_depth, 3)  # Changed to 3 to match valid_params
         self.assertEqual(flora.plot, self.mock_plot)
     
     def test_init_invalid_name(self):
@@ -109,10 +109,10 @@ class TestFlora(unittest.TestCase):
             Flora(**params)
         self.assertIn("cannot be empty", str(context.exception))
     
-    def test_init_invalid_total_mass(self):
-        """Test Flora initialization with invalid total_mass."""
+    def test_init_invalid_avg_mass(self):
+        """Test Flora initialization with invalid avg_mass."""
         params = self.valid_params.copy()
-        params['total_mass'] = -10.0  # Negative value
+        params['avg_mass'] = -10.0  # Negative value
         
         with self.assertRaises(ValueError) as context:
             Flora(**params)
@@ -223,7 +223,7 @@ class TestFlora(unittest.TestCase):
         """Test update_flora_mass with invalid day type."""
         with self.assertRaises(TypeError) as context:
             self.flora.update_flora_mass(day="invalid")
-        self.assertIn("must be an instance of int", str(context.exception))
+        self.assertIn("must be a number", str(context.exception))
     
     def test_update_flora_mass_negative_day(self):
         """Test update_flora_mass with negative day."""

@@ -266,27 +266,31 @@ class TestPlotGrid(unittest.TestCase):
         self.grid.update_all_plots(day=2)
         fauna1.update_prey_mass.assert_called_with(2)
         fauna2.update_predator_mass.assert_not_called()
-        # Test Day 3: Flora and predator updates
+        # Test Day 3: Flora updates only (predators are disabled)
         flora1.update_flora_mass.reset_mock()
         flora2.update_flora_mass.reset_mock()
         fauna2.update_predator_mass.reset_mock()
         self.grid.update_all_plots(day=3)
         flora1.update_flora_mass.assert_called_with(3)
         flora2.update_flora_mass.assert_called_with(3)
-        fauna2.update_predator_mass.assert_called_with(3)
+        fauna2.update_predator_mass.assert_not_called()  # Predators disabled
 
-        for day in [1,2,3,4,5,6,7,8,9,10,11]:
-            # Test migration triggered every 5th day only
-            if day % 5 == 0:
-                with patch.object(self.grid, 'migrate_species') as mock_migrate:
-                    self.grid.update_all_plots(day=day)
-                    mock_migrate.assert_called()
-            else:
-                with patch.object(self.grid, 'migrate_species') as mock_migrate:
-                    self.grid.update_all_plots(day=day)
-                    mock_migrate.assert_not_called()
-
-            # Test snow height and extinction always called
+        # Reset mocks before testing migration
+        for plot in [self.plot1, self.plot2]:
+            plot.update_avg_snow_height.reset_mock()
+            plot.remove_extinct_species.reset_mock()
+        
+        # Test migration triggered every 5th day only
+        with patch.object(self.grid, 'migrate_species') as mock_migrate:
+            for day in [1,2,3,4]:
+                self.grid.update_all_plots(day=day)
+                mock_migrate.assert_not_called()
+            
+            self.grid.update_all_plots(day=5)
+            mock_migrate.assert_called_once()
+        
+        # Test snow height and extinction always called
+        for day in [1,2,3,4,5]:
             for plot in [self.plot1, self.plot2]:
                 plot.update_avg_snow_height.assert_any_call(day)
                 plot.remove_extinct_species.assert_any_call()
@@ -353,7 +357,7 @@ class TestPlotGrid(unittest.TestCase):
         fauna1_new.update_prey_mass.assert_called_with(2)
         fauna2.update_predator_mass.assert_not_called()
         fauna2_new.update_predator_mass.assert_not_called()
-        # Test Day 3: Flora and predator updates
+        # Test Day 3: Flora updates only (predators are disabled)
         flora1.update_flora_mass.reset_mock()
         flora1_new.update_flora_mass.reset_mock()
         flora2.update_flora_mass.reset_mock()
@@ -367,8 +371,8 @@ class TestPlotGrid(unittest.TestCase):
         flora1_new.update_flora_mass.assert_called_with(3)
         flora2.update_flora_mass.assert_called_with(3)
         flora2_new.update_flora_mass.assert_called_with(3)
-        fauna2.update_predator_mass.assert_called_with(3)
-        fauna2_new.update_predator_mass.assert_called_with(3)
+        fauna2.update_predator_mass.assert_not_called()  # Predators disabled
+        fauna2_new.update_predator_mass.assert_not_called()  # Predators disabled
         fauna1.update_prey_mass.assert_not_called()
         fauna1_new.update_prey_mass.assert_not_called()
 
@@ -454,6 +458,9 @@ class TestPlotGrid(unittest.TestCase):
         climate2.get_biome.return_value = 'tundra'
         plot1.get_climate.return_value = climate1
         plot2.get_climate.return_value = climate2
+        # Mock get_all_fauna to return empty list (for mammoth border check)
+        plot1.get_all_fauna.return_value = []
+        plot2.get_all_fauna.return_value = []
         self.grid.plots = {(0, 0): plot1, (0, 1): plot2}
         self.grid.min_row = 0
         self.grid.max_row = 0

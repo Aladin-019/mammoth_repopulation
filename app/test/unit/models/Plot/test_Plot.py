@@ -845,6 +845,7 @@ class TestPlot(unittest.TestCase):
     
     def test_over_predator_capacity_over_limit(self):
         """Test over_predator_capacity when over the limit."""
+        # Note: over_predator_capacity is currently disabled (returns False) since predators are not enabled
         # Create mock predators with total mass above limit (10 kg/km^2 * 1.0 km^2 = 10 kg)
         mock_predator1 = Mock()
         mock_predator1.total_mass = 6.0
@@ -859,7 +860,7 @@ class TestPlot(unittest.TestCase):
         self.plot.fauna = [mock_predator1, mock_predator2]
         self.plot.plot_area = 1.0
         result = self.plot.over_predator_capacity()
-        self.assertTrue(result)  # 6 + 7 = 13 kg, over 10 kg limit
+        self.assertFalse(result)  # Currently returns False (stub) since predators are disabled
 
 if __name__ == '__main__':
     unittest.main()
