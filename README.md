@@ -27,6 +27,16 @@ Underlying data is likely derived from either:
 If the source is OpenStreetMap, the following attribution applies:
 OpenStreetMap contributors | www.openstreetmap.org | ODbL 1.0
 
+## Testing
+
+This project includes comprehensive test coverage with unit and integration tests. All tests include automatic coverage reporting.
+
+- **Test Suite**: Unit tests for individual components and integration tests for end-to-end functionality
+- **Coverage Reporting**: Automatic code coverage tracking (see `TESTING.md` for details)
+- **Test Runner**: Run tests with `python run_tests.py`
+
+For detailed testing information, see [TESTING.md](TESTING.md).
+
 ## Requirements
 - Python 3.8+
 - `pygrib` (for GRIB file parsing)

@@ -27,6 +27,14 @@ def main():
     # Build pytest command
     pytest_args = ['python', '-m', 'pytest', 'app/test']
     
+    # Add coverage arguments
+    pytest_args.extend([
+        '--cov=app',  # Measure coverage for app package
+        '--cov-report=term',  # Show coverage summary in terminal
+        '--cov-report=term-missing',  # Show missing lines in terminal
+        '--cov-report=html',  # Generate HTML report
+    ])
+    
     # Handle command line arguments
     if len(sys.argv) > 1:
         if sys.argv[1] == 'unit':
@@ -39,6 +47,15 @@ def main():
     
     # Run pytest
     result = subprocess.run(pytest_args, env=env)
+    
+    if result.returncode == 0:
+        print("\n" + "="*70)
+        print("Coverage report generated!")
+        print("="*70)
+        print("\nTerminal coverage summary shown above.")
+        print("For detailed HTML coverage report, open: htmlcov/index.html")
+        print("="*70)
+    
     sys.exit(result.returncode)
 
 if __name__ == '__main__':
