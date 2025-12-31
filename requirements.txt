@@ -3,5 +3,6 @@ numpy
 geopandas
 shapely
 matplotlib
+pytest
 # pygrib - only needed for processing GRIB files into CSV (not needed to run simulation)
 
