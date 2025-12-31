@@ -34,7 +34,7 @@ class TestUVLoader(unittest.TestCase):
 
     def test_values_are_floats(self):
         self.write_mock_csv(
-            "date,mean_uv,uv_var\n2024-01-01,2.5,0.2\n"
+            "Date,Mean_UV,Variance_UV\n2024-01-01,2.5,0.2\n"
         )
         uv_loader = UVLoader("mock_uv.csv", "Saskatoon")
         mean, var = list(uv_loader.get_uv_data()["Saskatoon"].values())[0]

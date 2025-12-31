@@ -34,7 +34,7 @@ class TestTemperatureLoader(unittest.TestCase):
 
     def test_values_are_floats(self):
         self.write_mock_csv(
-            "date,mean_temp,temp_var\n2024-01-01,-20.5,1.2\n"
+            "Date,Mean_Temp_C,Variance_Temp_C\n2024-01-01,-20.5,1.2\n"
         )
         temp_loader = TemperatureLoader("mock_temp.csv", "Saskatoon")
         mean, var = list(temp_loader.get_temp_data()["Saskatoon"].values())[0]

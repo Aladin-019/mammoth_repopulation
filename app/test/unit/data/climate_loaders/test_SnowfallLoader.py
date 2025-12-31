@@ -31,7 +31,7 @@ class TestSnowfallLoader(unittest.TestCase):
 
     def test_values_are_floats(self):
         self.write_mock_csv(
-            "date,mean_snowfall,snow_var\n2024-01-01,-20.5,1.2\n"
+            "Date,Mean_Snowfall_mm,Variance_Snowfall_mm\n2024-01-01,-20.5,1.2\n"
         )
         snow_loader = SnowfallLoader("mock_snowfall.csv", "Saskatoon")
         mean, var = list(snow_loader.get_snowfall_data()["Saskatoon"].values())[0]

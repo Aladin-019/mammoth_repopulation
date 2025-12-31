@@ -31,7 +31,7 @@ class TestSoilTemp4Loader(unittest.TestCase):
 
     def test_values_are_floats(self):
         self.write_mock_csv(
-            "date,mean_soil_temp,soil_temp_var\n2024-01-01,-20.5,1.2\n"
+            "Date,Mean_Temp_C,Variance_Temp_C\n2024-01-01,-20.5,1.2\n"
         )
         soil_temp4_loader = SoilTemp4Loader("mock_soil_temp4.csv", "Saskatoon")
         mean, var = list(soil_temp4_loader.get_soil_temp4_data()["Saskatoon"].values())[0]

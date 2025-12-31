@@ -31,7 +31,7 @@ class TestSRDLoader(unittest.TestCase):
 
     def test_values_are_floats(self):
         self.write_mock_csv(
-            "date,mean_srd,srd_var\n2024-01-01,-20.5,1.2\n"
+            "Date,Mean_Surface_Solar_Radiation_Jm2,Variance_Surface_Solar_Radiation_Jm2\n2024-01-01,-20.5,1.2\n"
         )
         srd_loader = SSRDLoader("mock_srd.csv", "Saskatoon")
         mean, var = list(srd_loader.get_srd_data()["Saskatoon"].values())[0]

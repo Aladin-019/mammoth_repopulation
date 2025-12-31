@@ -22,7 +22,7 @@ class TestClimate(unittest.TestCase):
         """Test Climate initialization."""
         self.assertEqual(self.climate.biome, "southern taiga")
         self.assertEqual(self.climate.consecutive_frozen_soil_days, 0)
-        self.assertEqual(self.climate.loaders, {})
+        # Climate uses class-level _class_loaders, not instance-level loaders
         
         for data_type in ['temperature', 'soil_temp', 'snowfall', 'rainfall', 'uv', 'ssrd']:
             self.assertEqual(self.climate.recent_values[data_type].maxlen, 7)  # deque max len
@@ -30,7 +30,7 @@ class TestClimate(unittest.TestCase):
 
     def test_init_invalid_biome_type(self):
         """Test initialization with invalid biome type."""
-        with self.assertRaises(ValueError) as context:
+        with self.assertRaises(TypeError) as context:
             Climate(101, self.mock_plot)
         self.assertIn("Biome must be a string", str(context.exception))
 
@@ -47,7 +47,7 @@ class TestClimate(unittest.TestCase):
 
     def test_set_biome_invalid_type(self):
         """Test setting biome with invalid type."""
-        with self.assertRaises(ValueError) as context:
+        with self.assertRaises(TypeError) as context:
             self.climate.set_biome(101)
         self.assertIn("Biome must be a string", str(context.exception))
 
@@ -130,13 +130,13 @@ class TestClimate(unittest.TestCase):
         """Test getting temperature with invalid day."""
         with self.assertRaises(ValueError) as context:
             self.climate._get_current_temperature(0)
-        self.assertIn("Day must be an integer between 1 and 365", str(context.exception))
+        self.assertIn("Day must be between 1 and 365", str(context.exception))
 
     def test_get_current_temperature_invalid_day_type(self):
         """Test getting temperature with invalid day type."""
-        with self.assertRaises(ValueError) as context:
+        with self.assertRaises(TypeError) as context:
             self.climate._get_current_temperature("1")
-        self.assertIn("Day must be an integer between 1 and 365", str(context.exception))
+        self.assertIn("Day must be an integer", str(context.exception))
 
     @patch('app.models.Climate.Climate.TemperatureDriver')
     @patch('app.models.Climate.Climate.TemperatureLoader')
@@ -150,7 +150,7 @@ class TestClimate(unittest.TestCase):
         mock_driver.generate_daily_temp.return_value = 15.0
         mock_driver_class.return_value = mock_driver
         
-        self.climate.loaders = {}
+        Climate._class_loaders.clear()  # Clear class-level cache
         
         result = self.climate._get_current_temperature(1)
         
@@ -171,7 +171,7 @@ class TestClimate(unittest.TestCase):
         mock_driver.generate_daily_temp.return_value = None
         mock_driver_class.return_value = mock_driver
         
-        self.climate.loaders = {}
+        Climate._class_loaders.clear()  # Clear class-level cache
         
         result = self.climate._get_current_temperature(1)  # should use fallback value 12.0
         self.assertEqual(result, 12.0)
@@ -188,7 +188,7 @@ class TestClimate(unittest.TestCase):
         mock_driver.generate_daily_temp.return_value = None
         mock_driver_class.return_value = mock_driver
         
-        self.climate.loaders = {}
+        Climate._class_loaders.clear()  # Clear class-level cache
         
         with self.assertRaises(RuntimeError) as context:
             self.climate._get_current_temperature(1)
@@ -198,7 +198,7 @@ class TestClimate(unittest.TestCase):
         """Test getting soil temperature with invalid day."""
         with self.assertRaises(ValueError) as context:
             self.climate._get_current_soil_temp(366)
-        self.assertIn("Day must be an integer between 1 and 365", str(context.exception))
+        self.assertIn("Day must be between 1 and 365", str(context.exception))
 
     @patch('app.models.Climate.Climate.SoilTemp4Driver')
     @patch('app.models.Climate.Climate.SoilTemp4Loader')
@@ -212,7 +212,7 @@ class TestClimate(unittest.TestCase):
         mock_driver.generate_daily_soil_temp.return_value = 3.0
         mock_driver_class.return_value = mock_driver
         
-        self.climate.loaders = {}
+        Climate._class_loaders.clear()  # Clear class-level cache
         
         result = self.climate._get_current_soil_temp(1)
         
@@ -245,9 +245,9 @@ class TestClimate(unittest.TestCase):
 
     def test_is_permafrost_not_enough_days(self):
         """Test is_permafrost when not enough consecutive frozen days."""
-        self.climate.consecutive_frozen_soil_days = 100
+        self.climate.consecutive_frozen_soil_days = 4  # threshold is 5 days for testing
         result = self.climate.is_permafrost()
-        self.assertFalse(result)  # should be 720 days (2 years)
+        self.assertFalse(result)
 
     def test_is_permafrost_enough_days(self):
         """Test is_permafrost when enough consecutive frozen days."""
@@ -270,12 +270,12 @@ class TestClimate(unittest.TestCase):
     def test_is_steppe_valid_steppe_conditions(self):
         """
         Test is_steppe with valid steppe conditions.
-        Valid permafrost and valid flora ratios.
+        Note: is_steppe() is currently disabled (always returns False) until fauna is implemented.
         """
         self.climate.consecutive_frozen_soil_days = 720  # valid permafrost
         self.mock_plot.get_flora_mass_composition.return_value = (0.9, 0.1, 0.0, 0.0)  # valid steppe ratios
         result = self.climate.is_steppe()
-        self.assertTrue(result)
+        self.assertFalse(result)  # is_steppe is currently disabled and always returns False
 
     def test_is_steppe_non_steppe_conditions_invalid_permafrost(self):
         """
@@ -326,19 +326,20 @@ class TestClimate(unittest.TestCase):
     def test_2mtemp_change_from_snow_delta_static_method(self):
         """Test the static _2mtemp_change_from_snow_delta method."""
         # Test positive snow delta (more snow = cools air)
+        # AIR_SENSITIVITY = 20.0, so -0.1 * 20.0 = -2.0°C (clamped to -15.0 max)
         result = Climate._2mtemp_change_from_snow_delta(0.1)
         self.assertIsInstance(result, float)
-        self.assertEqual(result, -0.2)  # -0.1 * 2.0 = -0.2°C
+        self.assertEqual(result, -2.0)  # -0.1 * 20.0 = -2.0°C
         
         # Test negative snow delta (less snow = warms air)
         result = Climate._2mtemp_change_from_snow_delta(-0.1)
         self.assertIsInstance(result, float)
-        self.assertEqual(result, 0.2)  # -(-0.1) * 2.0 = 0.2°C
+        self.assertEqual(result, 2.0)  # -(-0.1) * 20.0 = 2.0°C
         
         # Test zero snow delta (no change)
         result = Climate._2mtemp_change_from_snow_delta(0.0)
         self.assertIsInstance(result, float)
-        self.assertEqual(result, 0.0)  # -0.0 * 2.0 = 0.0°C
+        self.assertEqual(result, 0.0)  # -0.0 * 20.0 = 0.0°C
         
         # Test clamping at maximum negative value (MAX_DAILY_AIR_DELTA = 1.5)
         result = Climate._2mtemp_change_from_snow_delta(1.0)
@@ -353,19 +354,20 @@ class TestClimate(unittest.TestCase):
     def test_soil_temp_change_from_snow_delta_static_method(self):
         """Test the static _soil_temp_change_from_snow_delta method."""
         # Test positive snow delta (more snow = warms soil)
+        # SOIL_SENSITIVITY = 50.0, so 0.1 * 50.0 = 5.0°C (clamped to 30.0 max)
         result = Climate._soil_temp_change_from_snow_delta(0.1)
         self.assertIsInstance(result, float)
-        self.assertEqual(result, 0.5)  # 0.1 * 5.0 = 0.5°C
+        self.assertEqual(result, 5.0)  # 0.1 * 50.0 = 5.0°C
         
         # Test negative snow delta (less snow = cools soil)
         result = Climate._soil_temp_change_from_snow_delta(-0.1)
         self.assertIsInstance(result, float)
-        self.assertEqual(result, -0.5)  # -0.1 * 5.0 = -0.5°C
+        self.assertEqual(result, -5.0)  # -0.1 * 50.0 = -5.0°C
         
         # Test zero snow delta (no change)
         result = Climate._soil_temp_change_from_snow_delta(0.0)
         self.assertIsInstance(result, float)
-        self.assertEqual(result, 0.0)  # 0.0 * 5.0 = 0.0°C
+        self.assertEqual(result, 0.0)  # 0.0 * 50.0 = 0.0°C
         
         # Test clamping at maximum positive value (MAX_DAILY_SOIL_DELTA = 3.0)
         result = Climate._soil_temp_change_from_snow_delta(1.0)
@@ -421,7 +423,7 @@ class TestClimate(unittest.TestCase):
         mock_driver.generate_daily_snowfall.return_value = 3.0
         mock_driver_class.return_value = mock_driver
         
-        self.climate.loaders = {}
+        Climate._class_loaders.clear()  # Clear class-level cache
         
         result = self.climate._get_current_snowfall(1)
         self.assertEqual(result, 3.0)
@@ -438,9 +440,9 @@ class TestClimate(unittest.TestCase):
         mock_driver.generate_daily_rainfall.return_value = 1.5
         mock_driver_class.return_value = mock_driver
         
-        self.climate.loaders = {}
+        Climate._class_loaders.clear()  # Clear class-level cache
         
-        result = self.climate.get_current_rainfall(1)
+        result = self.climate._get_current_rainfall(1)
         self.assertEqual(result, 1.5)
 
     @patch('app.models.Climate.Climate.UVDriver')
@@ -455,7 +457,7 @@ class TestClimate(unittest.TestCase):
         mock_driver.generate_daily_uv.return_value = 2.5
         mock_driver_class.return_value = mock_driver
         
-        self.climate.loaders = {}
+        Climate._class_loaders.clear()  # Clear class-level cache
         
         result = self.climate._get_current_uv(1)
         self.assertEqual(result, 2.5)
@@ -472,9 +474,9 @@ class TestClimate(unittest.TestCase):
         mock_driver.generate_daily_srd.return_value = 80.0
         mock_driver_class.return_value = mock_driver
         
-        self.climate.loaders = {}
+        Climate._class_loaders.clear()  # Clear class-level cache
         
-        result = self.climate.get_current_SSRD(1)
+        result = self.climate._get_current_SSRD(1)
         self.assertEqual(result, 80.0)
 
 
