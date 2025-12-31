@@ -219,7 +219,6 @@ class PlotGrid:
             plot.remove_extinct_species()
         
         # Check and update biomes based on flora ratios (only on days when flora has updated)
-        # This prevents checking on even days when flora hasn't changed, avoiding unnecessary oscillations
         if day % 2 == 1:
             for plot in self.plots.values():
                 plot.check_and_update_biome()
@@ -312,8 +311,8 @@ class PlotGrid:
         im = ax.imshow(grid, cmap=cmap, aspect='equal', origin='lower', vmin=0, vmax=len(colors)-1)
 
         # Add borders around plots with mammoths
-        mammoth_border_color = '#FF0000'  # Red border for mammoths
-        mammoth_border_width = 2.0
+        mammoth_border_color = '#8B4513'  # Brown
+        mammoth_border_width = 1.5
         mammoth_count = 0
         
         for (row, col), plot in self.plots.items():
@@ -329,17 +328,13 @@ class PlotGrid:
                     break
             
             if has_mammoths:
-                # Draw border around this cell
-                # Rectangle coordinates: (left, bottom), width, height
-                # For imshow with origin='lower', x is column, y is row
-                # Each cell spans from (col-0.5, row-0.5) to (col+0.5, row+0.5)
                 rect = Rectangle(
-                    (grid_col - 0.5, grid_row - 0.5),  # bottom-left corner
+                    (grid_col - 0.5, grid_row - 0.5),
                     1.0,  # width
                     1.0,  # height
                     linewidth=mammoth_border_width,
                     edgecolor=mammoth_border_color,
-                    facecolor='none',  # No fill, just border
+                    facecolor='none',
                     zorder=10  # Draw on top
                 )
                 ax.add_patch(rect)
@@ -354,9 +349,9 @@ class PlotGrid:
             cbar.set_label('Biome Type')
         
         # Update title with day if provided
-        title = 'Eastern Siberia Biome Distribution'
+        title = 'Mammoth Repopulation Simulator'
         if day is not None:
-            title = f'Eastern Siberia Biome Distribution - Day {day}'
+            title = f'Eastern Siberia Biome Map - Day {day}'
         ax.set_title(title)
         ax.set_xlabel('Column')
         ax.set_ylabel('Row')
