@@ -17,7 +17,7 @@ class TestTemperatureLoader(unittest.TestCase):
 
     def test_temp_data_structure(self):
         csv_content = (
-            "date,mean_temp,temp_var\n"
+            "Date,Mean_Temp_C,Variance_Temp_C\n"
             "2024-01-01,-20.5,1.2\n"
             "2024-01-02,-25.0,1.1\n"
             "2024-01-03,-19.8,1.3\n"
@@ -43,7 +43,7 @@ class TestTemperatureLoader(unittest.TestCase):
 
     def test_day_number_indexing(self):
         self.write_mock_csv(
-            "date,mean_temp,temp_var\n"
+            "Date,Mean_Temp_C,Variance_Temp_C\n"
             "2024-01-01,-20.5,1.2\n2024-01-02,-25.0,1.1\n"
         )
         temp_loader = TemperatureLoader("mock_temp.csv", "Saskatoon")
@@ -52,7 +52,7 @@ class TestTemperatureLoader(unittest.TestCase):
 
     def test_skips_null_values(self):
         self.write_mock_csv(
-            "date,mean_temp,temp_var\n"
+            "Date,Mean_Temp_C,Variance_Temp_C\n"
             "2024-01-01,,0.2\n"
             "2024-01-02,3.0,\n"
         )
@@ -62,7 +62,7 @@ class TestTemperatureLoader(unittest.TestCase):
 
     def test_skips_negative_variance(self):
         self.write_mock_csv(
-            "date,mean_temp,temp_var\n"
+            "Date,Mean_Temp_C,Variance_Temp_C\n"
             "2024-01-01,2.5,-0.1\n"
         )
         temp_loader = TemperatureLoader("mock_temp.csv", "Saskatoon")
@@ -70,7 +70,7 @@ class TestTemperatureLoader(unittest.TestCase):
 
     def test_missing_required_columns(self):
         self.write_mock_csv(
-            "date,wrong_col,temp_var\n2024-01-01,2.5,0.2\n"
+            "Date,wrong_col,Variance_Temp_C\n2024-01-01,2.5,0.2\n"
         )
         temp_loader = TemperatureLoader("mock_temp.csv", "Saskatoon")
         self.assertEqual(temp_loader.get_temp_data(), {"Saskatoon": {}})

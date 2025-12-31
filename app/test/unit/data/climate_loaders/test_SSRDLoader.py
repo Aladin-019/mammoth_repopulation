@@ -14,7 +14,7 @@ class TestSRDLoader(unittest.TestCase):
 
     def test_srd_data_structure(self):
         csv_content = (
-            "date,mean_srd,srd_var\n"
+            "Date,Mean_Surface_Solar_Radiation_Jm2,Variance_Surface_Solar_Radiation_Jm2\n"
             "2024-01-01,-20.5,1.2\n"
             "2024-01-02,-25.0,1.1\n"
             "2024-01-03,-19.8,1.3\n"
@@ -40,7 +40,7 @@ class TestSRDLoader(unittest.TestCase):
 
     def test_day_number_indexing(self):
         self.write_mock_csv(
-            "date,mean_srd,srd_var\n"
+            "Date,Mean_Surface_Solar_Radiation_Jm2,Variance_Surface_Solar_Radiation_Jm2\n"
             "2024-01-01,-20.5,1.2\n2024-01-02,-25.0,1.1\n"
         )
         srd_loader = SSRDLoader("mock_srd.csv", "Saskatoon")
@@ -49,7 +49,7 @@ class TestSRDLoader(unittest.TestCase):
 
     def test_skips_null_values(self):
         self.write_mock_csv(
-            "date,mean_srd,srd_var\n"
+            "Date,Mean_Surface_Solar_Radiation_Jm2,Variance_Surface_Solar_Radiation_Jm2\n"
             "2024-01-01,,0.2\n"
             "2024-01-02,3.0,\n"
         )
@@ -59,7 +59,7 @@ class TestSRDLoader(unittest.TestCase):
 
     def test_skips_negative_variance(self):
         self.write_mock_csv(
-            "date,mean_srd,srd_var\n"
+            "Date,Mean_Surface_Solar_Radiation_Jm2,Variance_Surface_Solar_Radiation_Jm2\n"
             "2024-01-01,2.5,-0.1\n"
         )
         srd_loader = SSRDLoader("mock_srd.csv", "Saskatoon")
@@ -67,7 +67,7 @@ class TestSRDLoader(unittest.TestCase):
 
     def test_missing_required_columns(self):
         self.write_mock_csv(
-            "date,wrong_col,srd_var\n2024-01-01,2.5,0.2\n"
+            "Date,wrong_col,Variance_Surface_Solar_Radiation_Jm2\n2024-01-01,2.5,0.2\n"
         )
         srd_loader = SSRDLoader("mock_srd.csv", "Saskatoon")
         self.assertEqual(srd_loader.get_srd_data(), {"Saskatoon": {}})

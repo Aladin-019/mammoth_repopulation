@@ -47,7 +47,7 @@ class TestPredator(unittest.TestCase):
                     ideal_growth_rate=0.2,
                     feeding_rate=1.0,
                     avg_steps_taken=5.0,
-                    avg_feet_area=0.2,
+                    avg_foot_area=0.2,
                     plot=plot
                 )
             
@@ -70,7 +70,7 @@ class TestPredator(unittest.TestCase):
             'ideal_growth_rate': 0.08,
             'feeding_rate': 2.5,
             'avg_steps_taken': 12.0,
-            'avg_feet_area': 0.6,
+            'avg_foot_area': 0.6,
             'plot': self.mock_plot,
             'prey': [self.mock_prey]
         }
@@ -88,7 +88,7 @@ class TestPredator(unittest.TestCase):
         self.assertEqual(predator.ideal_growth_rate, 0.08)
         self.assertEqual(predator.feeding_rate, 2.5)
         self.assertEqual(predator.avg_steps_taken, 12.0)
-        self.assertEqual(predator.avg_feet_area, 0.6)
+        self.assertEqual(predator.avg_foot_area, 0.6)
         self.assertEqual(predator.plot, self.mock_plot)
         self.assertEqual(predator.prey, [self.mock_prey])
     
@@ -147,7 +147,7 @@ class TestPredator(unittest.TestCase):
                     ideal_growth_rate=0.18,
                     feeding_rate=0.8,
                     avg_steps_taken=4.0,
-                    avg_feet_area=0.15,
+                    avg_foot_area=0.15,
                     plot=plot
                 )
             
@@ -181,7 +181,7 @@ class TestPredator(unittest.TestCase):
                     ideal_growth_rate=0.18,
                     feeding_rate=0.8,
                     avg_steps_taken=6.0,
-                    avg_feet_area=0.3,
+                    avg_foot_area=0.3,
                     plot=plot
                 )
             def get_name(self):

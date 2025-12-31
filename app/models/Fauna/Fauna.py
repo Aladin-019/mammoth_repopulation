@@ -36,7 +36,7 @@ class Fauna():
             min_food_per_day=source_fauna.min_food_per_day / source_fauna.population if source_fauna.population > 0 else source_fauna.min_food_per_day,
             feeding_rate=source_fauna.feeding_rate,
             avg_steps_taken=source_fauna.avg_steps_taken,
-            avg_feet_area=source_fauna.avg_feet_area,
+            avg_foot_area=source_fauna.avg_foot_area,
             plot=plot if plot is not None else source_fauna.plot
         )
     

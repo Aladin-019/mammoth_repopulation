@@ -14,7 +14,7 @@ class TestRainfallLoader(unittest.TestCase):
 
     def test_rainfall_data_structure(self):
         csv_content = (
-            "date,mean_rainfall,rain_var\n"
+            "Date,Mean_Large_Scale_Rain_mmhr,Variance_Large_Scale_Rain_mmhr\n"
             "2024-01-01,-20.5,1.2\n"
             "2024-01-02,-25.0,1.1\n"
             "2024-01-03,-19.8,1.3\n"
@@ -31,7 +31,7 @@ class TestRainfallLoader(unittest.TestCase):
 
     def test_values_are_floats(self):
         self.write_mock_csv(
-            "date,mean_rainfall,rain_var\n2024-01-01,-20.5,1.2\n"
+            "Date,Mean_Large_Scale_Rain_mmhr,Variance_Large_Scale_Rain_mmhr\n2024-01-01,-20.5,1.2\n"
         )
         rain_loader = RainfallLoader("mock_rainfall.csv", "Saskatoon")
         mean, var = list(rain_loader.get_rainfall_data()["Saskatoon"].values())[0]
@@ -40,7 +40,7 @@ class TestRainfallLoader(unittest.TestCase):
 
     def test_day_number_indexing(self):
         self.write_mock_csv(
-            "date,mean_rainfall,rain_var\n"
+            "Date,Mean_Large_Scale_Rain_mmhr,Variance_Large_Scale_Rain_mmhr\n"
             "2024-01-01,-20.5,1.2\n2024-01-02,-25.0,1.1\n"
         )
         rain_loader = RainfallLoader("mock_rainfall.csv", "Saskatoon")
@@ -49,7 +49,7 @@ class TestRainfallLoader(unittest.TestCase):
 
     def test_skips_null_values(self):
         self.write_mock_csv(
-            "date,mean_rainfall,rain_var\n"
+            "Date,Mean_Large_Scale_Rain_mmhr,Variance_Large_Scale_Rain_mmhr\n"
             "2024-01-01,,0.2\n"
             "2024-01-02,3.0,\n"
         )
@@ -59,7 +59,7 @@ class TestRainfallLoader(unittest.TestCase):
 
     def test_skips_negative_variance(self):
         self.write_mock_csv(
-            "date,mean_rainfall,rain_var\n"
+            "Date,Mean_Large_Scale_Rain_mmhr,Variance_Large_Scale_Rain_mmhr\n"
             "2024-01-01,2.5,-0.1\n"
         )
         rain_loader = RainfallLoader("mock_rainfall.csv", "Saskatoon")
@@ -67,7 +67,7 @@ class TestRainfallLoader(unittest.TestCase):
 
     def test_missing_required_columns(self):
         self.write_mock_csv(
-            "date,wrong_col,rain_var\n2024-01-01,2.5,0.2\n"
+            "Date,wrong_col,Variance_Large_Scale_Rain_mmhr\n2024-01-01,2.5,0.2\n"
         )
         rain_loader = RainfallLoader("mock_rainfall.csv", "Saskatoon")
         self.assertEqual(rain_loader.get_rainfall_data(), {"Saskatoon": {}})

@@ -8,7 +8,6 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', '..', '..
 from app.models.Fauna.Fauna import Fauna
 from app.interfaces.plot_info import PlotInformation
 
-
 class TestFauna(unittest.TestCase):
     """Test cases for the Fauna class."""
     
@@ -40,7 +39,7 @@ class TestFauna(unittest.TestCase):
             'min_food_per_day': 50.0,
             'feeding_rate': 5.0,
             'avg_steps_taken': 1000.0,
-            'avg_feet_area': 0.5,
+            'avg_foot_area': 0.5,
             'plot': self.mock_plot
         }
         
@@ -57,7 +56,7 @@ class TestFauna(unittest.TestCase):
         self.assertEqual(self.fauna.feeding_rate, 5.0)
         self.assertEqual(self.fauna.min_food_per_day, 50.0)
         self.assertEqual(self.fauna.avg_steps_taken, 1000.0)
-        self.assertEqual(self.fauna.avg_feet_area, 0.5)
+        self.assertEqual(self.fauna.avg_foot_area, 0.5)
         self.assertEqual(self.fauna.plot, self.mock_plot)
         
         # Test calculated total_mass
@@ -207,19 +206,19 @@ class TestFauna(unittest.TestCase):
             Fauna(**params)
         self.assertIn("must be non-negative", str(context.exception))
     
-    def test_init_invalid_avg_feet_area_type(self):
-        """Test Fauna initialization with invalid avg_feet_area type."""
+    def test_init_invalid_avg_foot_area_type(self):
+        """Test Fauna initialization with invalid avg_foot_area type."""
         params = self.valid_params.copy()
-        params['avg_feet_area'] = "0.5"  # Wrong type
+        params['avg_foot_area'] = "0.5"  # Wrong type
         
         with self.assertRaises(TypeError) as context:
             Fauna(**params)
         self.assertIn("must be an instance of float", str(context.exception))
     
-    def test_init_invalid_avg_feet_area_zero(self):
-        """Test Fauna initialization with zero avg_feet_area."""
+    def test_init_invalid_avg_foot_area_zero(self):
+        """Test Fauna initialization with zero avg_foot_area."""
         params = self.valid_params.copy()
-        params['avg_feet_area'] = 0.0  # Zero value (not allowed)
+        params['avg_foot_area'] = 0.0  # Zero value (not allowed)
         
         with self.assertRaises(ValueError) as context:
             Fauna(**params)
@@ -268,9 +267,9 @@ class TestFauna(unittest.TestCase):
         """Test get_avg_steps_taken method."""
         self.assertEqual(self.fauna.get_avg_steps_taken(), 1000.0)
     
-    def test_get_avg_feet_area(self):
-        """Test get_avg_feet_area method."""
-        self.assertEqual(self.fauna.get_avg_feet_area(), 0.5)
+    def test_get_avg_foot_area(self):
+        """Test get_avg_foot_area method."""
+        self.assertEqual(self.fauna.get_avg_foot_area(), 0.5)
     
     def test_distance_from_ideal_ideal_value(self):
         """Test distance_from_ideal with ideal value."""
