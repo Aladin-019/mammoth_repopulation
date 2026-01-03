@@ -12,8 +12,7 @@ class Shrub(Flora):
     They are affected by canopy cover, which reduces UV exposure.
     """
     
-    # amount of shrub area trampled by large herbivores (probability they will trample if encountered)
-    STOMPING_RATE = 0.85
+    STOMPING_RATE = 0.04
 
     def __init__(self, name: str, description: str, avg_mass: float, population: int,
                  ideal_growth_rate: float, ideal_temp_range: Tuple[float, float],

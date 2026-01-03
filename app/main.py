@@ -91,7 +91,6 @@ def create_siberia_grid(resolution=0.75, lon_min=120.0, lon_max=180.0):
     lat_to_row = {lat: row for row, lat in enumerate(unique_lats)}
     lon_to_col = {lon: col for col, lon in enumerate(unique_lons)}
     
-    # Create plots ONLY for valid land cells (already filtered by polygon check above)
     print("Creating plots from grid cells...")
     for lon, lat in grid_cells:
         row = lat_to_row[lat]
@@ -116,19 +115,19 @@ def run_simulation(plot_grid: PlotGrid, num_days: int = 10, visualize: bool = Tr
     """
     print(f"\nRunning simulation for {num_days} days...")
     
-    # Define biome colors for visualization
     biome_colors = {
         'southern taiga': '#228B22',      # Forest green
         'northern taiga': '#32CD32',      # Lime green
         'southern tundra': '#D3D3D3',     # Light gray
-        'northern tundra': '#FFFFFF'      # White
+        'northern tundra': '#FFFFFF',     # White
+        'mammoth steppe': '#8B9662'       # Brownish green (olive drab)
     }
     
     # Setup visualization if requested
     ax = None
     if visualize:
         import matplotlib.pyplot as plt
-        plt.ion()  # Turn on interactive mode
+        plt.ion()
         # Show initial state (day 0)
         ax = plot_grid.visualize_biomes(biome_colors, figsize=(14, 10), save_path=None, ax=None, day=0)
         plt.pause(0.1)
@@ -136,50 +135,31 @@ def run_simulation(plot_grid: PlotGrid, num_days: int = 10, visualize: bool = Tr
     for day in range(1, num_days + 1):
         print(f"  Day {day}/{num_days}...", end=' ', flush=True)
         plot_grid.update_all_plots(day)
-        print("✓")
         
         # Update visualization each day
         if visualize:
             plot_grid.visualize_biomes(biome_colors, figsize=(14, 10), save_path=None, ax=ax, day=day)
-            plt.pause(0.5)  # Brief pause to see the update
+            plt.pause(0.5)
     
     if visualize:
         print("\nSimulation complete! Close the plot window when done viewing.")
         import matplotlib.pyplot as plt
-        plt.ioff()  # Turn off interactive mode
-        plt.show()  # Keep window open
+        plt.ioff()
+        plt.show()
     else:
         print("Simulation complete!")
 
 
-def visualize_biomes_interactive(plot_grid: PlotGrid):
-    """
-    Visualize the biomes with interactive zoom capability.
-    
-    Args:
-        plot_grid: The PlotGrid to visualize
-    """
-    # Define biome colors
-    biome_colors = {
-        'southern taiga': '#228B22',      # Forest green
-        'northern taiga': '#32CD32',      # Lime green
-        'southern tundra': '#D3D3D3',     # Light gray
-        'northern tundra': '#FFFFFF'      # White
-    }
-    
-    plot_grid.visualize_biomes(biome_colors, figsize=(14, 10))
-
-
-def add_mammoths_to_location(plot_grid, initializer, row: int, col: int, population_per_km2: float = 0.01):
+def add_mammoths_to_location(plot_grid, initializer, row: int, col: int, population_per_km2: float = 0.1):
     """
     Add mammoths to a specific plot location.
     
     Args:
         plot_grid: The PlotGrid to add mammoths to
-        initializer: The GridInitializer instance (needed for helper methods)
+        initializer: The GridInitializer instance
         row: Row coordinate of the plot
         col: Column coordinate of the plot
-        population_per_km2: Population density in mammoths per km^2 (default: 0.01)
+        population_per_km2: Population density in mammoths per km^2
     
     Returns:
         The mammoth Prey object if successful, None otherwise
@@ -209,8 +189,7 @@ def main():
     from app.setup.grid_initializer import GridInitializer
     initializer = GridInitializer(lat_step=0.55, lon_step=0.55)
     
-    # Add mammoths to a specific location (use an actual plot coordinate, not the center)
-    # Get all plot coordinates and pick one from the middle of the list
+    # Add mammoths to a specific location
     plot_coords = plot_grid.get_plot_coordinates()
     if plot_coords:
         # Sort by row then col to get a consistent ordering
@@ -219,15 +198,13 @@ def main():
         center_idx = len(plot_coords_sorted) // 2
         center_row, center_col = plot_coords_sorted[center_idx]
         
-        # Add mammoths with population density of 0.01 per km^2 (adjust as needed)
-        # You can change the location (row, col) and population_per_km2 as desired
         add_mammoths_to_location(plot_grid, initializer, center_row, center_col, population_per_km2=0.01)
     else:
         print("Warning: No plots found in the grid. Cannot add mammoths.")
     
-    # Run simulation with real-time visualization (300 days for longer simulation)
     run_simulation(plot_grid, num_days=300, visualize=True)
 
 
 if __name__ == "__main__":
     main()
+

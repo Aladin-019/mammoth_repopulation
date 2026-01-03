@@ -1,6 +1,5 @@
 from .Flora import Flora
-# FAUNA TEMPORARILY DISABLED - Focus on flora only
-# from ..Fauna import Fauna
+from ..Fauna import Fauna
 from typing import List, Tuple
 from app.interfaces.flora_plot_info import FloraPlotInformation
 
@@ -9,8 +8,10 @@ class Tree(Flora):
     """
     Represents a tree species of Flora.
     Trees provide canopy cover shade which reduces UV exposure and affects the mass of other
-    ground flora. Trees are resistent to trampling from large herbivores.
+    ground flora. Trees are affected by trampling from large herbivores, though less than shrubs.
     """
+    
+    STOMPING_RATE = 0.08
 
     def __init__(self, name: str, description: str, avg_mass: float, population: int,
                  ideal_growth_rate: float, ideal_temp_range: Tuple[float, float],
@@ -32,15 +33,43 @@ class Tree(Flora):
     def update_flora_mass(self, day: int) -> None:
         """
         Update the mass of the Tree.
+        Trees can be damaged by trampling from large herbivores.
         """
         self._validate_instance(day, int, "day")
         self._validate_positive_number(day, "day")
         
-        super().update_flora_mass(day)
+        try:
+            super().update_flora_mass(day)
+            
+            self._apply_trampling_reduction()
+        except Exception as e:
+            raise RuntimeError(f"Error updating tree mass: {e}")
 
     def get_Tree_canopy_cover(self) -> float:
         """Get the total canopy cover from all trees of this species in km^2"""
         return self.single_tree_canopy_cover * self.population
+    
+    def _apply_trampling_reduction(self) -> None:
+        """
+        Apply reduction in tree mass due to trampling by prey.
+        The trampling effect is proportional to how much of the plot is trampled.
+        Trees are more resistant to trampling than shrubs but still affected.
+        """
+        self._validate_not_none(self.plot, "plot")
+        
+        trampled_ratio = self.plot.get_area_trampled_ratio()
+        
+        trampling_damage = self.STOMPING_RATE * trampled_ratio
+        
+        if trampling_damage > 0:
+            # Reduce mass by trampling damage
+            mass_reduction = 1.0 - trampling_damage
+            self.total_mass *= max(0.0, mass_reduction)
+            
+            # Recalculate population after mass reduction
+            if self.avg_mass > 0:
+                new_population = int(self.total_mass / self.avg_mass)
+                self.population = max(0, new_population)
     
     def capacity_penalty(self) -> None:
         """

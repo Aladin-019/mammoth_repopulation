@@ -213,7 +213,8 @@ class Flora():
             self.avg_mass = float(avg_mass)
             self.population = population
             self.total_mass = self.avg_mass * self.population
-            self.ideal_growth_rate = float(ideal_growth_rate)   
+            self.ideal_growth_rate = float(ideal_growth_rate)
+            self.last_environmental_conditions = None  # Store last environmental conditions for debugging   
             self.ideal_temp_range = ideal_temp_range     
             self.ideal_uv_range = ideal_uv_range         
             self.ideal_hydration_range = ideal_hydration_range 
@@ -285,7 +286,7 @@ class Flora():
         
         if self.root_depth >= 3:
             current_soil_temp = self.plot.get_current_soil_temp(day)
-            return {
+            conditions = {
                 'temperature': current_temp,
                 'uv': current_uv,
                 'hydration': current_hydration,
@@ -293,11 +294,16 @@ class Flora():
             }
         else:
             # shallow flora only affected by surface conditions
-            return {
+            conditions = {
                 'temperature': current_temp,
                 'uv': current_uv,
                 'hydration': current_hydration
             }
+        
+        # Store conditions for debugging/access
+        self.last_environmental_conditions = conditions
+        
+        return conditions
 
     def _calculate_environmental_penalty(self, environmental_conditions: dict) -> float:
         """
@@ -366,6 +372,9 @@ class Flora():
         
         # Update mass
         actual_growth_rate = base_growth_rate - consumption_rate
+        # Cap the growth rate to prevent unrealistic death rates
+        # Even in worst conditions, mass should decrease gradually (at most 5% per day)
+        actual_growth_rate = max(actual_growth_rate, -0.05)
         new_mass = self.total_mass + self.total_mass * actual_growth_rate
         self.total_mass = max(0, new_mass)  # Prevent negative mass
         

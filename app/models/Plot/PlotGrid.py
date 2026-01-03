@@ -202,7 +202,7 @@ class PlotGrid:
                 for flora in plot.get_all_flora():
                     flora.update_flora_mass(day)
 
-            # Update prey (mammoths) on even days
+            # Update prey on even days
             if day % 2 == 0:
                 for fauna in plot.get_all_fauna():
                     if hasattr(fauna, 'update_prey_mass'):

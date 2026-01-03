@@ -574,19 +574,45 @@ class Plot(FloraPlotInformation):
     
     def check_and_update_biome(self) -> bool:
         """
-        Check flora ratios and update biome if they indicate a significant, sustained change.
-        Uses more conservative thresholds to prevent oscillation and misclassification.
+        Check flora ratios and mammoth presence to update biome if they indicate a significant change.
+        First checks for mammoth steppe (requires permafrost + flora ratios + mammoths),
+        then uses distance-based classification for other biomes.
         
         Returns:
             bool: True if biome was changed, False otherwise
         """
         try:
+            current_biome = self.climate.get_biome()
+            is_steppe_conditions_met = self.climate.is_steppe()
+            
+            # Steppe conditions are met - set to steppe
+            if is_steppe_conditions_met:
+                if current_biome != 'mammoth steppe':
+                    logger.info(f"Plot {self.Id}: Conditions indicate mammoth steppe (was {current_biome})")
+                    # Store the current biome as the original before changing to steppe
+                    if self.climate.original_biome is None:
+                        self.climate.original_biome = current_biome
+                    self.climate.set_biome('mammoth steppe')
+                    return True
+                return False  # Already steppe
+            
+            # Steppe conditions not met - determine new biome
             new_biome = self._determine_biome_from_flora()
-            if new_biome:
-                # Only update if the change is significant (not just noise)
-                # This helps prevent misclassification due to rounding/randomization effects
+            if current_biome == 'mammoth steppe':
+                # If we're leaving steppe, restore the original biome (don't use distance-based classification)
+                if self.climate.original_biome:
+                    logger.info(f"Plot {self.Id}: Steppe conditions no longer met, restoring original biome {self.climate.original_biome}")
+                    self.climate.set_biome(self.climate.original_biome)
+                    return True
+                # Fallback: if no original biome stored, use distance-based classification
+                if new_biome:
+                    logger.info(f"Plot {self.Id}: Steppe conditions no longer met, changing to {new_biome}")
+                    self.climate.set_biome(new_biome)
+                    return True
+            elif new_biome:
                 self.climate.set_biome(new_biome)
                 return True
+            
             return False
         except Exception as e:
             logger.error(f"Failed to check and update biome for plot {self.Id}: {e}")

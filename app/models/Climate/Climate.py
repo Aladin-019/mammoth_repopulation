@@ -56,6 +56,9 @@ BIOME_FILE_MAP = {
         "soil_temp4": "app/data/climate_data/daily_soil_temp_stats/level_4_depth/cape_chelyuskin_daily_temperature_stats.csv",
         "ssrd": "app/data/climate_data/daily_solar_rad_down_stats/cape_chelyuskin_daily_surface_solar_rad_stats.csv"
     }
+    # Note: "mammoth steppe" is NOT in BIOME_FILE_MAP - it uses the original biome's climate data
+    # Mammoth steppe is a classification that overrides the biome name for visualization,
+    # but continues using the underlying biome's climate drivers
 }
 
 class Climate:
@@ -87,14 +90,23 @@ class Climate:
         if not isinstance(biome, str):
             raise TypeError(f"Biome must be a string, got: {type(biome)}")
         
-        if biome not in BIOME_FILE_MAP:
-            raise ValueError(f"Unknown biome: {biome}. Available biomes: {list(BIOME_FILE_MAP.keys())}")
+        # Allow "mammoth steppe" as a valid biome name even though it's not in BIOME_FILE_MAP
+        # (it uses the original biome's climate data)
+        valid_biomes = list(BIOME_FILE_MAP.keys()) + ['mammoth steppe']
+        if biome not in valid_biomes:
+            raise ValueError(f"Unknown biome: {biome}. Available biomes: {valid_biomes}")
         
         if plot is not None and not isinstance(plot, PlotInformation):
             raise TypeError(f"Plot must be an instance of PlotInformation, got: {type(plot)}")
         
         try:
             self.biome = biome
+
+            if biome != 'mammoth steppe':
+                self.original_biome = biome
+            else:
+                # If somehow initialized as steppe, we need a fallback (shouldn't happen normally)
+                self.original_biome = None
             self.plot = plot
             self.consecutive_frozen_soil_days = 0
             self.cumulative_soil_temp_offset = 0.0
@@ -117,17 +129,42 @@ class Climate:
         self.plot = plot
 
     def set_biome(self, new_biome: str) -> None:
-        """Set the biome for this climate instance."""
+        """
+        Set the biome for this climate instance.
+        
+        If setting to "mammoth steppe", preserves the original biome for climate data loading.
+        If changing from "mammoth steppe" to another biome, updates the original biome.
+        """
         if not isinstance(new_biome, str):
             raise TypeError(f"Biome must be a string, got: {type(new_biome)}")
         
-        if new_biome not in BIOME_FILE_MAP:
-            raise ValueError(f"Unknown biome: {new_biome}. Available biomes: {list(BIOME_FILE_MAP.keys())}")
+        # Allow "mammoth steppe" as a valid biome name even though it's not in BIOME_FILE_MAP
+        valid_biomes = list(BIOME_FILE_MAP.keys()) + ['mammoth steppe']
+        if new_biome not in valid_biomes:
+            raise ValueError(f"Unknown biome: {new_biome}. Available biomes: {valid_biomes}")
         
-        logger.info(f"Changing biome from {self.biome} to {new_biome}")
+        # If changing to "mammoth steppe", store the current biome as the original (if not already steppe)
+        if new_biome == 'mammoth steppe' and self.biome != 'mammoth steppe':
+            # Store the current biome as original_biome so we can use its climate data
+            if self.original_biome is None:
+                self.original_biome = self.biome
+            logger.info(f"Changing biome from {self.biome} to {new_biome} (using {self.original_biome} climate data)")
+        # If changing from "mammoth steppe" to another biome, use the new biome as original_biome
+        elif self.biome == 'mammoth steppe' and new_biome != 'mammoth steppe':
+            # When leaving steppe, the new biome becomes the original_biome
+            self.original_biome = new_biome
+            logger.info(f"Changing biome from {self.biome} to {new_biome}")
+        else:
+            # Normal biome change (not involving steppe)
+            if new_biome != 'mammoth steppe':
+                self.original_biome = new_biome
+            logger.info(f"Changing biome from {self.biome} to {new_biome}")
+        
         self.biome = new_biome
-        # Clear cached loaders when biome changes (clear all since biome-specific keys)
-        Climate._class_loaders.clear()
+        # Don't clear cached loaders when changing to/from steppe - climate data stays the same
+        # Only clear if changing between actual climate-data biomes (both non-steppe)
+        if self.biome != 'mammoth steppe' and new_biome != 'mammoth steppe' and self.biome != new_biome:
+            Climate._class_loaders.clear()
     
     def get_biome(self) -> str:
         """Get the current biome."""
@@ -137,20 +174,32 @@ class Climate:
         """
         Loads the climate loader for the specified type if not already loaded.
         Uses class-level caching to share loaders across all Climate instances.
+        
+        For "mammoth steppe", uses the original biome's climate data instead.
+        
         loader_type (str): The type of climate loader to load (e.g., "temperature", "snowfall", etc.).
         loader_class: The class of the climate loader to instantiate.
         """
+        # Determine which biome's climate data to use
+        # If current biome is "mammoth steppe", use the original biome's climate data
+        climate_biome = self.original_biome if self.biome == 'mammoth steppe' else self.biome
+        
+        # Fallback: if original_biome is None and we're steppe, use a default (shouldn't happen)
+        if climate_biome is None:
+            logger.warning("Mammoth steppe detected but no original biome set. Using northern tundra as fallback.")
+            climate_biome = 'northern tundra'
+        
         # Unique key for this biome + loader type combination
-        cache_key = f"{self.biome}_{loader_type}"
+        cache_key = f"{climate_biome}_{loader_type}"
         
         if cache_key not in Climate._class_loaders:
-            if loader_type not in BIOME_FILE_MAP[self.biome]:
-                raise ValueError(f"Unknown loader type '{loader_type}' for biome '{self.biome}'")
+            if loader_type not in BIOME_FILE_MAP[climate_biome]:
+                raise ValueError(f"Unknown loader type '{loader_type}' for biome '{climate_biome}'")
             
-            filepath = BIOME_FILE_MAP[self.biome][loader_type]
+            filepath = BIOME_FILE_MAP[climate_biome][loader_type]
             try:
-                Climate._class_loaders[cache_key] = loader_class(filepath, self.biome)
-                logger.debug(f"Loaded {loader_type} loader for biome {self.biome}")
+                Climate._class_loaders[cache_key] = loader_class(filepath, climate_biome)
+                logger.debug(f"Loaded {loader_type} loader for biome {climate_biome} (current biome: {self.biome})")
             except (FileNotFoundError, PermissionError) as e:
                 raise RuntimeError(f"Failed to load climate data file for {loader_type}: {e}")
             except Exception as e:
@@ -264,7 +313,7 @@ class Climate:
             return
         
         if soil_temp < 0.0:
-            self.consecutive_frozen_soil_days += 1
+            self.consecutive_frozen_soil_days += 2  # Because this function is called every second day
             logger.debug(f"Soil temp {soil_temp:.2f}°C < 0°C, consecutive frozen days: {self.consecutive_frozen_soil_days}")
         else:
             # Reset counter when soil temperature goes above freezing
@@ -420,63 +469,62 @@ class Climate:
 
         return soil_temp_delta
     
-    # MAMMOTH STEPPE TEMPORARILY DISABLED - Requires megafauna (mammoths) to maintain steppe conditions
-    # Re-enable when fauna is reintroduced
     def is_steppe(self) -> bool:
         """
-        Check if the plot is in steppe conditions based on flora mass composition and permafrost.
-        DISABLED - Mammoth steppe requires megafauna to maintain, not currently implemented.
+        Check if the plot is in mammoth steppe conditions based on flora mass composition, and permafrost.
+        Mammoth steppe is maintained by megafauna (mammoths) grazing and trampling.
         
         Returns:
-            bool: False (always, since steppe not currently supported without fauna)
+            bool: True if steppe conditions are met (permafrost + appropriate flora ratios)
         """
-        # MAMMOTH STEPPE TEMPORARILY DISABLED
-        # Mammoth steppe is a biome maintained by megafauna. Without fauna, this check is premature.
-        # try:
-        #     # Check permafrost conditions (reduced requirement for testing)
-        #     if not self.is_permafrost():
-        #         logger.debug(f"Steppe conditions require valid permafrost. Current consecutive frozen days: {self.consecutive_frozen_soil_days}")
-        #         return False
-        #     
-        #     flora_mass_composition = self.plot.get_flora_mass_composition()
-        #     
-        #     if not flora_mass_composition or len(flora_mass_composition) != 4:
-        #         logger.warning(f"Invalid flora mass composition: {flora_mass_composition}")
-        #         return False
-        #     
-        #     grass_ratio, shrub_ratio, tree_ratio, moss_ratio = flora_mass_composition
-        #     
-        #     # Validate flora ratios
-        #     total_ratio = grass_ratio + shrub_ratio + tree_ratio + moss_ratio
-        #     if abs(total_ratio - 1.0) > 0.01:  # allow small floating point errors
-        #         logger.warning(f"Flora mass ratios don't sum to 1.0, got: {total_ratio}")
-        #         return False
-        #     
-        #     if (grass_ratio >= 0.25 and  # Grass should be dominant
-        #         tree_ratio <= 0.45 and   # Trees should be minimal for open steppe (mass ratio higher due to high mass of trees)
-        #         shrub_ratio <= 0.2 and   # Shrubs can be moderate
-        #         moss_ratio <= 0.1):      # Moss/lichen can be significant but not overwhelming
-        #         logger.info(f"Steppe conditions met: grass={grass_ratio:.2f}, tree={tree_ratio:.2f}, shrub={shrub_ratio:.2f}, moss={moss_ratio:.2f}")
-        #         return True
-        #     return False
-        #     
-        # except Exception as e:
-        #     logger.error(f"Error determining steppe conditions: {e}")
-        #     return False
-        return False  # Stub - steppe requires fauna to maintain
+        try:
+            # Check if plot is available
+            if self.plot is None:
+                logger.debug("Steppe conditions require a plot to be set")
+                return False
+            
+            # Check permafrost conditions (reduced requirement for testing)
+            if not self.is_permafrost():
+                logger.debug(f"Steppe conditions require valid permafrost. Current consecutive frozen days: {self.consecutive_frozen_soil_days}")
+                return False
+            
+            flora_mass_composition = self.plot.get_flora_mass_composition()
+            
+            if not flora_mass_composition or len(flora_mass_composition) != 4:
+                logger.warning(f"Invalid flora mass composition: {flora_mass_composition}")
+                return False
+            
+            grass_ratio, shrub_ratio, tree_ratio, moss_ratio = flora_mass_composition
+            
+            # Validate flora ratios
+            total_ratio = grass_ratio + shrub_ratio + tree_ratio + moss_ratio
+            if abs(total_ratio - 1.0) > 0.01:  # allow small floating point errors
+                logger.warning(f"Flora mass ratios don't sum to 1.0, got: {total_ratio}")
+                return False
+            
+            # Steppe requires grass to be more dominant than any other biome
+            if (grass_ratio >= 0.55 and  # Grass must be more dominant than any other biome
+                tree_ratio <= 0.10 and   # Trees should be minimal for open steppe
+                shrub_ratio <= 0.15 and   # Shrubs should be lower than other biomes
+                moss_ratio <= 0.20):      # Moss/lichen can be present but not overwhelming
+                logger.info(f"Steppe conditions met: grass={grass_ratio:.2f}, tree={tree_ratio:.2f}, shrub={shrub_ratio:.2f}, moss={moss_ratio:.2f}")
+                return True
+            return False
+                
+        except Exception as e:
+            logger.error(f"Error determining steppe conditions: {e}")
+            return False
 
     def is_permafrost(self) -> bool:
         """
         Check if the plot is in permafrost conditions based on soil temperature.
         For permafrost to exist, the soil temperature must be below 0.0 degrees Celsius 
-        for at least two years in a row.
+        for some time.
         Soil level 1 may unthaw (known as the active layer, where grasses survive), 
         but level 4 must remain frozen.
         """
         try:
-            # Check consecutive frozen days (720 days = 2 years)
-            #if self.consecutive_frozen_soil_days >= 720:
-            if self.consecutive_frozen_soil_days >= 5:   # for testing - even more lenient
+            if self.consecutive_frozen_soil_days >= 5:
                 return True
             return False
             
