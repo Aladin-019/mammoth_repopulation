@@ -6,7 +6,6 @@ from app.models.Flora.Shrub import Shrub
 from app.models.Flora.Tree import Tree
 from app.models.Flora.Moss import Moss
 from app.models.Flora.Flora import Flora
-# Re-enabling fauna - mammoths only for now
 from app.models.Fauna.Prey import Prey
 # Predators not yet enabled
 # from app.models.Fauna.Predator import Predator
@@ -14,10 +13,7 @@ from typing import List, Optional
 from app.globals import *
 
 class GridInitializer:
-    def _add_northern_taiga_plot_id(self, plot_id):
-        # Stub for testing
-        pass
-    # FAUNA TEMPORARILY DISABLED
+    # TEMPORARILY DISABLED
     def _create_predator(self, predator_name: str, prey_list, plot: Plot):  # -> Predator:  # Type hint disabled since Fauna import is commented
         # Stub for testing - fauna not currently used
         pass
@@ -25,13 +21,11 @@ class GridInitializer:
         """Set up which flora each prey consumes. Mammoths eat grass, shrub, and moss."""
         for fauna in plot.get_all_fauna():
             if fauna.get_name() == 'Mammoth':
-                # Mammoths are herbivores - they eat grass, shrub, and moss
                 consumable_flora = []
                 for flora in plot.get_all_flora():
                     if flora.get_name() in ['Grass', 'Shrub', 'Moss']:
                         consumable_flora.append(flora)
                 fauna.consumable_flora = consumable_flora
-                # Also update flora to know about mammoths as consumers
                 for flora in consumable_flora:
                     if fauna not in flora.consumers:
                         flora.consumers.append(fauna)
@@ -75,7 +69,6 @@ class GridInitializer:
         print(f"Standardization: plots are {self.standardization_factor:.1f}x larger than 1 km^2 plots")
 
         # Default flora and fauna for each biome
-        # Note: Mammoths are NOT added by default - they must be added manually to specific plots
         self.biome_defaults = {
             'southern taiga': {
                 'flora': ['tree', 'shrub', 'grass', 'moss'],
@@ -88,7 +81,7 @@ class GridInitializer:
                 # 'predators': []  # Predators not yet enabled
             },
             'southern tundra': {
-                'flora': ['shrub', 'grass', 'moss'],
+                'flora': ['tree','shrub', 'grass', 'moss'],
                 'prey': [],  # Mammoths will be added manually to specific plots
                 # 'predators': []  # Predators not yet enabled
             },
@@ -144,10 +137,6 @@ class GridInitializer:
         plot_id = self.plot_counter  # Simple sequential ID starting from 0
         self.plot_counter += 1       # Increment counter for next plot
         
-        # Track northern taiga plots for finding the central one
-        if biome == 'northern taiga':
-            self._add_northern_taiga_plot_id(plot_id)
-        
         plot = Plot(
             Id=plot_id,
             avg_snow_height=0.1,
@@ -158,8 +147,6 @@ class GridInitializer:
         climate.set_plot(plot)
         
         self._add_default_flora(plot, biome)
-        # Don't add mammoths by default - they will be added to specific locations
-        # self._add_default_fauna(plot, biome)
         
         return plot
 
@@ -176,22 +163,24 @@ class GridInitializer:
             if flora:
                 plot.add_flora(flora)
 
-    def _add_default_fauna(self, plot: Plot, biome: str) -> None:
-        """Add default fauna to the plot based on biome. Currently only mammoths."""
-        if biome not in self.biome_defaults:
-            return
+    # TEMPORARILY UNUSED
+    # re-enable it when add default fauna and modify it to add all fauna (not just mammoths)
+    # def _add_default_fauna(self, plot: Plot, biome: str) -> None:
+    #     """Add default fauna to the plot based on biome. Currently only mammoths."""
+    #     if biome not in self.biome_defaults:
+    #         return
             
-        prey_names = self.biome_defaults[biome]['prey']
+    #     prey_names = self.biome_defaults[biome]['prey']
         
-        # Add mammoths only (no other prey or predators for now)
-        for prey_name in prey_names:
-            if prey_name == 'mammoth':
-                mammoth = self._create_prey(prey_name, plot)
-                if mammoth:
-                    mammoth.plot = plot
-                    plot.add_fauna(mammoth)
-                    # Set up food chain: mammoths eat all flora (grass, shrub, moss)
-                    self._establish_food_chain_relationships(plot)
+    #     # Add mammoths only (no other prey or predators for now)
+    #     for prey_name in prey_names:
+    #         if prey_name == 'mammoth':
+    #             mammoth = self._create_prey(prey_name, plot)
+    #             if mammoth:
+    #                 mammoth.plot = plot
+    #                 plot.add_fauna(mammoth)
+    #                 # Set up food chain: mammoths eat all flora (grass, shrub, moss)
+    #                 self._establish_food_chain_relationships(plot)
 
     def _get_standardized_float(self, base_float: float) -> float:
         """Convert from base 1km^2 to standardized value based on current plot size."""
@@ -256,13 +245,13 @@ class GridInitializer:
 
             return Grass(
                 name='Grass',
-                description='Hardy grass adapted to various conditions',
+                description='Hardy grass',
                 total_mass=self._get_standardized_float(self._add_random_variation(base_mass, 5.0)),
                 population=1,  # grass doesnt use population, value is irrelevant
-                ideal_growth_rate=self._add_random_variation(0.05, 5.0),
+                ideal_growth_rate=self._add_random_variation(0.01, 5.0),
                 ideal_temp_range=(-40.0, 30.0),      # degree Celsius
                 ideal_uv_range=(10.0, 60_000.0),     # J/m^2/day
-                ideal_hydration_range=(0.01, 5.0),   # kg/m^2/day
+                ideal_hydration_range=(0.01, 1.5),   # kg/m^2/day
                 ideal_soil_temp_range=(-5.0, 30.0),  # Not used for grass (shallow roots)
                 consumers=[],  # No consumers initially
                 root_depth=1,  # Shallow roots for grasses
@@ -283,10 +272,10 @@ class GridInitializer:
 
             return Shrub(
                 name='Shrub',
-                description='Low-growing shrub adapted to various conditions',
+                description='Low-growing shrub',
                 avg_mass=self._add_random_variation(avg_mass, 5.0),
                 population=self._get_standardized_population(self._add_random_variation(base_population, 5.0)),
-                ideal_growth_rate=self._add_random_variation(0.03, 5.0),
+                ideal_growth_rate=self._add_random_variation(0.01, 5.0),
                 ideal_temp_range=(-40.0, 30.0),     # degree Celsius
                 ideal_uv_range=(10.0, 40_000.0),    # J/m^2/day
                 ideal_hydration_range=(0.01, 1.5),  # kg/m^2/day
@@ -310,10 +299,10 @@ class GridInitializer:
 
             return Tree(
                 name='Pine Tree',
-                description='Coniferous tree adapted to taiga conditions',
+                description='Coniferous tree',
                 avg_mass=self._add_random_variation(avg_mass, 5.0),
                 population=self._get_standardized_population(self._add_random_variation(base_population, 5.0)),
-                ideal_growth_rate=self._add_random_variation(0.02, 5.0),
+                ideal_growth_rate=self._add_random_variation(0.01, 5.0),
                 ideal_temp_range=(-40.0, 20.0),     # degree Celsius
                 ideal_uv_range=(10.0, 40_000.0),    # J/m^2/day
                 ideal_hydration_range=(0.01, 1.5),  # kg/m^2/day
@@ -336,13 +325,13 @@ class GridInitializer:
 
             return Moss(
                 name='Moss',
-                description='Low-growing moss adapted to cold conditions',
+                description='Low-growing moss',
                 total_mass=self._get_standardized_float(self._add_random_variation(base_mass, 5.0)),
                 population=1,  # moss doesnt use population, value is irrelevant
-                ideal_growth_rate=self._add_random_variation(0.005, 5.0),
+                ideal_growth_rate=self._add_random_variation(0.01, 5.0),
                 ideal_temp_range=(-40.0, 5.0),      # degree Celsius
                 ideal_uv_range=(10.0, 10_000.0),     # J/m^2/day
-                ideal_hydration_range=(0.01, 0.4),   # kg/m^2/day
+                ideal_hydration_range=(0.01, 0.8),   # kg/m^2/day
                 ideal_soil_temp_range=(0.0, 15.0), # Not used for moss (shallow roots)
                 consumers=[],  # No consumers initially
                 root_depth=1,  # Shallow roots for moss
@@ -367,18 +356,18 @@ class GridInitializer:
             else:
                 base_population = population_per_km2
             
-            avg_mass = 6000.0  # kg per mammoth
+            avg_mass = 4000.0  # kg per mammoth
             avg_foot_area = 0.12  # m^2
-            avg_steps_taken = 80000  # steps per day
+            avg_steps_taken = 40000  # steps per day
             return Prey(
                 name='Mammoth',
                 description='Woolly mammoth adapted to cold steppe conditions',
                 population=self._get_standardized_population(self._add_random_variation(base_population, 30.0)),
                 avg_mass=self._add_random_variation(avg_mass, 20.0),
-                ideal_growth_rate=self._add_random_variation(0.1, 25.0),
-                ideal_temp_range=(-80.0, 30.0),  # degree Celsius
-                min_food_per_day=self._get_standardized_float(self._add_random_variation(0.2, 10.0)),  # kg per day
-                feeding_rate=self._add_random_variation(0.8, 15.0),  # kg per day
+                ideal_growth_rate=self._add_random_variation(0.2, 10.0),  # ARTIFICIALLY HIGH GROWTH RATE to speed up simulation due to low compute 
+                ideal_temp_range=(-60.0, 30.0),  # degree Celsius
+                min_food_per_day=self._get_standardized_float(self._add_random_variation(8.0, 10.0)),  # kg per day
+                feeding_rate=self._add_random_variation(10.0, 15.0),  # kg per day
                 avg_steps_taken=self._get_standardized_float(self._add_random_variation(avg_steps_taken, 20.0)),
                 avg_foot_area=self._m2_to_km2(self._add_random_variation(avg_foot_area, 15.0)),
                 plot=plot,
