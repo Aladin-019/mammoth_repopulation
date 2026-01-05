@@ -1,4 +1,4 @@
-from typing import Dict, Tuple, List, Optional
+from typing import Dict, Tuple, List, Optional, Any
 from .Plot import Plot
 from app.interfaces.flora_plot_info import PlotInformation
 import numpy as np
@@ -14,13 +14,14 @@ except ImportError:
     Rectangle = None
 
 
-# Migration probabilities
-P_PREY_MIGRATION = 0.8
+# ** DAILY MIGRATION PROBABILITIES **
+# Articifically high daily migration probabilities to speed up simulation due to low compute
+P_PREY_MIGRATION = 0.2
 P_PREDATOR_MIGRATION = 0.2
 
-# Migration mass ratios
-PREY_MIGRATION_RATIO = 0.5
-PREDATOR_MIGRATION_RATIO = 0.3
+# ** MIGRATION MASS RATIOS **
+PREY_MIGRATION_RATIO = 0.2
+PREDATOR_MIGRATION_RATIO = 0.2
 
 
 class PlotGrid:
@@ -39,8 +40,8 @@ class PlotGrid:
         self.max_row = float('-inf')
         self.min_col = float('inf')
         self.max_col = float('-inf')
-        self._initial_blended_grid: Optional[np.ndarray] = None  # Store the initial blended grid
-        self._initial_biomes: Dict[Tuple[int, int], str] = {}  # Store initial biome for each plot
+        self._initial_blended_grid: Optional[np.ndarray] = None
+        self._current_biomes: Dict[Tuple[int, int], str] = {}
     
     def add_plot(self, row: int, col: int, plot: Plot) -> None:
         """
@@ -122,7 +123,7 @@ class PlotGrid:
                     neighbors.append(neighbor)
         return neighbors
 
-    def _migrate_fauna(self, fauna, target_plot, capacity_check, migration_percent):
+    def _migrate_fauna(self, fauna: Any, target_plot: Plot, capacity_check: str, migration_percent: float) -> None:
         """
         Helper to migrate fauna between plots.
         Args:
@@ -218,13 +219,12 @@ class PlotGrid:
         for plot in self.plots.values():
             plot.remove_extinct_species()
         
-        # Check and update biomes based on flora ratios (only on days when flora has updated)
-        if day % 2 == 1:
-            for plot in self.plots.values():
-                plot.check_and_update_biome()
+        # Update biomes for each plot
+        for plot in self.plots.values():
+            plot.check_and_update_biome()
 
-        # Handle migration (only call once, migrate_species already loops over all plots)
-        if day % 5 == 0:  # every 5th day
+        # Handle migration - migrate_species loops over all plots
+        if day % 5 == 0:
             self.migrate_species()
 
     def visualize_biomes(self, biome_colors: Dict[str, str], figsize: Tuple[int, int] = (12, 8), 
@@ -267,28 +267,30 @@ class PlotGrid:
             biome = plot.get_climate().get_biome()
             grid[grid_row, grid_col] = biome_to_int.get(biome, len(biome_colors))
         
-        # Apply border blending on initial render only (for realistic smooth transitions)
+        # Apply border blending only on initial render (day 0), then reuse that blended grid
         if create_new and self._initial_blended_grid is None:
-            # Store initial biomes before blending
+            # Store current biomes before blending
             for (row, col), plot in self.plots.items():
-                self._initial_biomes[(row, col)] = plot.get_climate().get_biome()
-            # Apply blending to create smooth biome borders
+                self._current_biomes[(row, col)] = plot.get_climate().get_biome()
+            # Apply blending to create smooth biome borders on initial render
             grid = self._blend_biome_borders(grid, rows, cols, blend_prob=0.2)
-            # Convert water from -1 to 0 and store the blended grid
             grid[grid == -1] = 0
+            # Store the blended grid for reuse
             self._initial_blended_grid = grid.copy()
+
+        # If not initial render, use stored blended grid as base and update cells where biome changed
         elif self._initial_blended_grid is not None:
-            # Use stored blended grid as base and only update changed cells
-            grid = self._initial_blended_grid.copy()
+            grid = self._initial_blended_grid
             for (row, col), plot in self.plots.items():
                 grid_row = row - self.min_row
                 grid_col = col - self.min_col
-                current_biome = plot.get_climate().get_biome()
-                initial_biome = self._initial_biomes.get((row, col))
-                if initial_biome is not None and current_biome != initial_biome:
-                    # Biome changed - update this cell to new biome
-                    grid[grid_row, grid_col] = biome_to_int.get(current_biome, len(biome_colors))
-                    self._initial_biomes[(row, col)] = current_biome
+                actual_biome = plot.get_climate().get_biome()  # current biome
+                stored_biome = self._current_biomes.get((row, col))  # stored biome
+                if stored_biome is not None and actual_biome != stored_biome:
+                    # Biome changed - update this cell to new biome in the stored grid
+                    grid[grid_row, grid_col] = biome_to_int.get(actual_biome, len(biome_colors))
+                # Update stored biome to current for next comparison
+                self._current_biomes[(row, col)] = actual_biome
         else:
             # First call but not create_new - just convert water
             grid[grid == -1] = 0
@@ -300,7 +302,7 @@ class PlotGrid:
             fig = ax.figure
 
         # Custom colormap - add dark blue for water/empty cells
-        water_color = '#001F5C'  # Dark blue ocean color
+        water_color = '#001F5C'  # Dark blue
         colors = [water_color] + list(biome_colors.values())  # Water is index 0
         cmap = mcolors.ListedColormap(colors)
         
@@ -375,7 +377,7 @@ class PlotGrid:
             plt.draw()  # Update existing plot
             return ax  # Return the same axis
 
-    def _blend_biome_borders(self, grid, rows, cols, blend_prob=0.2):
+    def _blend_biome_borders(self, grid: np.ndarray, rows: int, cols: int, blend_prob: float = 0.2) -> np.ndarray:
         """
         Helps blend biome borders in visualize_biomes for more realistic transitions.
         For each border plot (adjacent to a different biome), with probability blend_prob,
