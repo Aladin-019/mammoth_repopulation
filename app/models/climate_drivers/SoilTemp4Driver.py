@@ -1,5 +1,6 @@
 import numpy as np
 import logging
+from typing import Optional
 
 class SoilTemp4Driver:
     """
@@ -8,13 +9,13 @@ class SoilTemp4Driver:
         Attributes:
         soil_temp_data (dict): { location: { day: (mean, variance) } }
     """
-    def __init__ (self, soil_temp_data):
+    def __init__ (self, soil_temp_data: dict):
         """
         soil_temp_data (dict): Nested dict of soil temperature stats per location and day.
         """
         self.soil_temp_data = soil_temp_data
 
-    def generate_daily_soil_temp(self, location, day, offset=0.0):
+    def generate_daily_soil_temp(self, location: str, day: int, offset: float = 0.0) -> Optional[float]:
         """
         location (str): Name of the location.
         day (int): Day of year (0-365).

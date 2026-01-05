@@ -1,5 +1,6 @@
 import numpy as np
 import logging
+from typing import Optional
 
 class TemperatureDriver:
     """
@@ -8,13 +9,13 @@ class TemperatureDriver:
         Attributes:
         temp_data (dict): { location: { day: (mean, variance) } }
         """
-    def __init__ (self, temp_data):
+    def __init__ (self, temp_data: dict):
         """
         temp_data (dict): Nested dict of temperature stats per location and day.
         """
         self.temp_data = temp_data
 
-    def generate_daily_temp(self, location, day, offset=0.0):
+    def generate_daily_temp(self, location: str, day: int, offset: float = 0.0) -> Optional[float]:
         """
         location (str): Name of the location.
         day (int): Day of year (0-365).

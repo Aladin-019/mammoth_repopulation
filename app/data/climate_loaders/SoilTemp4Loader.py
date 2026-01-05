@@ -16,7 +16,7 @@ class SoilTemp4Loader:
         self.location = location
         self.soil_temp4_data = self.load_soil_temp4_data(filepath)
 
-    def load_soil_temp4_data(self, filepath):
+    def load_soil_temp4_data(self, filepath: str) -> dict:
         """
         Reads a CSV file and loads a mapping of {day_number: (mean_soil_temp, soil_temp_var)}.
 
@@ -53,5 +53,5 @@ class SoilTemp4Loader:
 
         return {self.location: days_map}
 
-    def get_soil_temp4_data(self):
+    def get_soil_temp4_data(self) -> dict:
         return self.soil_temp4_data

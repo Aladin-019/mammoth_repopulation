@@ -1,5 +1,6 @@
 import numpy as np
 import logging
+from typing import Optional
 
 class SnowfallDriver:
     """
@@ -8,13 +9,13 @@ class SnowfallDriver:
         Attributes:
         snowfall_data (dict): { location: { day: (mean, variance) } }
         """
-    def __init__ (self, snowfall_data):
+    def __init__ (self, snowfall_data: dict):
         """
         snowfall_data (dict): Nested dict of snowfall stats per location and day.
         """
         self.snowfall_data = snowfall_data
 
-    def generate_daily_snowfall(self, location, day, offset=0.0):
+    def generate_daily_snowfall(self, location: str, day: int, offset: float = 0.0) -> Optional[float]:
         """
         location (str): Name of the location.
         day (int): Day of year (0-365).

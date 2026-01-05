@@ -16,7 +16,7 @@ class SSRDLoader:
         self.location = location
         self.srd_data = self.load_srd_data(filepath)
 
-    def load_srd_data(self, filepath):
+    def load_srd_data(self, filepath: str) -> dict:
         """
         Reads a CSV file and loads a mapping of {day_number: (mean_srd, srd_var)}.
 
@@ -53,5 +53,5 @@ class SSRDLoader:
 
         return {self.location: days_map}
 
-    def get_srd_data(self):
+    def get_srd_data(self) -> dict:
         return self.srd_data

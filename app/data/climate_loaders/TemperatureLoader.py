@@ -17,7 +17,7 @@ class TemperatureLoader:
         self.location = location
         self.temp_data = self.load_temp_data(filepath)
 
-    def load_temp_data(self, filepath):
+    def load_temp_data(self, filepath: str) -> dict:
         """
         Reads a CSV file and loads a mapping of {day_number: (mean_temp, temp_var)}.
 
@@ -54,5 +54,5 @@ class TemperatureLoader:
 
         return {self.location: days_map}
 
-    def get_temp_data(self):
+    def get_temp_data(self) -> dict:
         return self.temp_data

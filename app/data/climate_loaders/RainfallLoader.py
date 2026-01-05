@@ -16,7 +16,7 @@ class RainfallLoader:
         self.location = location
         self.rainfall_data = self.load_rainfall_data(filepath)
 
-    def load_rainfall_data(self, filepath):
+    def load_rainfall_data(self, filepath: str) -> dict:
         """
         Reads a CSV file and loads a mapping of {day_number: (mean_rainfall, rain_var)}.
 
@@ -53,5 +53,5 @@ class RainfallLoader:
 
         return {self.location: days_map}
 
-    def get_rainfall_data(self):
+    def get_rainfall_data(self) -> dict:
         return self.rainfall_data

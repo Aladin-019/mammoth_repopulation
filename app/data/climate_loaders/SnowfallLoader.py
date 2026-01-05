@@ -16,7 +16,7 @@ class SnowfallLoader:
         self.location = location
         self.snowfall_data = self.load_snowfall_data(filepath)
 
-    def load_snowfall_data(self, filepath):
+    def load_snowfall_data(self, filepath: str) -> dict:
         """
         Reads a CSV file and loads a mapping of {day_number: (mean_snowfall, snow_var)}.
 
@@ -53,5 +53,5 @@ class SnowfallLoader:
 
         return {self.location: days_map}
 
-    def get_snowfall_data(self):
+    def get_snowfall_data(self) -> dict:
         return self.snowfall_data

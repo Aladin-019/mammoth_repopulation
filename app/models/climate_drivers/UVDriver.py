@@ -1,5 +1,6 @@
 import numpy as np
 import logging
+from typing import Optional
 
 class UVDriver:
     """
@@ -8,13 +9,13 @@ class UVDriver:
         Attributes:
         uv_data (dict): { location: { day: (mean, variance) } }
         """
-    def __init__ (self, uv_data):
+    def __init__ (self, uv_data: dict):
         """
         uv_data (dict): Nested dict of UV stats per location and day.
         """
         self.uv_data = uv_data
 
-    def generate_daily_uv(self, location, day, offset=0.0):
+    def generate_daily_uv(self, location: str, day: int, offset: float = 0.0) -> Optional[float]:
         """
         location (str): Name of the location.
         day (int): Day of year (0-365).

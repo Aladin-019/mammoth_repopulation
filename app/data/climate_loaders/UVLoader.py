@@ -17,7 +17,7 @@ class UVLoader:
         self.location = location
         self.uv_data = self.load_uv_data(filepath)
 
-    def load_uv_data(self, filepath):
+    def load_uv_data(self, filepath: str) -> dict:
         """
         Reads a CSV file and loads a mapping of {day_number: (mean_uv, uv_var)}.
 
@@ -54,5 +54,5 @@ class UVLoader:
 
         return {self.location: days_map}
 
-    def get_uv_data(self):
+    def get_uv_data(self) -> dict:
         return self.uv_data

@@ -1,5 +1,6 @@
 import numpy as np
 import logging
+from typing import Optional
 
 class SSRDDriver:
     """
@@ -9,13 +10,13 @@ class SSRDDriver:
         Attributes:
         srd_data (dict): { location: { day: (mean, variance) } }
         """
-    def __init__ (self, srd_data):
+    def __init__ (self, srd_data: dict):
         """
         srd_data (dict): Nested dict of srd stats per location and day.
         """
         self.srd_data = srd_data
 
-    def generate_daily_srd(self, location, day, offset=0.0):
+    def generate_daily_srd(self, location: str, day: int, offset: float = 0.0) -> Optional[float]:
         """
         location (str): Name of the location.
         day (int): Day of year (0-365).
