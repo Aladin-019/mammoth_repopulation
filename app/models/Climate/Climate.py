@@ -105,7 +105,6 @@ class Climate:
             if biome != 'mammoth steppe':
                 self.original_biome = biome
             else:
-                # If somehow initialized as steppe, we need a fallback (shouldn't happen normally)
                 self.original_biome = None
             self.plot = plot
             self.consecutive_frozen_soil_days = 0
@@ -184,10 +183,12 @@ class Climate:
         # If current biome is "mammoth steppe", use the original biome's climate data
         climate_biome = self.original_biome if self.biome == 'mammoth steppe' else self.biome
         
-        # Fallback: if original_biome is None and we're steppe, use a default (shouldn't happen)
         if climate_biome is None:
-            logger.warning("Mammoth steppe detected but no original biome set. Using northern tundra as fallback.")
-            climate_biome = 'northern tundra'
+            raise RuntimeError(
+                f"Mammoth steppe detected but no original biome set. "
+                f"This indicates a programming error - original_biome should be set when transitioning to steppe. "
+                f"Current biome: {self.biome}, original_biome: {self.original_biome}"
+            )
         
         # Unique key for this biome + loader type combination
         cache_key = f"{climate_biome}_{loader_type}"
@@ -471,21 +472,19 @@ class Climate:
     
     def is_steppe(self) -> bool:
         """
-        Check if the plot is in mammoth steppe conditions based on flora mass composition, and permafrost.
+        Check if the plot is in mammoth steppe conditions based on flora mass composition.
         Mammoth steppe is maintained by megafauna (mammoths) grazing and trampling.
         
         Returns:
-            bool: True if steppe conditions are met (permafrost + appropriate flora ratios)
+            bool: True if steppe conditions are met
+
+        note: permafrost is no longer required for steppe conditions (from is_permafrost() method)
+        but keeping the is_permafrost() method for future reference.
         """
         try:
             # Check if plot is available
             if self.plot is None:
                 logger.debug("Steppe conditions require a plot to be set")
-                return False
-            
-            # Check permafrost conditions (reduced requirement for testing)
-            if not self.is_permafrost():
-                logger.debug(f"Steppe conditions require valid permafrost. Current consecutive frozen days: {self.consecutive_frozen_soil_days}")
                 return False
             
             flora_mass_composition = self.plot.get_flora_mass_composition()
@@ -503,11 +502,10 @@ class Climate:
                 return False
             
             # Steppe requires grass to be more dominant than any other biome
-            if (grass_ratio >= 0.55 and  # Grass must be more dominant than any other biome
-                tree_ratio <= 0.10 and   # Trees should be minimal for open steppe
-                shrub_ratio <= 0.15 and   # Shrubs should be lower than other biomes
-                moss_ratio <= 0.20):      # Moss/lichen can be present but not overwhelming
-                logger.info(f"Steppe conditions met: grass={grass_ratio:.2f}, tree={tree_ratio:.2f}, shrub={shrub_ratio:.2f}, moss={moss_ratio:.2f}")
+            if (grass_ratio >= 0.55 and
+                tree_ratio <= 0.10 and
+                shrub_ratio <= 0.15 and
+                moss_ratio <= 0.20):
                 return True
             return False
                 
@@ -515,19 +513,19 @@ class Climate:
             logger.error(f"Error determining steppe conditions: {e}")
             return False
 
-    def is_permafrost(self) -> bool:
-        """
-        Check if the plot is in permafrost conditions based on soil temperature.
-        For permafrost to exist, the soil temperature must be below 0.0 degrees Celsius 
-        for some time.
-        Soil level 1 may unthaw (known as the active layer, where grasses survive), 
-        but level 4 must remain frozen.
-        """
-        try:
-            if self.consecutive_frozen_soil_days >= 5:
-                return True
-            return False
+    # def is_permafrost(self) -> bool:
+    #     """
+    #     Check if the plot is in permafrost conditions based on soil temperature.
+    #     For permafrost to exist, the soil temperature must be below 0.0 degrees Celsius 
+    #     for some time.
+    #     Soil level 1 may unthaw (known as the active layer, where grasses survive), 
+    #     but level 4 must remain frozen.
+    #     """
+    #     try:
+    #         if self.consecutive_frozen_soil_days >= 5:
+    #             return True
+    #         return False
             
-        except Exception as e:
-            logger.error(f"Error determining permafrost conditions: {e}")
-            return False
+    #     except Exception as e:
+    #         logger.error(f"Error determining permafrost conditions: {e}")
+    #         return False
