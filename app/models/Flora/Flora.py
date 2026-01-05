@@ -1,7 +1,7 @@
 import logging
 # Re-enabling fauna - mammoths only for now
 from ..Fauna import Fauna
-from typing import List, Tuple, Union
+from typing import List, Tuple, Union, Any, Optional
 from app.interfaces.flora_plot_info import FloraPlotInformation
 
 logger = logging.getLogger(__name__)
@@ -94,7 +94,7 @@ class Flora():
             raise ValueError(f"{name} must be between {min_val} and {max_val}, got: {value}")
     
     @staticmethod
-    def _validate_list(value: List, name: str, element_type: type = None) -> None:
+    def _validate_list(value: List[Any], name: str, element_type: Optional[type] = None) -> None:
         """
         Validate that a value is a list with optional element type checking.
         
@@ -112,7 +112,7 @@ class Flora():
             raise ValueError(f"{name} must contain only {element_type.__name__} objects")
     
     @staticmethod
-    def _validate_not_none(value, name: str) -> None:
+    def _validate_not_none(value: Any, name: str) -> None:
         """
         Validate that a value is not None.
         
@@ -126,7 +126,7 @@ class Flora():
             raise ValueError(f"{name} must be provided")
     
     @staticmethod
-    def _validate_instance(value, expected_type: type, name: str) -> None:
+    def _validate_instance(value: Any, expected_type: type, name: str) -> None:
         """
         Validate that a value is an instance of the expected type.
         

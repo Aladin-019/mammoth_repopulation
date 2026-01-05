@@ -12,7 +12,7 @@ class Shrub(Flora):
     They are affected by canopy cover, which reduces UV exposure.
     """
     
-    STOMPING_RATE = 0.04
+    STOMPING_RATE = 0.08
 
     def __init__(self, name: str, description: str, avg_mass: float, population: int,
                  ideal_growth_rate: float, ideal_temp_range: Tuple[float, float],
