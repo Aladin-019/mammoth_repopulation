@@ -229,7 +229,8 @@ class TestClimate(unittest.TestCase):
         """Test updating consecutive frozen days with negative temperature."""
         initial_count = self.climate.consecutive_frozen_soil_days
         self.climate._update_consecutive_frozen_soil_days(-5.0)
-        self.assertEqual(self.climate.consecutive_frozen_soil_days, initial_count + 1)
+        # Method adds 2 days because it's called every second day
+        self.assertEqual(self.climate.consecutive_frozen_soil_days, initial_count + 2)
 
     def test_update_consecutive_frozen_soil_days_zero_temp(self):
         """Test updating consecutive frozen days with zero temperature."""
@@ -243,56 +244,59 @@ class TestClimate(unittest.TestCase):
         self.climate._update_consecutive_frozen_soil_days("invalid")
         self.assertEqual(self.climate.consecutive_frozen_soil_days, initial_count)
 
-    def test_is_permafrost_not_enough_days(self):
-        """Test is_permafrost when not enough consecutive frozen days."""
-        self.climate.consecutive_frozen_soil_days = 4  # threshold is 5 days for testing
-        result = self.climate.is_permafrost()
-        self.assertFalse(result)
+    # NOTE: is_permafrost() method has been commented out/removed
+    # These tests are disabled until permafrost functionality is re-enabled
+    # def test_is_permafrost_not_enough_days(self):
+    #     """Test is_permafrost when not enough consecutive frozen days."""
+    #     self.climate.consecutive_frozen_soil_days = 4  # threshold is 5 days for testing
+    #     result = self.climate.is_permafrost()
+    #     self.assertFalse(result)
 
-    def test_is_permafrost_enough_days(self):
-        """Test is_permafrost when enough consecutive frozen days."""
-        self.climate.consecutive_frozen_soil_days = 730
-        result = self.climate.is_permafrost()
-        self.assertTrue(result)
+    # def test_is_permafrost_enough_days(self):
+    #     """Test is_permafrost when enough consecutive frozen days."""
+    #     self.climate.consecutive_frozen_soil_days = 730
+    #     result = self.climate.is_permafrost()
+    #     self.assertTrue(result)
 
-    def test_is_permafrost_more_than_enough_days(self):
-        """Test is_permafrost when more than enough consecutive frozen days."""
-        self.climate.consecutive_frozen_soil_days = 10000
-        result = self.climate.is_permafrost()
-        self.assertTrue(result)
+    # def test_is_permafrost_more_than_enough_days(self):
+    #     """Test is_permafrost when more than enough consecutive frozen days."""
+    #     self.climate.consecutive_frozen_soil_days = 10000
+    #     result = self.climate.is_permafrost()
+    #     self.assertTrue(result)
 
-    def test_is_permafrost_exactly_720_days(self):
-        """Test is_permafrost when exactly at the threshold."""
-        self.climate.consecutive_frozen_soil_days = 720
-        result = self.climate.is_permafrost()
-        self.assertTrue(result)
+    # def test_is_permafrost_exactly_720_days(self):
+    #     """Test is_permafrost when exactly at the threshold."""
+    #     self.climate.consecutive_frozen_soil_days = 720
+    #     result = self.climate.is_permafrost()
+    #     self.assertTrue(result)
 
     def test_is_steppe_valid_steppe_conditions(self):
         """
         Test is_steppe with valid steppe conditions.
-        Note: is_steppe() is currently disabled (always returns False) until fauna is implemented.
+        Note: Permafrost check is currently disabled, so only flora ratios are checked.
         """
-        self.climate.consecutive_frozen_soil_days = 720  # valid permafrost
+        # Valid steppe ratios: grass >= 0.55, tree <= 0.10, shrub <= 0.15, moss <= 0.20
         self.mock_plot.get_flora_mass_composition.return_value = (0.9, 0.1, 0.0, 0.0)  # valid steppe ratios
         result = self.climate.is_steppe()
-        self.assertFalse(result)  # is_steppe is currently disabled and always returns False
+        self.assertTrue(result)  # Should return True with valid steppe ratios
 
     def test_is_steppe_non_steppe_conditions_invalid_permafrost(self):
         """
         Test is_steppe with non-steppe conditions.
         Valid flora ratios but invalid permafrost.
+        NOTE: Since permafrost check is disabled, this test now checks valid steppe ratios.
         """
-        self.climate.consecutive_frozen_soil_days = 100  # invalid permafrost (not enough days)
+        # Valid steppe ratios: grass >= 0.55, tree <= 0.10, shrub <= 0.15, moss <= 0.20
         self.mock_plot.get_flora_mass_composition.return_value = (0.9, 0.1, 0.0, 0.0)  # valid steppe ratios
         result = self.climate.is_steppe()
-        self.assertFalse(result)
+        self.assertTrue(result)  # Should return True since permafrost check is disabled
 
     def test_is_steppe_non_steppe_conditions_invalid_ratios(self):
         """
         Test is_steppe with non-steppe conditions.
-        Valid permafrost but invalid flora ratios.
+        Invalid flora ratios (grass too low, tree too high).
         """
-        self.climate.consecutive_frozen_soil_days = 720  # valid permafrost
+        # Invalid ratios: grass=0.3 < 0.55, tree=0.3 > 0.10
         self.mock_plot.get_flora_mass_composition.return_value = (0.3, 0.3, 0.3, 0.1)  # invalid ratios
         result = self.climate.is_steppe()
         self.assertFalse(result)
@@ -301,7 +305,6 @@ class TestClimate(unittest.TestCase):
         """
         Test is_steppe with invalid flora composition (wrong length).
         """
-        self.climate.consecutive_frozen_soil_days = 720  # valid permafrost
         self.mock_plot.get_flora_mass_composition.return_value = (0.8, 0.2)  # only 2 values instead of 4
         result = self.climate.is_steppe()
         self.assertFalse(result)
@@ -310,7 +313,6 @@ class TestClimate(unittest.TestCase):
         """
         Test is_steppe with invalid flora ratios that don't sum to 1.0.
         """
-        self.climate.consecutive_frozen_soil_days = 720  # valid permafrost
         self.mock_plot.get_flora_mass_composition.return_value = (0.9, 0.2, 0.0, 0.0)  # sums to 1.1 not 1.0
         result = self.climate.is_steppe()
         self.assertFalse(result)

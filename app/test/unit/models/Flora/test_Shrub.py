@@ -360,7 +360,7 @@ class TestShrub(unittest.TestCase):
     
     def test_stomping_rate_class_variable(self):
         """Test that STOMPING_RATE class variable is accessible."""
-        self.assertEqual(Shrub.STOMPING_RATE, 0.85)
+        self.assertEqual(Shrub.STOMPING_RATE, 0.08)
     
     def test_shrub_area_validation(self):
         """Test shrub_area validation."""

@@ -344,9 +344,9 @@ class TestPrey(unittest.TestCase):
         environmental_penalty = -0.5
         result = prey._calculate_base_growth_rate(environmental_penalty)
         
-        # Expected: ideal_growth_rate + ideal_growth_rate * (1 + penalty/2)
-        # = 0.15 + 0.15 * (1 + (-0.5)/2) = 0.15 + 0.15 * (1 + -0.25) = 0.15 + 0.15 * 0.75 = 0.15 + 0.1125 = 0.2625
-        expected = 0.2625
+        # Expected: ideal_growth_rate * (1 + penalty/2)
+        # = 0.15 * (1 + (-0.5)/2) = 0.15 * (1 + -0.25) = 0.15 * 0.75 = 0.1125
+        expected = 0.1125
         self.assertAlmostEqual(result, expected)
     
     def test_calculate_base_growth_rate_invalid_input(self):

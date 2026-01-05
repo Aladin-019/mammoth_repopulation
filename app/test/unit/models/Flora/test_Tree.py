@@ -40,6 +40,8 @@ class TestTree(unittest.TestCase):
                 return 0.0
             def get_previous_snow_height(self) -> float:
                 return 0.0
+            def get_area_trampled_ratio(self) -> float:
+                return 0.1  # 10% trampled
             def over_tree_capacity(self) -> bool:
                 return False
         
