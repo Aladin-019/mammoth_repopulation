@@ -63,9 +63,9 @@ class TestMammothMigration(unittest.TestCase):
         )
         self.assertEqual(initial_neighbor_mammoth_count, 0)
         
-        # Run simulation for 10 days (migration happens every 5 days)
-        # Migration should happen on day 5 and day 10
-        for day in range(1, 11):
+        # Run simulation for 25 days
+        # Migration can happen on days 5, 10, 15, 20, 25 (5 chances with 20% probability each)
+        for day in range(1, 26):
             self.grid.update_all_plots(day)
         
         # Check that mammoths have appeared in at least one neighbor
@@ -81,13 +81,18 @@ class TestMammothMigration(unittest.TestCase):
         if center_mammoth:
             center_final_mass = center_mammoth.get_total_mass()
             # Either mass decreased (migration happened) or neighbors have mammoths
-            mass_decreased = center_final_mass < initial_center_mass
+            # Allow for small floating point differences
+            mass_decreased = center_final_mass < (initial_center_mass - 0.01)
             neighbors_have_mammoths = final_neighbor_mammoth_count > 0
             
             # At least one of these should be true if migration is working
+            # With 5 migration opportunities at 20% each, probability of at least one migration is ~67%
             self.assertTrue(mass_decreased or neighbors_have_mammoths, 
                           f"Migration doesn't seem to be working. Center mass: {initial_center_mass} -> {center_final_mass}, "
                           f"Neighbors with mammoths: {final_neighbor_mammoth_count}")
+        else:
+            # If center mammoth is gone, migration definitely happened
+            self.assertTrue(True, "Center mammoth migrated away completely")
     
     def test_mammoth_migration_mass_preservation(self):
         """Test that total mammoth mass is preserved during migration."""

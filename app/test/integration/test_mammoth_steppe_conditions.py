@@ -70,8 +70,7 @@ class TestMammothSteppeConditions(unittest.TestCase):
 
             # Count mammoths (sum population from all mammoth Prey objects)
             mammoth_count = sum(f.population for f in plot.get_all_fauna() if f.get_name() == 'Mammoth' and f.get_total_mass() > 0)
-            # Check permafrost and steppe conditions
-            is_permafrost = climate.is_permafrost()
+            # Check steppe conditions (permafrost check is currently disabled)
             is_steppe = climate.is_steppe()
             
             # Get climate data from flora's stored environmental conditions
@@ -100,7 +99,6 @@ class TestMammothSteppeConditions(unittest.TestCase):
             print(f"Moss: {moss_ratio}, Max moss: {steppe_moss_max}")
             print(f"Mammoths: {mammoth_count}")
             print(f"Frozen Days: {climate.consecutive_frozen_soil_days}")
-            print(f"Is Permafrost: {is_permafrost}")
             print(f"Is Steppe: {is_steppe}")
 
 if __name__ == '__main__':
