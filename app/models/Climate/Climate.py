@@ -169,6 +169,25 @@ class Climate:
         """Get the current biome."""
         return self.biome
 
+    def _get_location_name_for_biome(self, biome: str) -> str:
+        """
+        Extract the location name from the biome's climate data file path.
+        (i.e. "southern taiga" -> "krasnoyarsk")
+
+        Args:
+            biome: The biome name
+        Returns:
+            str: The location name
+        """
+        if biome not in BIOME_FILE_MAP:
+            raise ValueError(f"Unknown biome: {biome}")
+        
+        filepath = BIOME_FILE_MAP[biome]["temperature"]
+        import os
+        filename = os.path.basename(filepath)
+        location_name = filename.split('_')[0]  # Get location name before first underscore
+        return location_name
+    
     def _load_climate_loader(self, loader_type: str, loader_class) -> object:
         """
         Loads the climate loader for the specified type if not already loaded.
@@ -198,8 +217,9 @@ class Climate:
                 raise ValueError(f"Unknown loader type '{loader_type}' for biome '{climate_biome}'")
             
             filepath = BIOME_FILE_MAP[climate_biome][loader_type]
+            location_name = self._get_location_name_for_biome(climate_biome)
             try:
-                Climate._class_loaders[cache_key] = loader_class(filepath, climate_biome)
+                Climate._class_loaders[cache_key] = loader_class(filepath, location_name)
                 logger.debug(f"Loaded {loader_type} loader for biome {climate_biome} (current biome: {self.biome})")
             except (FileNotFoundError, PermissionError) as e:
                 raise RuntimeError(f"Failed to load climate data file for {loader_type}: {e}")
@@ -256,7 +276,9 @@ class Climate:
 
             loader = self._load_climate_loader("temperature", TemperatureLoader)
             driver = TemperatureDriver(loader.get_temp_data())
-            result = driver.generate_daily_temp(self.biome, day, self.cumulative_air_temp_offset)
+            climate_biome = self.original_biome if self.biome == 'mammoth steppe' else self.biome
+            location_name = self._get_location_name_for_biome(climate_biome)
+            result = driver.generate_daily_temp(location_name, day, self.cumulative_air_temp_offset)
             
             if result is None:
                 return self._get_fallback_value('temperature', day)
@@ -292,7 +314,9 @@ class Climate:
             
             loader = self._load_climate_loader("soil_temp4", SoilTemp4Loader)
             driver = SoilTemp4Driver(loader.get_soil_temp4_data())
-            result = driver.generate_daily_soil_temp(self.biome, day, self.cumulative_soil_temp_offset)
+            climate_biome = self.original_biome if self.biome == 'mammoth steppe' else self.biome
+            location_name = self._get_location_name_for_biome(climate_biome)
+            result = driver.generate_daily_soil_temp(location_name, day, self.cumulative_soil_temp_offset)
             
             if result is None:
                 return self._get_fallback_value('soil_temp', day)
@@ -339,7 +363,9 @@ class Climate:
         try:
             loader = self._load_climate_loader("snowfall", SnowfallLoader)
             driver = SnowfallDriver(loader.get_snowfall_data())
-            result = driver.generate_daily_snowfall(self.biome, day)
+            climate_biome = self.original_biome if self.biome == 'mammoth steppe' else self.biome
+            location_name = self._get_location_name_for_biome(climate_biome)
+            result = driver.generate_daily_snowfall(location_name, day)
             
             if result is None:
                 return self._get_fallback_value('snowfall', day)
@@ -367,7 +393,9 @@ class Climate:
         try:
             loader = self._load_climate_loader("rainfall", RainfallLoader)
             driver = RainfallDriver(loader.get_rainfall_data())
-            result = driver.generate_daily_rainfall(self.biome, day)
+            climate_biome = self.original_biome if self.biome == 'mammoth steppe' else self.biome
+            location_name = self._get_location_name_for_biome(climate_biome)
+            result = driver.generate_daily_rainfall(location_name, day)
             
             if result is None:
                 return self._get_fallback_value('rainfall', day)
@@ -395,7 +423,9 @@ class Climate:
         try:
             loader = self._load_climate_loader("uv", UVLoader)
             driver = UVDriver(loader.get_uv_data())
-            result = driver.generate_daily_uv(self.biome, day)
+            climate_biome = self.original_biome if self.biome == 'mammoth steppe' else self.biome
+            location_name = self._get_location_name_for_biome(climate_biome)
+            result = driver.generate_daily_uv(location_name, day)
             
             if result is None:
                 return self._get_fallback_value('uv', day)
@@ -424,7 +454,9 @@ class Climate:
         try:
             loader = self._load_climate_loader("ssrd", SSRDLoader)
             driver = SSRDDriver(loader.get_srd_data())
-            result = driver.generate_daily_srd(self.biome, day)
+            climate_biome = self.original_biome if self.biome == 'mammoth steppe' else self.biome
+            location_name = self._get_location_name_for_biome(climate_biome)
+            result = driver.generate_daily_srd(location_name, day)
             
             if result is None:
                 return self._get_fallback_value('ssrd', day)
