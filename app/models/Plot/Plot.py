@@ -117,6 +117,11 @@ class Plot(FloraPlotInformation):
             self.compaction_depth = 0.7
             self.plot_area = float(plot_area)
             
+            self.grass_mass = 0.0
+            self.shrub_mass = 0.0
+            self.tree_mass = 0.0
+            self.moss_mass = 0.0
+            
         except Exception as e:
             raise RuntimeError(f"Failed to initialize Plot {Id}: {e}")
 

@@ -42,6 +42,8 @@ class Tree(Flora):
             super().update_flora_mass(day)
             
             self._apply_trampling_reduction()
+            
+            self.capacity_penalty()
         except Exception as e:
             raise RuntimeError(f"Error updating tree mass: {e}")
 

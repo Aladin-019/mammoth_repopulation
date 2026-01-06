@@ -50,6 +50,8 @@ class Shrub(Flora):
             self._update_mass_from_growth_and_consumption(base_growth_rate, consumption_rate)
             
             self._apply_trampling_reduction()
+            
+            self.capacity_penalty()
         except Exception as e:
             raise RuntimeError(f"Error updating shrub mass: {e}")
 

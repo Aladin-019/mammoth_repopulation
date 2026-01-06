@@ -48,6 +48,8 @@ class Grass(Flora):
             consumption_rate = self.total_consumption_rate()
             
             self._update_mass_from_growth_and_consumption(base_growth_rate, consumption_rate)
+            
+            self.capacity_penalty()
         except Exception as e:
             raise RuntimeError(f"Error updating grass mass: {e}")
     

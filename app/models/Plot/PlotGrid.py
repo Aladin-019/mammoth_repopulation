@@ -200,6 +200,8 @@ class PlotGrid:
         # Now process flora and fauna updates for each plot
         for plot in self.plots.values():
             if day % 2 == 1:
+                # Calculate flora masses before updates for capacity checks
+                plot.calculate_flora_masses()
                 for flora in plot.get_all_flora():
                     flora.update_flora_mass(day)
 
