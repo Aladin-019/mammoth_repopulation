@@ -11,11 +11,12 @@ With the advent of genetic cloning repopulating mammoths in Siberia has been a n
 - Display real-time visualization of biome changes
 
 # Future plans:
-- Saving inital simulation conditions 
-- Storing saved initial simulation conditions 
+- UI cursor-based custom placement of Prey/Predator on map
+- Edit/Change simulation variables in UI
+- Save/store initial simulation conditions
 - Introduce Predators and other Prey
 - Integrate premafrost requirement into mammoth steppe condition
-- Version with mammoth herd reinforcement learning model
+- Version with mammoth herd as a reinforcement learning model
 
 ## Installation
 
