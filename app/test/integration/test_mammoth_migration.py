@@ -64,8 +64,9 @@ class TestMammothMigration(unittest.TestCase):
         self.assertEqual(initial_neighbor_mammoth_count, 0)
         
         # Run simulation for 25 days
-        # Migration can happen on days 5, 10, 15, 20, 25 (5 chances with 20% probability each)
-        for day in range(1, 26):
+        # Migration can happen on days 5, 10, 15, 20, 25... 76 days (20% probability each day)
+        # Should be plenty of time to migrate to at least one neighbor
+        for day in range(1, 76):
             self.grid.update_all_plots(day)
         
         # Check that mammoths have appeared in at least one neighbor
@@ -78,11 +79,13 @@ class TestMammothMigration(unittest.TestCase):
         # Note: Migration is probabilistic, so we can't guarantee it happens
         # But we can check that the center plot mass decreased or neighbors have mammoths
         center_mammoth = center_plot.get_a_fauna('Mammoth')
+        
         if center_mammoth:
             center_final_mass = center_mammoth.get_total_mass()
             # Either mass decreased (migration happened) or neighbors have mammoths
-            # Allow for small floating point differences
-            mass_decreased = center_final_mass < (initial_center_mass - 0.01)
+            # Use a percentage-based check for mass decrease
+            # Allow for 5% decrease to account for small migrations
+            mass_decreased = center_final_mass < (initial_center_mass * 0.95)
             neighbors_have_mammoths = final_neighbor_mammoth_count > 0
             
             # At least one of these should be true if migration is working

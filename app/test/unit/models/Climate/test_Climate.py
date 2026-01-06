@@ -126,11 +126,47 @@ class TestClimate(unittest.TestCase):
         self.assertEqual(list(self.climate.recent_values['temperature']), expected_values)
         self.assertEqual(len(self.climate.recent_values['temperature']), 7)
 
-    def test_get_current_temperature_invalid_day(self):
-        """Test getting temperature with invalid day."""
-        with self.assertRaises(ValueError) as context:
-            self.climate._get_current_temperature(0)
-        self.assertIn("Day must be between 1 and 365", str(context.exception))
+    def test_get_current_temperature_day_wrapping(self):
+        """Test that days beyond 365 wrap correctly instead of raising errors."""
+        Climate._class_loaders.clear()  # Clear class-level cache
+        
+        # Day 0 should wrap to day 365 (index 364) - no error should be raised
+        with patch('app.models.Climate.Climate.TemperatureLoader') as mock_loader_class:
+            mock_loader = Mock()
+            mock_loader.get_temp_data.return_value = {'krasnoyarsk': {364: (0.0, 1.0)}}
+            mock_loader_class.return_value = mock_loader
+            
+            with patch('app.models.Climate.Climate.TemperatureDriver') as mock_driver_class:
+                mock_driver = Mock()
+                mock_driver.generate_daily_temp.return_value = 5.0
+                mock_driver_class.return_value = mock_driver
+                
+                # Should not raise an error, should wrap day 0 to day 365
+                result = self.climate._get_current_temperature(0)
+                # Verify driver was called with index 364 (day 365 - 1)
+                mock_driver.generate_daily_temp.assert_called_once()
+                call_args = mock_driver.generate_daily_temp.call_args
+                self.assertEqual(call_args[0][1], 364)
+        
+        Climate._class_loaders.clear()  # Clear class-level cache
+        
+        # Day 366 should wrap to day 1 (index 0) - no error should be raised
+        with patch('app.models.Climate.Climate.TemperatureLoader') as mock_loader_class:
+            mock_loader = Mock()
+            mock_loader.get_temp_data.return_value = {'krasnoyarsk': {0: (0.0, 1.0)}}
+            mock_loader_class.return_value = mock_loader
+            
+            with patch('app.models.Climate.Climate.TemperatureDriver') as mock_driver_class:
+                mock_driver = Mock()
+                mock_driver.generate_daily_temp.return_value = 5.0
+                mock_driver_class.return_value = mock_driver
+                
+                # Should not raise an error, should wrap day 366 to day 1
+                result = self.climate._get_current_temperature(366)
+                # Verify driver was called with index 0 (day 1 - 1)
+                mock_driver.generate_daily_temp.assert_called_once()
+                call_args = mock_driver.generate_daily_temp.call_args
+                self.assertEqual(call_args[0][1], 0)
 
     def test_get_current_temperature_invalid_day_type(self):
         """Test getting temperature with invalid day type."""
@@ -194,11 +230,27 @@ class TestClimate(unittest.TestCase):
             self.climate._get_current_temperature(1)
         self.assertIn("No recent fallback values available", str(context.exception))
 
-    def test_get_current_soil_temp_invalid_day(self):
-        """Test getting soil temperature with invalid day."""
-        with self.assertRaises(ValueError) as context:
-            self.climate._get_current_soil_temp(366)
-        self.assertIn("Day must be between 1 and 365", str(context.exception))
+    def test_get_current_soil_temp_day_wrapping(self):
+        """Test that days beyond 365 wrap correctly instead of raising errors."""
+        Climate._class_loaders.clear()  # Clear class-level cache
+        
+        # Day 366 should wrap to day 1 (index 0) - no error should be raised
+        with patch('app.models.Climate.Climate.SoilTemp4Loader') as mock_loader_class:
+            mock_loader = Mock()
+            mock_loader.get_soil_temp4_data.return_value = {'krasnoyarsk': {0: (0.0, 1.0)}}
+            mock_loader_class.return_value = mock_loader
+            
+            with patch('app.models.Climate.Climate.SoilTemp4Driver') as mock_driver_class:
+                mock_driver = Mock()
+                mock_driver.generate_daily_soil_temp.return_value = 5.0
+                mock_driver_class.return_value = mock_driver
+                
+                # Should not raise an error, should wrap day 366 to day 1
+                result = self.climate._get_current_soil_temp(366)
+                # Verify driver was called with index 0 (day 1 - 1)
+                mock_driver.generate_daily_soil_temp.assert_called_once()
+                call_args = mock_driver.generate_daily_soil_temp.call_args
+                self.assertEqual(call_args[0][1], 0)
 
     @patch('app.models.Climate.Climate.SoilTemp4Driver')
     @patch('app.models.Climate.Climate.SoilTemp4Loader')
