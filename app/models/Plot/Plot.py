@@ -1,5 +1,5 @@
 import logging
-from typing import List, Optional, Tuple
+from typing import List, Optional, Tuple, Union, Any
 # Re-enabling fauna - mammoths only for now
 from app.models import Fauna, Flora, Climate
 from app.interfaces.flora_plot_info import FloraPlotInformation
@@ -14,14 +14,14 @@ RHO_SNOW = 100.0
 LF = 100_000
 
 # Maximum density constants for flora types (kg/km^2)
-MAX_GRASS_DENSITY = 100_000_000.0    # Grass can grow densely
-MAX_SHRUB_DENSITY = 100_000_000.0    # Shrubs need more space
-MAX_TREE_DENSITY = 100_000_000.0      # Trees need significant space
-MAX_MOSS_DENSITY = 100_000_000.0      # Moss grows in patches
+MAX_GRASS_DENSITY = 1_000_000.0
+MAX_SHRUB_DENSITY = 1_000_000.0
+MAX_TREE_DENSITY = 1_000_000.0
+MAX_MOSS_DENSITY = 1_000_000.0
 
 # Maximum density constants for fauna types (kg/km^2)
-MAX_PREY_DENSITY = 10.0      # Maximum herbivore density
-MAX_PREDATOR_DENSITY = 10.0   # Maximum predator density
+MAX_PREY_DENSITY = 10_000.0
+MAX_PREDATOR_DENSITY = 10_000.0
 
 class Plot(FloraPlotInformation):
     """
@@ -34,7 +34,7 @@ class Plot(FloraPlotInformation):
     """
     
     @staticmethod
-    def _validate_positive_number(value, name: str, allow_zero: bool = True):
+    def _validate_positive_number(value: Union[int, float], name: str, allow_zero: bool = True) -> None:
         """Validate that a value is a positive number."""
         if not isinstance(value, (int, float)):
             raise TypeError(f"{name} must be a number, got: {type(value).__name__}")
@@ -42,13 +42,13 @@ class Plot(FloraPlotInformation):
             raise ValueError(f"{name} must be {'positive' if not allow_zero else 'non-negative'}, got: {value}")
     
     @staticmethod
-    def _validate_not_none(value, name: str):
+    def _validate_not_none(value: Any, name: str) -> None:
         """Validate that a value is not None."""
         if value is None:
             raise ValueError(f"{name} cannot be None")
     
     @staticmethod
-    def _validate_instance(value, expected_type, name: str):
+    def _validate_instance(value: Any, expected_type: Union[type, str], name: str) -> None:
         """Validate that a value is an instance of the expected type."""
         if isinstance(expected_type, str):
             # Handle string type names (for forward references)
@@ -124,7 +124,7 @@ class Plot(FloraPlotInformation):
         """Get the unique identifier for the plot."""
         return self.Id
     
-    def add_flora(self, flora):
+    def add_flora(self, flora: Flora) -> None:
         """Add flora to the plot, preventing duplicates by name."""
         self._validate_not_none(flora, "flora")
         self._validate_instance(flora, 'Flora', "flora")
@@ -135,7 +135,7 @@ class Plot(FloraPlotInformation):
         except Exception as e:
             raise RuntimeError(f"Failed to add flora {flora.name} to plot {self.Id}: {e}")
     
-    def add_fauna(self, fauna):
+    def add_fauna(self, fauna: Fauna) -> None:
         """Add fauna to the plot, preventing duplicates by name."""
         self._validate_not_none(fauna, "fauna")
         self._validate_instance(fauna, 'Fauna', "fauna")
@@ -146,7 +146,7 @@ class Plot(FloraPlotInformation):
         except Exception as e:
             raise RuntimeError(f"Failed to add fauna {fauna.name} to plot {self.Id}: {e}")
     
-    def get_a_fauna(self, name: str):
+    def get_a_fauna(self, name: str) -> Optional[Fauna]:
         """Get a specific fauna by name."""
         self._validate_instance(name, str, "name")
         
@@ -170,11 +170,11 @@ class Plot(FloraPlotInformation):
         except Exception as e:
             raise RuntimeError(f"Failed to get flora {name} from plot {self.Id}: {e}")
         
-    def get_all_fauna(self) -> list:
+    def get_all_fauna(self) -> List[Fauna]:
         """Get all fauna on the plot."""
         return self.fauna
     
-    def get_all_flora(self) -> list:
+    def get_all_flora(self) -> List[Flora]:
         """Get all flora on the plot."""
         return self.flora
     
@@ -557,10 +557,8 @@ class Plot(FloraPlotInformation):
                 ('northern tundra', distance(current_flora_ratios, n_tundra_ratios))
             ]
             
-            # Find the biome with the smallest distance
-            closest_biome = min(biome_distances, key=lambda x: x[1])[0]
+            closest_biome = min(biome_distances, key=lambda x: x[1])
             
-            # Only return if biome has changed
             current_biome = self.climate.get_biome()
             if closest_biome != current_biome:
                 logger.debug(f"Plot {self.Id}: Flora ratios indicate biome change from {current_biome} to {closest_biome} "
@@ -575,7 +573,7 @@ class Plot(FloraPlotInformation):
     def check_and_update_biome(self) -> bool:
         """
         Check flora ratios and mammoth presence to update biome if they indicate a significant change.
-        First checks for mammoth steppe (requires permafrost + flora ratios + mammoths),
+        First checks for mammoth steppe.
         then uses distance-based classification for other biomes.
         
         Returns:
@@ -596,22 +594,20 @@ class Plot(FloraPlotInformation):
                     return True
                 return False  # Already steppe
             
-            # Steppe conditions not met - determine new biome
-            new_biome = self._determine_biome_from_flora()
+            # Steppe conditions not met
             if current_biome == 'mammoth steppe':
-                # If we're leaving steppe, restore the original biome (don't use distance-based classification)
-                if self.climate.original_biome:
-                    logger.info(f"Plot {self.Id}: Steppe conditions no longer met, restoring original biome {self.climate.original_biome}")
-                    self.climate.set_biome(self.climate.original_biome)
-                    return True
-                # Fallback: if no original biome stored, use distance-based classification
+                new_biome = self._determine_biome_from_flora()
                 if new_biome:
-                    logger.info(f"Plot {self.Id}: Steppe conditions no longer met, changing to {new_biome}")
+                    logger.info(f"Plot {self.Id}: Steppe conditions no longer met, changing to {new_biome} based on flora composition")
                     self.climate.set_biome(new_biome)
                     return True
-            elif new_biome:
-                self.climate.set_biome(new_biome)
-                return True
+                return False
+            else:
+                # Not steppe - determine new biome normally based on flora
+                new_biome = self._determine_biome_from_flora()
+                if new_biome:
+                    self.climate.set_biome(new_biome)
+                    return True
             
             return False
         except Exception as e:
