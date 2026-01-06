@@ -100,8 +100,6 @@ python -m pytest app/test -v -s
 # Run and stop at first failure
 python -m pytest app/test -x
 
-# Run with coverage (coverage is already included in run_tests.py)
-python -m pytest app/test --cov=app --cov-report=html --cov-report=term --cov-report=term-missing
 ```
 
 ## Test Structure
@@ -114,9 +112,7 @@ app/test/
 │   ├── models/        # Tests for model classes
 │   ├── setup/         # Tests for setup utilities
 │   └── data/          # Tests for data loaders
-└── integration/       # Integration tests (test multiple components together)
-    ├── test_biome_stability.py
-    └── test_mammoth_migration.py
+└── integration/       # Integration tests
 ```
 
 ## Installation
@@ -132,24 +128,3 @@ Or install pytest separately:
 ```bash
 pip install pytest
 ```
-
-## Troubleshooting
-
-### Tests fail with import errors
-Make sure you're running tests from the `mammoth_repopulation` directory and that PYTHONPATH is set correctly. The `run_tests.py` script handles this automatically.
-
-### Tests are slow
-Integration tests are slower than unit tests. You can run only unit tests for faster feedback:
-
-```bash
-python run_tests.py unit
-```
-
-### Some tests are skipped
-Check if tests are marked with pytest markers. You can run specific markers:
-
-```bash
-python -m pytest -m unit
-python -m pytest -m integration
-```
-
