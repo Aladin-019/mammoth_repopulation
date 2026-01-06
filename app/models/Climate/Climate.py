@@ -257,15 +257,15 @@ class Climate:
         regional data for the current day and the change in 2m temperature
         (based on the change in snow depth).
 
-        day (int): The day of the year (1-365).
+        day (int): The day of the year (1-365, wraps around after 365).
         returns:
             float: The current temperature for the given day in the biome.
         """
         if not isinstance(day, int):
             raise TypeError(f"Day must be an integer, got: {type(day)}")
         
-        if day < 1 or day > 365:
-            raise ValueError(f"Day must be between 1 and 365, got: {day}")
+        # Wrap day to 1-365 range (day 366 becomes day 1, etc.)
+        day = ((day - 1) % 365) + 1
         
         try:
             delta_snow_height = self.plot.delta_snow_height()
@@ -278,7 +278,9 @@ class Climate:
             driver = TemperatureDriver(loader.get_temp_data())
             climate_biome = self.original_biome if self.biome == 'mammoth steppe' else self.biome
             location_name = self._get_location_name_for_biome(climate_biome)
-            result = driver.generate_daily_temp(location_name, day, self.cumulative_air_temp_offset)
+            # Convert to 0-indexed for driver (day 1-365 becomes 0-364)
+            driver_day = day - 1
+            result = driver.generate_daily_temp(location_name, driver_day, self.cumulative_air_temp_offset)
             
             if result is None:
                 return self._get_fallback_value('temperature', day)
@@ -295,15 +297,15 @@ class Climate:
         from the regional data for the current day and the change in soil temperature
         (based on the change in snow depth).
 
-        day (int): The day of the year (1-365).
+        day (int): The day of the year (1-365, wraps around after 365).
         returns:
             float: The current soil temperature for the given day in the biome.
         """
         if not isinstance(day, int):
             raise TypeError(f"Day must be an integer, got: {type(day)}")
         
-        if day < 1 or day > 365:
-            raise ValueError(f"Day must be between 1 and 365, got: {day}")
+        # Wrap day to 1-365 range (day 366 becomes day 1, etc.)
+        day = ((day - 1) % 365) + 1
         
         try:
             delta_snow_height = self.plot.delta_snow_height()
@@ -316,7 +318,9 @@ class Climate:
             driver = SoilTemp4Driver(loader.get_soil_temp4_data())
             climate_biome = self.original_biome if self.biome == 'mammoth steppe' else self.biome
             location_name = self._get_location_name_for_biome(climate_biome)
-            result = driver.generate_daily_soil_temp(location_name, day, self.cumulative_soil_temp_offset)
+            # Convert to 0-indexed for driver (day 1-365 becomes 0-364)
+            driver_day = day - 1
+            result = driver.generate_daily_soil_temp(location_name, driver_day, self.cumulative_soil_temp_offset)
             
             if result is None:
                 return self._get_fallback_value('soil_temp', day)
@@ -350,22 +354,24 @@ class Climate:
         """
         Returns random snowfall for the given day from regional data.
 
-        day (int): The day of the year (1-365).
+        day (int): The day of the year (1-365, wraps around after 365).
         returns:
             float: The current snowfall for the given day in the biome.
         """
         if not isinstance(day, int):
             raise TypeError(f"Day must be an integer, got: {type(day)}")
         
-        if day < 1 or day > 365:
-            raise ValueError(f"Day must be between 1 and 365, got: {day}")
+        # Wrap day to 1-365 range (day 366 becomes day 1, etc.)
+        day = ((day - 1) % 365) + 1
         
         try:
             loader = self._load_climate_loader("snowfall", SnowfallLoader)
             driver = SnowfallDriver(loader.get_snowfall_data())
             climate_biome = self.original_biome if self.biome == 'mammoth steppe' else self.biome
             location_name = self._get_location_name_for_biome(climate_biome)
-            result = driver.generate_daily_snowfall(location_name, day)
+            # Convert to 0-indexed for driver (day 1-365 becomes 0-364)
+            driver_day = day - 1
+            result = driver.generate_daily_snowfall(location_name, driver_day)
             
             if result is None:
                 return self._get_fallback_value('snowfall', day)
@@ -380,22 +386,24 @@ class Climate:
         """
         Returns random rainfall for the given day from regional data.
 
-        day (int): The day of the year (1-365).
+        day (int): The day of the year (1-365, wraps around after 365).
         returns:
             float: The current rainfall for the given day in the biome.
         """
         if not isinstance(day, int):
             raise TypeError(f"Day must be an integer, got: {type(day)}")
         
-        if day < 1 or day > 365:
-            raise ValueError(f"Day must be between 1 and 365, got: {day}")
+        # Wrap day to 1-365 range (day 366 becomes day 1, etc.)
+        day = ((day - 1) % 365) + 1
         
         try:
             loader = self._load_climate_loader("rainfall", RainfallLoader)
             driver = RainfallDriver(loader.get_rainfall_data())
             climate_biome = self.original_biome if self.biome == 'mammoth steppe' else self.biome
             location_name = self._get_location_name_for_biome(climate_biome)
-            result = driver.generate_daily_rainfall(location_name, day)
+            # Convert to 0-indexed for driver (day 1-365 becomes 0-364)
+            driver_day = day - 1
+            result = driver.generate_daily_rainfall(location_name, driver_day)
             
             if result is None:
                 return self._get_fallback_value('rainfall', day)
@@ -410,22 +418,24 @@ class Climate:
         """
         Returns random UV index for the given day from regional data.
 
-        day (int): The day of the year (1-365).
+        day (int): The day of the year (1-365, wraps around after 365).
         returns:
             float: The current UV index for the given day in the biome.
         """
         if not isinstance(day, int):
             raise TypeError(f"Day must be an integer, got: {type(day)}")
         
-        if day < 1 or day > 365:
-            raise ValueError(f"Day must be between 1 and 365, got: {day}")
+        # Wrap day to 1-365 range (day 366 becomes day 1, etc.)
+        day = ((day - 1) % 365) + 1
         
         try:
             loader = self._load_climate_loader("uv", UVLoader)
             driver = UVDriver(loader.get_uv_data())
             climate_biome = self.original_biome if self.biome == 'mammoth steppe' else self.biome
             location_name = self._get_location_name_for_biome(climate_biome)
-            result = driver.generate_daily_uv(location_name, day)
+            # Convert to 0-indexed for driver (day 1-365 becomes 0-364)
+            driver_day = day - 1
+            result = driver.generate_daily_uv(location_name, driver_day)
             
             if result is None:
                 return self._get_fallback_value('uv', day)
@@ -441,22 +451,24 @@ class Climate:
         Returns random Surface Solar Radiation Downward (SSRD) for the given day
         from regional data.
 
-        day (int): The day of the year (1-365).
+        day (int): The day of the year (1-365, wraps around after 365).
         returns:
             float: The SSRD for the given day in the biome.
         """
         if not isinstance(day, int):
             raise TypeError(f"Day must be an integer, got: {type(day)}")
         
-        if day < 1 or day > 365:
-            raise ValueError(f"Day must be between 1 and 365, got: {day}")
+        # Wrap day to 1-365 range (day 366 becomes day 1, etc.)
+        day = ((day - 1) % 365) + 1
         
         try:
             loader = self._load_climate_loader("ssrd", SSRDLoader)
             driver = SSRDDriver(loader.get_srd_data())
             climate_biome = self.original_biome if self.biome == 'mammoth steppe' else self.biome
             location_name = self._get_location_name_for_biome(climate_biome)
-            result = driver.generate_daily_srd(location_name, day)
+            # Convert to 0-indexed for driver (day 1-365 becomes 0-364)
+            driver_day = day - 1
+            result = driver.generate_daily_srd(location_name, driver_day)
             
             if result is None:
                 return self._get_fallback_value('ssrd', day)

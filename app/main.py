@@ -135,7 +135,9 @@ def run_simulation(plot_grid: PlotGrid, num_days: int = 10, visualize: bool = Tr
     
     for day in range(1, num_days + 1):
         print(f"  Day {day}/{num_days}...\n", end=' ', flush=True)
-        plot_grid.update_all_plots(day)
+        # Wrap day to 1-365 range for climate data (day 366 becomes day 1, etc.)
+        climate_day = ((day - 1) % 365) + 1
+        plot_grid.update_all_plots(climate_day)
         
         # Update visualization each day
         if visualize:
@@ -203,7 +205,7 @@ def main() -> None:
     else:
         print("Warning: No plots found in the grid. Cannot add mammoths.")
     
-    run_simulation(plot_grid, num_days=370, visualize=True)
+    run_simulation(plot_grid, num_days=400, visualize=True)
 
 
 if __name__ == "__main__":
