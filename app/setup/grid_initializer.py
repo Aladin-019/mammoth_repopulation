@@ -17,7 +17,7 @@ class GridInitializer:
     def _create_predator(self, predator_name: str, prey_list, plot: Plot):  # -> Predator:  # Type hint disabled since Fauna import is commented
         # Stub for testing - fauna not currently used
         pass
-    def _establish_food_chain_relationships(self, plot):
+    def _establish_food_chain_relationships(self, plot: Plot) -> None:
         """Set up which flora each prey consumes. Mammoths eat grass, shrub, and moss."""
         for fauna in plot.get_all_fauna():
             if fauna.get_name() == 'Mammoth':
@@ -29,7 +29,7 @@ class GridInitializer:
                 for flora in consumable_flora:
                     if fauna not in flora.consumers:
                         flora.consumers.append(fauna)
-    def _update_predator_prey_lists(self, plot):
+    def _update_predator_prey_lists(self, plot: Plot) -> None:
         # Stub for testing
         pass
 
@@ -216,7 +216,7 @@ class GridInitializer:
 
         return base_value * random_multiplier
 
-    def _create_flora_for_biome(self, flora_name: str, biome: str, plot: Plot) -> Flora:
+    def _create_flora_for_biome(self, flora_name: str, biome: str, plot: Plot) -> Optional[Flora]:
         """Create a flora object with appropriate parameters for the biome and flora subtype.
             Necessary values are automatically scaled to current plot size and randomized.
 
