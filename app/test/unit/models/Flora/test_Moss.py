@@ -40,6 +40,8 @@ class TestMoss(unittest.TestCase):
                 return 0.0
             def get_previous_snow_height(self) -> float:
                 return 0.0
+            def over_moss_capacity(self) -> bool:
+                return False
         
         self.mock_plot = MockPlot()
         
@@ -263,6 +265,8 @@ class TestMoss(unittest.TestCase):
                 return 0.0
             def get_previous_snow_height(self) -> float:
                 return 0.0
+            def over_moss_capacity(self) -> bool:
+                return False
         
         mock_plot_with_tree = MockPlotWithTree()
         moss_with_tree = Moss(**{**self.valid_params, 'plot': mock_plot_with_tree})

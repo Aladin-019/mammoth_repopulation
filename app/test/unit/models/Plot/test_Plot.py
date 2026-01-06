@@ -801,21 +801,22 @@ class TestPlot(unittest.TestCase):
     
     def test_over_prey_capacity_over_limit(self):
         """Test over_prey_capacity when over the limit."""
-        # Create mock prey with total mass above limit (10 kg/km^2 * 1.0 km^2 = 10 kg)
+        # Create mock prey with total mass above limit (MAX_PREY_DENSITY = 10,000 kg/km^2 * 1.0 km^2 = 10,000 kg)
+        from app.models.Plot.Plot import MAX_PREY_DENSITY
         mock_prey1 = Mock()
-        mock_prey1.total_mass = 6.0
-        mock_prey1.get_total_mass.return_value = 6.0
+        mock_prey1.total_mass = 6000.0
+        mock_prey1.get_total_mass.return_value = 6000.0
         mock_prey1.__class__.__name__ = "Prey"
 
         mock_prey2 = Mock()
-        mock_prey2.total_mass = 7.0
-        mock_prey2.get_total_mass.return_value = 7.0
+        mock_prey2.total_mass = 7000.0
+        mock_prey2.get_total_mass.return_value = 7000.0
         mock_prey2.__class__.__name__ = "Prey"
 
         self.plot.fauna = [mock_prey1, mock_prey2]
         self.plot.plot_area = 1.0
         result = self.plot.over_prey_capacity()
-        self.assertTrue(result)  # 6 + 7 = 13 kg, over 10 kg limit
+        self.assertTrue(result)  # 6000 + 7000 = 13,000 kg, over 10,000 kg limit
     
     def test_over_predator_capacity_under_limit(self):
         """Test over_predator_capacity when under the limit."""

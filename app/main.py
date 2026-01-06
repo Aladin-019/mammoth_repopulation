@@ -48,7 +48,6 @@ def create_siberia_grid(resolution: float = 0.75, lon_min: float = 120.0, lon_ma
     Returns:
         Tuple of (PlotGrid, list of (lon, lat) coordinates)
     """
-    # Use the original generate_siberia_grid function but with custom resolution and region
     import numpy as np
     import geopandas as gp
     from shapely.geometry import Point, box
