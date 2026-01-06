@@ -557,7 +557,7 @@ class Plot(FloraPlotInformation):
                 ('northern tundra', distance(current_flora_ratios, n_tundra_ratios))
             ]
             
-            closest_biome = min(biome_distances, key=lambda x: x[1])
+            closest_biome = min(biome_distances, key=lambda x: x[1])[0]
             
             current_biome = self.climate.get_biome()
             if closest_biome != current_biome:
