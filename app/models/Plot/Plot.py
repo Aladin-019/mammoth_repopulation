@@ -504,7 +504,6 @@ class Plot(FloraPlotInformation):
         _, _, _, moss_mass = self.get_flora_masses()
         return moss_mass > (self.plot_area * MAX_MOSS_DENSITY)
     
-    # FAUNA TEMPORARILY DISABLED
     def over_prey_capacity(self) -> bool:
         """
         Check if prey mass exceeds absolute maximum density per km^2.
@@ -516,13 +515,13 @@ class Plot(FloraPlotInformation):
         prey_mass = sum(fauna.get_total_mass() for fauna in self.fauna if fauna.__class__.__name__ == "Prey")
         return prey_mass > (self.plot_area * MAX_PREY_DENSITY)
     
-    # FAUNA TEMPORARILY DISABLED
+    # TEMPORARILY DISABLED
     def over_predator_capacity(self) -> bool:
         """
         Check if predator mass exceeds absolute maximum density per km^2.
         DISABLED - returns False since fauna not currently used.
         """
-        # FAUNA TEMPORARILY DISABLED
+        # TEMPORARILY DISABLED
         # predator_mass = sum(fauna.get_total_mass() for fauna in self.fauna if fauna.__class__.__name__ == "Predator")
         # return predator_mass > (self.plot_area * MAX_PREDATOR_DENSITY)
         return False  # Stub - fauna not currently used
