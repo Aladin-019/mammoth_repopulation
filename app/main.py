@@ -3,8 +3,10 @@ Main script to run the mammoth repopulation simulation.
 This script initializes a grid based on real Siberia geography, runs the simulation, and visualizes the results.
 """
 
+from typing import Tuple, List, Optional
 from app.setup.grid_initializer import GridInitializer
 from app.models.Plot.PlotGrid import PlotGrid
+from app.models.Fauna.Prey import Prey
 import matplotlib.pyplot as plt
 
 
@@ -33,7 +35,7 @@ def latitude_to_biome(latitude: float) -> str:
         return 'northern tundra'
 
 
-def create_siberia_grid(resolution=0.75, lon_min=120.0, lon_max=180.0):
+def create_siberia_grid(resolution: float = 0.75, lon_min: float = 120.0, lon_max: float = 180.0) -> Tuple[PlotGrid, List[Tuple[float, float]]]:
     """
     Create a realistic Siberia grid using actual geography.
     Only creates plots for land cells (within Siberia polygon), not water.
@@ -133,7 +135,7 @@ def run_simulation(plot_grid: PlotGrid, num_days: int = 10, visualize: bool = Tr
         plt.pause(0.1)
     
     for day in range(1, num_days + 1):
-        print(f"  Day {day}/{num_days}...", end=' ', flush=True)
+        print(f"  Day {day}/{num_days}...\n", end=' ', flush=True)
         plot_grid.update_all_plots(day)
         
         # Update visualization each day
@@ -150,7 +152,7 @@ def run_simulation(plot_grid: PlotGrid, num_days: int = 10, visualize: bool = Tr
         print("Simulation complete!")
 
 
-def add_mammoths_to_location(plot_grid, initializer, row: int, col: int, population_per_km2: float = 0.1):
+def add_mammoths_to_location(plot_grid: PlotGrid, initializer: GridInitializer, row: int, col: int, population_per_km2: float = 15.0) -> Optional[Prey]:
     """
     Add mammoths to a specific plot location.
     
@@ -176,7 +178,7 @@ def add_mammoths_to_location(plot_grid, initializer, row: int, col: int, populat
     return mammoth
 
 
-def main():
+def main() -> None:
     """Main function to run the simulation."""
     print("=" * 50)
     print("Mammoth Repopulation Simulator")
@@ -198,11 +200,11 @@ def main():
         center_idx = len(plot_coords_sorted) // 2
         center_row, center_col = plot_coords_sorted[center_idx]
         
-        add_mammoths_to_location(plot_grid, initializer, center_row, center_col, population_per_km2=0.01)
+        add_mammoths_to_location(plot_grid, initializer, center_row, center_col, population_per_km2=15.0)
     else:
         print("Warning: No plots found in the grid. Cannot add mammoths.")
     
-    run_simulation(plot_grid, num_days=300, visualize=True)
+    run_simulation(plot_grid, num_days=370, visualize=True)
 
 
 if __name__ == "__main__":
