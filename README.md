@@ -1,5 +1,82 @@
-# Mammoth Repopulation Simulator
-With the advent of genetic cloning, mammoth repopulation of Siberia has been a new hot topic, not only for the novelty of it but also for its environmental benefits. This project aims at simulating how reintroducing mammoths into present day sibera would actually pan out. It also gives the user freedom to play around the different variables and initial conditions. Though this project is based on actual recorded Siberian data from the CDS, I am far from the cutting edge of research and experimentation on this subject. Nonetheless, it opens a doorway to this world in a fun and engaging way.
+# Mammoth Repopulation Simulator:
+With the advent of genetic cloning repopulating mammoths in Siberia has been a new hot topic, not only for the novelty but also for its environmental benefits. This project aims at simulating mammoth repopulation in present day Siberian biomes. I recognize there is a great limitation on the accuracy of this project due to the scale of such a simulation. Nonetheless, it opens a doorway to this world in a fun and engaging way. 
+
+# The simulation will:
+- Initialize a grid based on real Siberia geography
+- Add mammoths to specified location
+- Run the simulation for a specified number of days
+- Update climate conditions probabilistically (based on real extracted data)
+- Plot-level Flora and Fauna total mass updates based on environmental penalties and    growth rates
+- Ice Age mammoth-steppe biome achieved via megafauna trampling and grazing 
+- Display real-time visualization of biome changes
+
+# Future plans:
+- Saving inital simulation conditions 
+- Storing saved initial simulation conditions 
+- Introduce Predators and other Prey
+- Integrate premafrost requirement into mammoth steppe condition
+- Version with mammoth herd reinforcement learning model
+
+## Installation
+
+1. **Clone the repository**:
+   ```bash
+   git clone <repository-url>
+   cd mammoth_repopulation
+   ```
+
+2. **Install dependencies**:
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+   Note: `pygrib` is only needed for processing GRIB files into CSV (not required to run the simulation).
+
+## Running the Simulation
+
+To run the mammoth repopulation simulation:
+
+```bash
+python -m app.main
+```
+
+Or from the `app` directory:
+
+```bash
+cd app
+python main.py
+```
+
+You can modify simulation parameters in `app/main.py`:
+- `num_days`: Number of days to simulate (default: 370)
+- `population_per_km2`: Initial mammoth population density
+- `visualize`: Whether to show real-time visualization
+
+## Requirements
+
+- **Python 3.8+**
+
+**Python Packages** (install via `pip install -r requirements.txt`):
+- `pandas` - Data manipulation and analysis
+- `numpy` - Numerical computing
+- `geopandas` - Geographic data processing
+- `shapely` - Geometric operations
+- `matplotlib` - Visualization and plotting
+- `pytest` - Testing framework
+- `pytest-cov` - Test coverage reporting
+
+**Optional**:
+- `pygrib` - Only needed for processing GRIB files into CSV (already completed)
+
+## Testing
+
+This project includes comprehensive test coverage with unit and integration tests. All tests include automatic coverage reporting.
+
+- **Test Suite**: Unit tests for individual components and integration tests for end-to-end functionality
+- **Coverage Reporting**: Automatic code coverage tracking (see `TESTING.md` for details)
+- **Test Runner**: Run tests with `python run_tests.py`
+
+For detailed testing information, see [TESTING.md](TESTING.md).
 
 ## Locations Covered for Climate Data
 - Krasnoyarsk (southern taiga)
@@ -26,19 +103,3 @@ Underlying data is likely derived from either:
 
 If the source is OpenStreetMap, the following attribution applies:
 OpenStreetMap contributors | www.openstreetmap.org | ODbL 1.0
-
-## Testing
-
-This project includes comprehensive test coverage with unit and integration tests. All tests include automatic coverage reporting.
-
-- **Test Suite**: Unit tests for individual components and integration tests for end-to-end functionality
-- **Coverage Reporting**: Automatic code coverage tracking (see `TESTING.md` for details)
-- **Test Runner**: Run tests with `python run_tests.py`
-
-For detailed testing information, see [TESTING.md](TESTING.md).
-
-## Requirements
-- Python 3.8+
-- `pygrib` (for GRIB file parsing)
-- `pandas`
-- `numpy`
