@@ -176,10 +176,6 @@ class Prey(Fauna):
         """
         self._validate_instance(environmental_penalty, float, "environmental_penalty")
 
-        # Growth rate should be a small percentage, adjusted by environmental conditions
-        # environmental_penalty ranges from 0 (ideal) to -1 (worst)
-        # Formula: ideal_growth_rate * (1 + environmental_penalty/2)
-        # This gives: ideal_growth_rate * 1.0 (best) to ideal_growth_rate * 0.5 (worst)
         return self.ideal_growth_rate * (1 + environmental_penalty/2)
 
     def _update_mass_from_growth_and_consumption(self, base_growth_rate: float, consumption_rate: float) -> None:

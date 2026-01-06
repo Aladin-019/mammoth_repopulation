@@ -1,6 +1,4 @@
 from .Flora import Flora
-# FAUNA TEMPORARILY DISABLED - Focus on flora only
-# from ..Fauna import Fauna
 from typing import List, Tuple
 from app.interfaces.flora_plot_info import FloraPlotInformation
 

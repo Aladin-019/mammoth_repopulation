@@ -1,5 +1,4 @@
 from .Flora import Flora
-# Re-enabling fauna - mammoths only for now
 from ..Fauna import Fauna
 from typing import List, Tuple
 from app.interfaces.flora_plot_info import FloraPlotInformation

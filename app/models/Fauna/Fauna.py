@@ -1,4 +1,3 @@
-
 import logging
 from typing import List, Tuple, Union, Any, Optional
 from app.interfaces.plot_info import PlotInformation
