@@ -4,7 +4,7 @@ With the advent of genetic cloning repopulating mammoths in Siberia has been a n
 I recognize there is a great limitation on the accuracy of this project due to the scale of such a simulation. Nonetheless, it opens a doorway to this world in a fun and engaging way. 
 
 # Simulation Window
-image.png
+![Demo screenshot](mammoth_repopulation\documentation\pictures\example_run.png)
 
 # The simulation will:
 - Initialize a grid based on real Siberian geography
