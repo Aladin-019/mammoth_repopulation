@@ -394,8 +394,8 @@ class TestPrey(unittest.TestCase):
         
         prey.capacity_penalty()
         
-        # Mass should be reduced by 10%
-        expected_mass = initial_mass * 0.9
+        # Mass should be reduced by 20%
+        expected_mass = initial_mass * 0.8
         self.assertEqual(prey.get_total_mass(), expected_mass)
     
     def test_capacity_penalty_with_plot_under_capacity(self):
