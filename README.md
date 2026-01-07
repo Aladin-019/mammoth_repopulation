@@ -1,17 +1,23 @@
 # Mammoth Repopulation Simulator:
-With the advent of genetic cloning repopulating mammoths in Siberia has been a new hot topic, not only for the novelty but also for its environmental benefits. This project aims at simulating mammoth repopulation in present day Siberian biomes. I recognize there is a great limitation on the accuracy of this project due to the scale of such a simulation. Nonetheless, it opens a doorway to this world in a fun and engaging way. 
+With the advent of genetic cloning repopulating mammoths in Siberia has been a new hot topic, not only for the novelty but also for its potential environmental benefits. This project aims at simulating mammoth repopulation in present day Siberian biomes, and transform the landscape into what was once Ice Age (mammoth) steppe. The idea is that only very large herbivoires such as mammoths will trample trees/shrubs thereby making way for greater grass growth. They will also compact snow which contributes to permafrost soil conditions, thus cooling the air.
+
+I recognize there is a great limitation on the accuracy of this project due to the scale of such a simulation. Nonetheless, it opens a doorway to this world in a fun and engaging way. 
+
+# Simulation Window
+image.png
 
 # The simulation will:
-- Initialize a grid based on real Siberia geography
+- Initialize a grid based on real Siberian geography
 - Add mammoths to specified location
 - Run the simulation for a specified number of days
 - Update climate conditions probabilistically (based on real extracted data)
 - Plot-level Flora and Fauna total mass updates based on environmental penalties and    growth rates
-- Ice Age mammoth-steppe biome achieved via megafauna trampling and grazing 
+- Achieve an Ice Age mammoth-steppe biome via megafauna trampling and grazing 
 - Display real-time visualization of biome changes
 
 # Future plans:
 - UI cursor-based custom placement of Prey/Predator on map
+- Dockerization (possibly run simulation window in browser)
 - Edit/Change simulation variables in UI
 - Save/store initial simulation conditions
 - Introduce Predators and other Prey
