@@ -20,8 +20,8 @@ MAX_TREE_DENSITY = 1_000_000.0
 MAX_MOSS_DENSITY = 1_000_000.0
 
 # Maximum density constants for fauna types (kg/km^2)
-MAX_PREY_DENSITY = 10_000.0
-MAX_PREDATOR_DENSITY = 10_000.0
+MAX_PREY_DENSITY = 5_000.0
+MAX_PREDATOR_DENSITY = 2_000.0
 
 class Plot(FloraPlotInformation):
     """

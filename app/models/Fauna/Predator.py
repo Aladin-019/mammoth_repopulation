@@ -140,6 +140,6 @@ class Predator(Fauna):
         Precondition: calculate_fauna_masses() must be called first (for current timestep)
         """
         if self.plot.over_predator_capacity():
-            self.set_total_mass(self.get_total_mass() * 0.9)    # Reduce mass by 10% if over predator capacity
+            self.set_total_mass(self.get_total_mass() * 0.8)    # Reduce mass by 20% if over predator capacity
 
 

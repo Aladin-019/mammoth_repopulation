@@ -201,7 +201,7 @@ def main() -> None:
         center_idx = len(plot_coords_sorted) // 2
         center_row, center_col = plot_coords_sorted[center_idx]
         
-        add_mammoths_to_location(plot_grid, initializer, center_row, center_col, population_per_km2=15.0)
+        add_mammoths_to_location(plot_grid, initializer, center_row, center_col, population_per_km2=2.0)
     else:
         print("Warning: No plots found in the grid. Cannot add mammoths.")
     
