@@ -205,7 +205,24 @@ def main() -> None:
     else:
         print("Warning: No plots found in the grid. Cannot add mammoths.")
     
-    run_simulation(plot_grid, num_days=400, visualize=True)
+    days_to_run = 400
+    run_simulation(plot_grid, num_days=days_to_run, visualize=True)
+    
+    # Save a high-quality screenshot at the end
+    biome_colors = {
+        'southern taiga': '#228B22',      # Forest green
+        'northern taiga': '#32CD32',      # Lime green
+        'southern tundra': '#D3D3D3',     # Light gray
+        'northern tundra': '#FFFFFF',     # White
+        'mammoth steppe': '#8B9662'       # Brownish green
+    }
+    plot_grid.visualize_biomes(biome_colors, figsize=(14, 10), 
+                               save_path='documentation/pictures/example_run.png', 
+                               ax=None, day=days_to_run)
+    
+    import matplotlib.pyplot as plt
+    plt.close('all')
+    print("\nScreenshot saved. Simulation ended.")
 
 
 if __name__ == "__main__":
