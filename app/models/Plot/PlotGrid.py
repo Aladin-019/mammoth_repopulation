@@ -5,13 +5,14 @@ import numpy as np
 try:
     import matplotlib.pyplot as plt
     import matplotlib.colors as mcolors
-    from matplotlib.patches import Rectangle
+    from matplotlib.patches import Rectangle, Patch
     MATPLOTLIB_AVAILABLE = True
 except ImportError:
     MATPLOTLIB_AVAILABLE = False
     plt = None
     mcolors = None
     Rectangle = None
+    Patch = None
 
 
 # ** DAILY MIGRATION PROBABILITIES **
@@ -42,6 +43,8 @@ class PlotGrid:
         self.max_col = float('-inf')
         self._initial_blended_grid: Optional[np.ndarray] = None
         self._current_biomes: Dict[Tuple[int, int], str] = {}
+        self._colorbar = None
+        self._total_pop_text = None
     
     def add_plot(self, row: int, col: int, plot: Plot) -> None:
         """
@@ -308,9 +311,6 @@ class PlotGrid:
         colors = [water_color] + list(biome_colors.values())  # Water is index 0
         cmap = mcolors.ListedColormap(colors)
         
-        # Ensure water is 0 (should already be done above, but double-check)
-        grid[grid == -1] = 0
-        
         # Plot the grid with water shown as dark blue
         im = ax.imshow(grid, cmap=cmap, aspect='equal', origin='lower', vmin=0, vmax=len(colors)-1)
 
@@ -318,20 +318,24 @@ class PlotGrid:
         mammoth_border_color = '#8B4513'  # Brown
         mammoth_border_width = 1.5
         mammoth_count = 0
+        total_mammoth_population = 0  # Total population across all plots
         
         for (row, col), plot in self.plots.items():
             grid_row = row - self.min_row
             grid_col = col - self.min_col
             
-            # Check if plot has mammoths (any fauna with name 'Mammoth' and mass > 0)
+            total_population = 0
             has_mammoths = False
             for fauna in plot.get_all_fauna():
                 if fauna.get_name() == 'Mammoth' and fauna.get_total_mass() > 0:
                     has_mammoths = True
-                    mammoth_count += 1
-                    break
+                    plot_pop = fauna.get_population()
+                    total_population += plot_pop
+                    total_mammoth_population += plot_pop
             
             if has_mammoths:
+                mammoth_count += 1
+                # Add border around plot
                 rect = Rectangle(
                     (grid_col - 0.5, grid_row - 0.5),
                     1.0,  # width
@@ -348,10 +352,11 @@ class PlotGrid:
             # Adjust ticks and labels for water + biomes
             cbar_ticks = range(len(colors))
             cbar_labels = ['Water'] + list(biome_colors.keys())
-            cbar = plt.colorbar(im, ax=ax, ticks=cbar_ticks)
-            cbar.set_ticklabels(cbar_labels)
-            cbar.set_label('Biome Type')
-        
+            self._colorbar = plt.colorbar(im, ax=ax, ticks=cbar_ticks, shrink=0.7)
+            self._colorbar.set_ticklabels(cbar_labels)
+            self._colorbar.set_label('Biome Type', fontsize=9)
+            self._colorbar.ax.tick_params(labelsize=8)
+            
         # Update title with day if provided
         title = 'Mammoth Repopulation Simulator'
         if day is not None:
@@ -367,6 +372,68 @@ class PlotGrid:
         ax.set_yticks([])
 
         plt.tight_layout()
+        
+        # Add mammoth plot indicator in top right corner
+        if create_new:
+            # Position in top right corner of figure
+            text_x = 0.965
+            text_y = 0.88
+            
+            # Square size in figure coordinates
+            # Account for figure aspect ratio to make it appear square
+            fig_width, fig_height = fig.get_size_inches()
+            aspect_ratio = fig_width / fig_height
+            rect_width = 0.015
+            rect_height = rect_width * aspect_ratio  # Adjust height for aspect ratio
+            
+            # Position square to the left of text with small gap
+            rect_x = text_x - 0.122
+            rect_y = text_y - rect_height / 2
+            
+            # Create square indicator matching the simulation style
+            mammoth_indicator = Rectangle(
+                (rect_x, rect_y), rect_width, rect_height,
+                edgecolor=mammoth_border_color,
+                facecolor='none',
+                linewidth=mammoth_border_width,
+                transform=fig.transFigure,
+                figure=fig,
+                zorder=10  # Make sure it's on top
+            )
+            fig.add_artist(mammoth_indicator)
+            
+            # Add text in top right corner
+            fig.text(
+                text_x,
+                text_y,
+                'Mammoths are present',
+                ha='right',
+                va='center',
+                fontsize=8,
+                color='black',
+                transform=fig.transFigure,
+                zorder=10
+            )
+        
+        # Add total mammoth population above the indicator
+        if create_new:
+            # Create text element for total population
+            self._total_pop_text = fig.text(
+                0.965,
+                0.91,
+                f'Mammoth population: {total_mammoth_population}',
+                ha='right',
+                va='bottom',
+                fontsize=8,
+                color='black',
+                weight='bold',
+                transform=fig.transFigure,
+                zorder=10
+            )
+        else:
+            # Update existing text with new population
+            if hasattr(self, '_total_pop_text') and self._total_pop_text is not None:
+                self._total_pop_text.set_text(f'Mammoth population: {total_mammoth_population}')
 
         if save_path:
             plt.savefig(save_path, dpi=300, bbox_inches='tight')
