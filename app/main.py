@@ -4,10 +4,9 @@ This script initializes a grid based on real Siberia geography and
 visualizes the biome map using a Dash web app.
 """
 
-from typing import Tuple, List, Optional, Dict
+from typing import Tuple, List, Dict
 from app.setup.grid_initializer import GridInitializer
 from app.models.Plot.PlotGrid import PlotGrid
-from app.models.Fauna.Prey import Prey
 import numpy as np
 
 
@@ -115,32 +114,6 @@ def create_siberia_grid(resolution: float = 0.75, lon_min: float = 120.0, lon_ma
     return plot_grid, grid_cells, initializer
 
 
-def add_mammoths_to_location(plot_grid: PlotGrid, initializer: GridInitializer, row: int, col: int, population_per_km2: float = 15.0) -> Optional[Prey]:
-    """
-    Add mammoths to a specific plot location.
-    
-    Args:
-        plot_grid: The PlotGrid to add mammoths to
-        initializer: The GridInitializer instance
-        row: Row coordinate of the plot
-        col: Column coordinate of the plot
-        population_per_km2: Population density in mammoths per km^2
-    
-    Returns:
-        The mammoth Prey object if successful, None otherwise
-    """
-    plot = plot_grid.get_plot(row, col)
-    if plot is None:
-        print(f"Warning: No plot found at row={row}, col={col}")
-        return None
-    
-    mammoth = initializer.add_mammoth_to_plot(plot, population_per_km2=population_per_km2)
-    if mammoth:
-        print(f"Added mammoths to plot at row={row}, col={col} with population density {population_per_km2} per km^2")
-        print(f"  Actual population: {mammoth.population} mammoths")
-    return mammoth
-
-
 # ═══════════════════════════════════════════════════════════
 #  Grid data helpers
 # ═══════════════════════════════════════════════════════════
@@ -195,8 +168,8 @@ def get_population_stats(pg: PlotGrid) -> Dict:
 #  Dash App
 # ═══════════════════════════════════════════════════════════
 
-def _build_figure(plot_grid: PlotGrid, day: int = 0):
-    """Build a Plotly figure showing the biome grid."""
+def _build_figure(plot_grid: PlotGrid, placements: Dict = None, day: int = 0):
+    """Build a Plotly figure showing the biome grid with optional placement markers."""
     import plotly.graph_objects as go
 
     biome_grid = build_biome_grid(plot_grid)
@@ -217,13 +190,31 @@ def _build_figure(plot_grid: PlotGrid, day: int = 0):
         name='Biome',
     )
 
-    title_text = f'Eastern Siberia Biome Map — Day {day}'
+    shapes = []
+
+    # Show red borders on placement cells
+    if placements:
+        for key, density in placements.items():
+            r, c = map(int, key.split(','))
+            gr = r - plot_grid.min_row
+            gc = c - plot_grid.min_col
+            shapes.append(dict(
+                type='rect',
+                x0=gc - 0.5, y0=gr - 0.5, x1=gc + 0.5, y1=gr + 0.5,
+                line=dict(color='red', width=2),
+                fillcolor='rgba(255,0,0,0.15)',
+            ))
+
+    title_text = 'Eastern Siberia — Click to place mammoths' if day == 0 else f'Eastern Siberia Biome Map — Day {day}'
+    if placements and day == 0:
+        title_text = f'Eastern Siberia — {len(placements)} placement(s)'
 
     fig = go.Figure(data=[biome_trace])
     fig.update_layout(
         title=dict(text=title_text, x=0.5, font=dict(size=16)),
         xaxis=dict(showticklabels=False, showgrid=False, constrain='domain'),
         yaxis=dict(showticklabels=False, showgrid=False, scaleanchor='x'),
+        shapes=shapes,
         margin=dict(l=10, r=120, t=50, b=10),
         plot_bgcolor='#001F5C',
         paper_bgcolor='#f5f5f5',
@@ -256,8 +247,8 @@ def _build_stats(plot_grid: PlotGrid, day: int):
 
 
 def create_dash_app(plot_grid: PlotGrid, initializer: GridInitializer):
-    """Build and return the Dash application."""
-    from dash import Dash, html, dcc
+    """Build and return the Dash application with interactive fauna placement."""
+    from dash import Dash, html, dcc, Input, Output, State, no_update
 
     app = Dash(__name__)
     app.title = "Mammoth Repopulation Simulator"
@@ -275,8 +266,37 @@ def create_dash_app(plot_grid: PlotGrid, initializer: GridInitializer):
             html.H2("Mammoth Sim", style={'margin': '0 0 15px 0', 'textAlign': 'center'}),
             html.Hr(style={'borderColor': '#444'}),
 
-            html.P("Siberia biome visualization. Interactive features coming soon!",
-                   style={'fontSize': '12px', 'color': '#aaa', 'lineHeight': '1.5'}),
+            # ── Placement controls ──
+            html.Div(id='placement-controls', children=[
+                html.P("Click on a land plot to place mammoths. Set density below, then click plots on the map.",
+                       style={'fontSize': '12px', 'color': '#aaa', 'lineHeight': '1.5'}),
+
+                # Density slider
+                html.Label("Density (mammoths/km²):", style={'fontWeight': 'bold', 'marginTop': '10px'}),
+                html.Div(id='density-display', children="2.0", style={
+                    'fontSize': '18px', 'fontWeight': 'bold', 'color': '#f39c12',
+                    'textAlign': 'center', 'marginTop': '5px',
+                }),
+                dcc.Slider(
+                    id='density-slider',
+                    min=0.5, max=20, step=0.5, value=2.0,
+                    marks={i: str(i) for i in [1, 5, 10, 15, 20]},
+                    tooltip=None,
+                ),
+
+                # Placement list
+                html.Div(id='placement-list', style={
+                    'marginTop': '15px', 'maxHeight': '200px', 'overflowY': 'auto',
+                    'fontSize': '12px', 'lineHeight': '1.6',
+                }),
+
+                # Clear button
+                html.Button('Clear All', id='clear-btn', n_clicks=0,
+                            style={'marginTop': '15px', 'padding': '10px 20px', 'fontSize': '14px',
+                                   'cursor': 'pointer', 'backgroundColor': '#e74c3c',
+                                   'color': '#fff', 'border': 'none', 'borderRadius': '5px',
+                                   'fontWeight': 'bold', 'width': '100%'}),
+            ]),
 
             html.Hr(style={'borderColor': '#444'}),
 
@@ -289,10 +309,83 @@ def create_dash_app(plot_grid: PlotGrid, initializer: GridInitializer):
         html.Div(style={'flex': 1, 'position': 'relative'}, children=[
             dcc.Graph(id='biome-map', figure=init_fig, style={'height': '100%'},
                       config={'scrollZoom': True, 'displayModeBar': True}),
+            dcc.Store(id='placements', data={}),  # {"row,col": density}
         ]),
     ])
 
+    # ══════════════════════════════════════════════════════
+    #  Update density display when slider changes
+    # ══════════════════════════════════════════════════════
+    @app.callback(
+        Output('density-display', 'children'),
+        Input('density-slider', 'value'),
+    )
+    def update_density_display(value):
+        return f"{value}"
+
+    # ══════════════════════════════════════════════════════
+    #  Click on map to add/remove placement
+    # ══════════════════════════════════════════════════════
+    @app.callback(
+        Output('placements', 'data'),
+        Output('biome-map', 'figure'),
+        Output('placement-list', 'children'),
+        Input('biome-map', 'clickData'),
+        Input('clear-btn', 'n_clicks'),
+        State('placements', 'data'),
+        State('density-slider', 'value'),
+        prevent_initial_call=True,
+    )
+    def handle_click_or_clear(click_data, clear_clicks, placements, density):
+        from dash import ctx, no_update
+
+        triggered = ctx.triggered_id
+
+        if triggered == 'clear-btn':
+            fig = _build_figure(plot_grid, {}, 0)
+            return {}, fig, []
+
+        if triggered == 'biome-map' and click_data is not None:
+            pt = click_data['points'][0]
+            grid_col = int(round(pt['x']))
+            grid_row = int(round(pt['y']))
+            plot_row = grid_row + plot_grid.min_row
+            plot_col = grid_col + plot_grid.min_col
+
+            plot = plot_grid.get_plot(plot_row, plot_col)
+            if plot is None:
+                return no_update, no_update, no_update
+
+            key = f'{plot_row},{plot_col}'
+            if key in placements:
+                new_placements = {k: v for k, v in placements.items() if k != key}
+            else:
+                new_placements = {**placements, key: density if density and density > 0 else 2.0}
+
+            fig = _build_figure(plot_grid, new_placements, 0)
+            placement_items = _build_placement_list(plot_grid, new_placements)
+            return new_placements, fig, placement_items
+
+        return no_update, no_update, no_update
+
     return app
+
+
+def _build_placement_list(plot_grid: PlotGrid, placements: Dict):
+    """Build the placement list for the sidebar."""
+    from dash import html
+
+    items = []
+    if placements:
+        for key, density in placements.items():
+            r, c = key.split(',')
+            plot = plot_grid.get_plot(int(r), int(c))
+            biome = plot.get_climate().get_biome() if plot else '?'
+            items.append(html.Div(
+                f"({r},{c}) {biome}: {density}/km²",
+                style={'color': '#f39c12'},
+            ))
+    return items
 
 
 # ═══════════════════════════════════════════════════════════
@@ -318,4 +411,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-
