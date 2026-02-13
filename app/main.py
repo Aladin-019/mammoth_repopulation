@@ -12,11 +12,11 @@ import numpy as np
 
 # ── Biome colors used throughout ──
 BIOME_COLORS: Dict[str, str] = {
-    'southern taiga': '#228B22',
-    'northern taiga': '#32CD32',
-    'southern tundra': '#D3D3D3',
-    'northern tundra': '#FFFFFF',
-    'mammoth steppe': '#8B9662',
+    'southern taiga': "#1D5A1D",
+    'northern taiga': "#2A802A",
+    'southern tundra': "#66A37B",
+    'northern tundra': "#7BA696",
+    'mammoth steppe': "#8D9E4A",
 }
 
 
@@ -192,8 +192,8 @@ def _build_figure(plot_grid: PlotGrid, placements: Dict = None, day: int = 0):
 
     shapes = []
 
-    # Show red borders on placement cells
-    if placements:
+    # Show red borders on placement cells (before simulation starts)
+    if placements and day == 0:
         for key, density in placements.items():
             r, c = map(int, key.split(','))
             gr = r - plot_grid.min_row
@@ -205,11 +205,29 @@ def _build_figure(plot_grid: PlotGrid, placements: Dict = None, day: int = 0):
                 fillcolor='rgba(255,0,0,0.15)',
             ))
 
+    # Show brown borders on plots with mammoths (during simulation)
+    mammoth_count = 0
+    if day > 0:
+        for (r, c), plot in plot_grid.plots.items():
+            has_mammoths = any(f.get_name() == 'Mammoth' and f.get_population() > 0 
+                               for f in plot.get_all_fauna())
+            if has_mammoths:
+                mammoth_count += 1
+                gr = r - plot_grid.min_row
+                gc = c - plot_grid.min_col
+                shapes.append(dict(
+                    type='rect',
+                    x0=gc - 0.5, y0=gr - 0.5, x1=gc + 0.5, y1=gr + 0.5,
+                    line=dict(color='#8B4513', width=2),  # Brown
+                    fillcolor='rgba(139,69,19,0.15)',
+                ))
+
     title_text = 'Eastern Siberia — Click to place mammoths' if day == 0 else f'Eastern Siberia Biome Map — Day {day}'
     if placements and day == 0:
         title_text = f'Eastern Siberia — {len(placements)} placement(s)'
 
     fig = go.Figure(data=[biome_trace])
+
     fig.update_layout(
         title=dict(text=title_text, x=0.5, font=dict(size=16)),
         xaxis=dict(showticklabels=False, showgrid=False, constrain='domain'),
@@ -219,10 +237,10 @@ def _build_figure(plot_grid: PlotGrid, placements: Dict = None, day: int = 0):
         plot_bgcolor='#001F5C',
         paper_bgcolor='#f5f5f5',
     )
-    return fig
+    return fig, mammoth_count
 
 
-def _build_stats(plot_grid: PlotGrid, day: int):
+def _build_stats(plot_grid: PlotGrid, day: int, mammoth_plots: int = 0):
     """Build the stats panel children."""
     from dash import html
 
@@ -236,6 +254,24 @@ def _build_stats(plot_grid: PlotGrid, day: int):
     if stats['fauna']:
         for name, pop in stats['fauna'].items():
             children.append(html.Div(f"  {name}: {pop:,}"))
+        if mammoth_plots > 0:
+            children.append(html.Div(
+                style={'display': 'flex', 'alignItems': 'center', 'marginTop': '8px', 'gap': '8px'},
+                children=[
+                    # Hollow brown box to match plot borders on map
+                    html.Div(style={
+                        'width': '14px',
+                        'height': '14px',
+                        'border': '2px solid #8B4513',
+                        'borderRadius': '2px',
+                        'flexShrink': '0',
+                    }),
+                    html.Span(f"{mammoth_plots} plots with mammoths", style={
+                        'color': '#CD853F',
+                        'fontSize': '12px',
+                    }),
+                ]
+            ))
     else:
         children.append(html.Div("  (none yet)"))
 
@@ -254,7 +290,7 @@ def create_dash_app(plot_grid: PlotGrid, initializer: GridInitializer):
     app.title = "Mammoth Repopulation Simulator"
 
     # Initial figure
-    init_fig = _build_figure(plot_grid)
+    init_fig, _ = _build_figure(plot_grid)
 
     # ── Layout ──
     app.layout = html.Div(style={'display': 'flex', 'height': '100vh', 'fontFamily': 'Arial'}, children=[
@@ -343,15 +379,20 @@ def create_dash_app(plot_grid: PlotGrid, initializer: GridInitializer):
         Input('clear-btn', 'n_clicks'),
         State('placements', 'data'),
         State('density-slider', 'value'),
+        State('sim-state', 'data'),
         prevent_initial_call=True,
     )
-    def handle_click_or_clear(click_data, clear_clicks, placements, density):
+    def handle_click_or_clear(click_data, clear_clicks, placements, density, sim_state):
         from dash import ctx, no_update
 
         triggered = ctx.triggered_id
 
+        # Ignore clicks if simulation has started
+        if sim_state and sim_state.get('initialized', False):
+            return no_update, no_update, no_update
+
         if triggered == 'clear-btn':
-            fig = _build_figure(plot_grid, {}, 0)
+            fig, _ = _build_figure(plot_grid, {}, 0)
             return {}, fig, []
 
         if triggered == 'biome-map' and click_data is not None:
@@ -371,7 +412,7 @@ def create_dash_app(plot_grid: PlotGrid, initializer: GridInitializer):
             else:
                 new_placements = {**placements, key: density if density and density > 0 else 2.0}
 
-            fig = _build_figure(plot_grid, new_placements, 0)
+            fig, _ = _build_figure(plot_grid, new_placements, 0)
             placement_items = _build_placement_list(plot_grid, new_placements)
             return new_placements, fig, placement_items
 
@@ -440,19 +481,25 @@ def create_dash_app(plot_grid: PlotGrid, initializer: GridInitializer):
     )
     def run_simulation_step(n_intervals, sim_state):
         from dash import no_update
+        import traceback
 
         if not sim_state['running']:
             return no_update, no_update, no_update
 
-        # Advance one day
-        sim_state['day'] += 1
-        plot_grid.update_all_plots(day=sim_state['day'])
+        try:
+            # Advance one day
+            sim_state['day'] += 1
+            plot_grid.update_all_plots(day=sim_state['day'])
 
-        # Update figure and stats
-        fig = _build_figure(plot_grid, {}, sim_state['day'])
-        stats_children = _build_stats(plot_grid, sim_state['day'])
+            # Update figure and stats
+            fig, mammoth_count = _build_figure(plot_grid, {}, sim_state['day'])
+            stats_children = _build_stats(plot_grid, sim_state['day'], mammoth_count)
 
-        return sim_state, fig, stats_children
+            return sim_state, fig, stats_children
+        except Exception as e:
+            print(f"ERROR on day {sim_state['day']}: {e}")
+            traceback.print_exc()
+            return sim_state, no_update, no_update
 
     return app
 
