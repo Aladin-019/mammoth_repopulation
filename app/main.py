@@ -296,6 +296,13 @@ def create_dash_app(plot_grid: PlotGrid, initializer: GridInitializer):
                                    'cursor': 'pointer', 'backgroundColor': '#e74c3c',
                                    'color': '#fff', 'border': 'none', 'borderRadius': '5px',
                                    'fontWeight': 'bold', 'width': '100%'}),
+
+                # Start Simulation button
+                html.Button('Start Simulation', id='start-btn', n_clicks=0,
+                            style={'marginTop': '10px', 'padding': '12px 20px', 'fontSize': '14px',
+                                   'cursor': 'pointer', 'backgroundColor': '#27ae60',
+                                   'color': '#fff', 'border': 'none', 'borderRadius': '5px',
+                                   'fontWeight': 'bold', 'width': '100%'}),
             ]),
 
             html.Hr(style={'borderColor': '#444'}),
@@ -310,6 +317,8 @@ def create_dash_app(plot_grid: PlotGrid, initializer: GridInitializer):
             dcc.Graph(id='biome-map', figure=init_fig, style={'height': '100%'},
                       config={'scrollZoom': True, 'displayModeBar': True}),
             dcc.Store(id='placements', data={}),  # {"row,col": density}
+            dcc.Store(id='sim-state', data={'running': False, 'day': 0, 'initialized': False}),
+            dcc.Interval(id='sim-interval', interval=500, disabled=True),  # 500ms per day
         ]),
     ])
 
@@ -367,6 +376,83 @@ def create_dash_app(plot_grid: PlotGrid, initializer: GridInitializer):
             return new_placements, fig, placement_items
 
         return no_update, no_update, no_update
+
+    # ══════════════════════════════════════════════════════
+    #  Start/Stop simulation button
+    # ══════════════════════════════════════════════════════
+    @app.callback(
+        Output('sim-state', 'data'),
+        Output('sim-interval', 'disabled'),
+        Output('start-btn', 'children'),
+        Output('start-btn', 'style'),
+        Output('placement-controls', 'style'),
+        Input('start-btn', 'n_clicks'),
+        State('sim-state', 'data'),
+        State('placements', 'data'),
+        prevent_initial_call=True,
+    )
+    def toggle_simulation(n_clicks, sim_state, placements):
+        if sim_state['running']:
+            # Stop simulation
+            sim_state['running'] = False
+            return (
+                sim_state,
+                True,  # disable interval
+                'Start Simulation',
+                {'marginTop': '10px', 'padding': '12px 20px', 'fontSize': '14px',
+                 'cursor': 'pointer', 'backgroundColor': '#27ae60',
+                 'color': '#fff', 'border': 'none', 'borderRadius': '5px',
+                 'fontWeight': 'bold', 'width': '100%'},
+                {},  # show placement controls
+            )
+        else:
+            # Start simulation - first add mammoths from placements
+            if not sim_state['initialized'] and placements:
+                for key, density in placements.items():
+                    r, c = map(int, key.split(','))
+                    plot = plot_grid.get_plot(r, c)
+                    if plot:
+                        initializer.add_mammoth_to_plot(plot, population_per_km2=density)
+                sim_state['initialized'] = True
+
+            sim_state['running'] = True
+            return (
+                sim_state,
+                False,  # enable interval
+                'Stop Simulation',
+                {'marginTop': '10px', 'padding': '12px 20px', 'fontSize': '14px',
+                 'cursor': 'pointer', 'backgroundColor': '#c0392b',
+                 'color': '#fff', 'border': 'none', 'borderRadius': '5px',
+                 'fontWeight': 'bold', 'width': '100%'},
+                {'display': 'none'},  # hide placement controls
+            )
+
+    # ══════════════════════════════════════════════════════
+    #  Simulation step on interval
+    # ══════════════════════════════════════════════════════
+    @app.callback(
+        Output('sim-state', 'data', allow_duplicate=True),
+        Output('biome-map', 'figure', allow_duplicate=True),
+        Output('stats-panel', 'children'),
+        Input('sim-interval', 'n_intervals'),
+        State('sim-state', 'data'),
+        prevent_initial_call=True,
+    )
+    def run_simulation_step(n_intervals, sim_state):
+        from dash import no_update
+
+        if not sim_state['running']:
+            return no_update, no_update, no_update
+
+        # Advance one day
+        sim_state['day'] += 1
+        plot_grid.update_all_plots(day=sim_state['day'])
+
+        # Update figure and stats
+        fig = _build_figure(plot_grid, {}, sim_state['day'])
+        stats_children = _build_stats(plot_grid, sim_state['day'])
+
+        return sim_state, fig, stats_children
 
     return app
 
