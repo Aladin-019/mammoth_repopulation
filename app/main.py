@@ -1,13 +1,24 @@
 """
 Main script to run the mammoth repopulation simulation.
-This script initializes a grid based on real Siberia geography, runs the simulation, and visualizes the results.
+This script initializes a grid based on real Siberia geography and
+visualizes the biome map using a Dash web app.
 """
 
-from typing import Tuple, List, Optional
+from typing import Tuple, List, Optional, Dict
 from app.setup.grid_initializer import GridInitializer
 from app.models.Plot.PlotGrid import PlotGrid
 from app.models.Fauna.Prey import Prey
-import matplotlib.pyplot as plt
+import numpy as np
+
+
+# ── Biome colors used throughout ──
+BIOME_COLORS: Dict[str, str] = {
+    'southern taiga': '#228B22',
+    'northern taiga': '#32CD32',
+    'southern tundra': '#D3D3D3',
+    'northern tundra': '#FFFFFF',
+    'mammoth steppe': '#8B9662',
+}
 
 
 def latitude_to_biome(latitude: float) -> str:
@@ -35,7 +46,7 @@ def latitude_to_biome(latitude: float) -> str:
         return 'northern tundra'
 
 
-def create_siberia_grid(resolution: float = 0.75, lon_min: float = 120.0, lon_max: float = 180.0) -> Tuple[PlotGrid, List[Tuple[float, float]]]:
+def create_siberia_grid(resolution: float = 0.75, lon_min: float = 120.0, lon_max: float = 180.0) -> Tuple[PlotGrid, List[Tuple[float, float]], GridInitializer]:
     """
     Create a realistic Siberia grid using actual geography.
     Only creates plots for land cells (within Siberia polygon), not water.
@@ -46,9 +57,8 @@ def create_siberia_grid(resolution: float = 0.75, lon_min: float = 120.0, lon_ma
         lon_max: Maximum longitude (default: 180.0 for eastern edge)
     
     Returns:
-        Tuple of (PlotGrid, list of (lon, lat) coordinates)
+        Tuple of (PlotGrid, list of (lon, lat) coordinates, GridInitializer)
     """
-    import numpy as np
     import geopandas as gp
     from shapely.geometry import Point, box
     import os
@@ -102,55 +112,7 @@ def create_siberia_grid(resolution: float = 0.75, lon_min: float = 120.0, lon_ma
         plot_grid.add_plot(row, col, plot)
     
     print(f"Created grid with {len(plot_grid.plots)} plots (land only)")
-    return plot_grid, grid_cells
-
-
-def run_simulation(plot_grid: PlotGrid, num_days: int = 10, visualize: bool = True):
-    """
-    Run the simulation for a specified number of days, with optional real-time visualization.
-    
-    Args:
-        plot_grid: The PlotGrid to simulate
-        num_days: Number of days to simulate (default: 10)
-        visualize: Whether to visualize each day in real time (default: True)
-    """
-    print(f"\nRunning simulation for {num_days} days...")
-    
-    biome_colors = {
-        'southern taiga': '#228B22',      # Forest green
-        'northern taiga': '#32CD32',      # Lime green
-        'southern tundra': '#D3D3D3',     # Light gray
-        'northern tundra': '#FFFFFF',     # White
-        'mammoth steppe': '#8B9662'       # Brownish green (olive drab)
-    }
-    
-    # Setup visualization if requested
-    ax = None
-    if visualize:
-        import matplotlib.pyplot as plt
-        plt.ion()
-        # Show initial state (day 0)
-        ax = plot_grid.visualize_biomes(biome_colors, figsize=(14, 10), save_path=None, ax=None, day=0)
-        plt.pause(0.1)
-    
-    for day in range(1, num_days + 1):
-        print(f"  Day {day}/{num_days}...\n", end=' ', flush=True)
-        # Wrap day to 1-365 range for climate data (day 366 becomes day 1, etc.)
-        climate_day = ((day - 1) % 365) + 1
-        plot_grid.update_all_plots(climate_day)
-        
-        # Update visualization each day
-        if visualize:
-            plot_grid.visualize_biomes(biome_colors, figsize=(14, 10), save_path=None, ax=ax, day=day)
-            plt.pause(0.5)
-    
-    if visualize:
-        print("\nSimulation complete! Close the plot window when done viewing.")
-        import matplotlib.pyplot as plt
-        plt.ioff()
-        plt.show()
-    else:
-        print("Simulation complete!")
+    return plot_grid, grid_cells, initializer
 
 
 def add_mammoths_to_location(plot_grid: PlotGrid, initializer: GridInitializer, row: int, col: int, population_per_km2: float = 15.0) -> Optional[Prey]:
@@ -179,50 +141,179 @@ def add_mammoths_to_location(plot_grid: PlotGrid, initializer: GridInitializer, 
     return mammoth
 
 
+# ═══════════════════════════════════════════════════════════
+#  Grid data helpers
+# ═══════════════════════════════════════════════════════════
+
+def _grid_shape(pg: PlotGrid):
+    """Get the shape of the grid."""
+    rows = pg.max_row - pg.min_row + 1
+    cols = pg.max_col - pg.min_col + 1
+    return rows, cols
+
+
+def build_biome_grid(pg: PlotGrid) -> np.ndarray:
+    """Return 2D int array: 0=water, 1..N = biome index."""
+    rows, cols = _grid_shape(pg)
+    grid = np.zeros((rows, cols), dtype=int)
+    biome_to_int = {b: i + 1 for i, b in enumerate(BIOME_COLORS)}
+    for (r, c), plot in pg.plots.items():
+        biome = plot.get_climate().get_biome()
+        grid[r - pg.min_row, c - pg.min_col] = biome_to_int.get(biome, 0)
+    return grid
+
+
+def biome_colorscale():
+    """Discrete colorscale for the biome grid."""
+    water = '#001F5C'
+    all_c = [water] + list(BIOME_COLORS.values())
+    n = len(all_c)
+    cs = []
+    for i, c in enumerate(all_c):
+        cs.append([i / n, c])
+        cs.append([(i + 1) / n, c])
+    return cs, n
+
+
+def get_population_stats(pg: PlotGrid) -> Dict:
+    """Gather per-species population totals and flora totals."""
+    fauna_pops: Dict[str, int] = {}
+    flora_mass: Dict[str, float] = {'Grass': 0, 'Shrub': 0, 'Tree': 0, 'Moss': 0}
+    for plot in pg.get_all_plots():
+        for f in plot.get_all_fauna():
+            if f.get_total_mass() > 0:
+                fauna_pops[f.get_name()] = fauna_pops.get(f.get_name(), 0) + f.get_population()
+        gm, sm, tm, mm = plot.get_flora_masses()
+        flora_mass['Grass'] += gm
+        flora_mass['Shrub'] += sm
+        flora_mass['Tree'] += tm
+        flora_mass['Moss'] += mm
+    return {'fauna': fauna_pops, 'flora': flora_mass}
+
+
+# ═══════════════════════════════════════════════════════════
+#  Dash App
+# ═══════════════════════════════════════════════════════════
+
+def _build_figure(plot_grid: PlotGrid, day: int = 0):
+    """Build a Plotly figure showing the biome grid."""
+    import plotly.graph_objects as go
+
+    biome_grid = build_biome_grid(plot_grid)
+    cs, n_colors = biome_colorscale()
+    cbar_labels = ['Water'] + list(BIOME_COLORS.keys())
+
+    biome_trace = go.Heatmap(
+        z=biome_grid.tolist(),
+        colorscale=cs,
+        zmin=0,
+        zmax=n_colors - 1,
+        colorbar=dict(
+            title='Biome', tickvals=list(range(n_colors)),
+            ticktext=cbar_labels, tickfont=dict(size=9), len=0.5, x=1.02,
+        ),
+        hovertemplate='Row %{y}, Col %{x}<br>Biome idx: %{z}<extra></extra>',
+        showscale=True,
+        name='Biome',
+    )
+
+    title_text = f'Eastern Siberia Biome Map — Day {day}'
+
+    fig = go.Figure(data=[biome_trace])
+    fig.update_layout(
+        title=dict(text=title_text, x=0.5, font=dict(size=16)),
+        xaxis=dict(showticklabels=False, showgrid=False, constrain='domain'),
+        yaxis=dict(showticklabels=False, showgrid=False, scaleanchor='x'),
+        margin=dict(l=10, r=120, t=50, b=10),
+        plot_bgcolor='#001F5C',
+        paper_bgcolor='#f5f5f5',
+    )
+    return fig
+
+
+def _build_stats(plot_grid: PlotGrid, day: int):
+    """Build the stats panel children."""
+    from dash import html
+
+    stats = get_population_stats(plot_grid)
+    children = [
+        html.Div(f"Day {day}", style={
+            'fontSize': '16px', 'fontWeight': 'bold', 'marginBottom': '10px',
+        }),
+        html.B("Fauna"),
+    ]
+    if stats['fauna']:
+        for name, pop in stats['fauna'].items():
+            children.append(html.Div(f"  {name}: {pop:,}"))
+    else:
+        children.append(html.Div("  (none yet)"))
+
+    children.append(html.B("Flora biomass (kg)", style={'marginTop': '10px', 'display': 'block'}))
+    for fname, mass in stats['flora'].items():
+        children.append(html.Div(f"  {fname}: {mass:,.0f}"))
+
+    return children
+
+
+def create_dash_app(plot_grid: PlotGrid, initializer: GridInitializer):
+    """Build and return the Dash application."""
+    from dash import Dash, html, dcc
+
+    app = Dash(__name__)
+    app.title = "Mammoth Repopulation Simulator"
+
+    # Initial figure
+    init_fig = _build_figure(plot_grid)
+
+    # ── Layout ──
+    app.layout = html.Div(style={'display': 'flex', 'height': '100vh', 'fontFamily': 'Arial'}, children=[
+        # ── Sidebar ──
+        html.Div(id='sidebar', style={
+            'width': '300px', 'padding': '20px', 'backgroundColor': '#1a1a2e',
+            'color': '#eee', 'overflowY': 'auto', 'flexShrink': 0,
+        }, children=[
+            html.H2("Mammoth Sim", style={'margin': '0 0 15px 0', 'textAlign': 'center'}),
+            html.Hr(style={'borderColor': '#444'}),
+
+            html.P("Siberia biome visualization. Interactive features coming soon!",
+                   style={'fontSize': '12px', 'color': '#aaa', 'lineHeight': '1.5'}),
+
+            html.Hr(style={'borderColor': '#444'}),
+
+            # ── Stats panel ──
+            html.Div(id='stats-panel', children=_build_stats(plot_grid, 0),
+                     style={'fontSize': '13px', 'lineHeight': '1.8'}),
+        ]),
+
+        # ── Main map area ──
+        html.Div(style={'flex': 1, 'position': 'relative'}, children=[
+            dcc.Graph(id='biome-map', figure=init_fig, style={'height': '100%'},
+                      config={'scrollZoom': True, 'displayModeBar': True}),
+        ]),
+    ])
+
+    return app
+
+
+# ═══════════════════════════════════════════════════════════
+#  Entry point
+# ═══════════════════════════════════════════════════════════
+
 def main() -> None:
-    """Main function to run the simulation."""
     print("=" * 50)
     print("Mammoth Repopulation Simulator")
     print("=" * 50)
-    
-    # Create Siberia grid focused on eastern third with higher resolution
-    plot_grid, grid_cells = create_siberia_grid(resolution=0.55, lon_min=130.0, lon_max=180.0)
-    
-    # Create initializer to use for adding mammoths (must match grid resolution)
-    from app.setup.grid_initializer import GridInitializer
-    initializer = GridInitializer(lat_step=0.55, lon_step=0.55)
-    
-    # Add mammoths to a specific location
-    plot_coords = plot_grid.get_plot_coordinates()
-    if plot_coords:
-        # Sort by row then col to get a consistent ordering
-        plot_coords_sorted = sorted(plot_coords)
-        # Pick a plot from the middle of the sorted list
-        center_idx = len(plot_coords_sorted) // 2
-        center_row, center_col = plot_coords_sorted[center_idx]
-        
-        add_mammoths_to_location(plot_grid, initializer, center_row, center_col, population_per_km2=2.0)
-    else:
-        print("Warning: No plots found in the grid. Cannot add mammoths.")
-    
-    days_to_run = 400
-    run_simulation(plot_grid, num_days=days_to_run, visualize=True)
-    
-    # Save a high-quality screenshot at the end
-    biome_colors = {
-        'southern taiga': '#228B22',      # Forest green
-        'northern taiga': '#32CD32',      # Lime green
-        'southern tundra': '#D3D3D3',     # Light gray
-        'northern tundra': '#FFFFFF',     # White
-        'mammoth steppe': '#8B9662'       # Brownish green
-    }
-    plot_grid.visualize_biomes(biome_colors, figsize=(14, 10), 
-                               save_path='documentation/pictures/example_run.png', 
-                               ax=None, day=days_to_run)
-    
-    import matplotlib.pyplot as plt
-    plt.close('all')
-    print("\nScreenshot saved. Simulation ended.")
+
+    plot_grid, grid_cells, initializer = create_siberia_grid(
+        resolution=0.55, lon_min=130.0, lon_max=180.0
+    )
+
+    app = create_dash_app(plot_grid, initializer)
+
+    print("\nStarting Dash server...")
+    print("   Open http://127.0.0.1:8050 in your browser")
+    print("   Press Ctrl+C to stop\n")
+    app.run(debug=False, port=8050)
 
 
 if __name__ == "__main__":

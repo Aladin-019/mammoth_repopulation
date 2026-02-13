@@ -2,7 +2,9 @@ pandas
 numpy
 geopandas
 shapely
-matplotlib
+#matplotlib
+dash
+plotly
 pytest
 pytest-cov
 # pygrib - only needed for processing GRIB files into CSV (not needed to run simulation)
