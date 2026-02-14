@@ -118,6 +118,10 @@ def create_siberia_grid(resolution: float = 0.75, lon_min: float = 120.0, lon_ma
 #  Grid data helpers
 # ═══════════════════════════════════════════════════════════
 
+# Cache for blended grid - blend once at startup, then only update changed cells
+_grid_cache: Dict = {'blended': None, 'original': None}
+
+
 def _grid_shape(pg: PlotGrid):
     """Get the shape of the grid."""
     rows = pg.max_row - pg.min_row + 1
@@ -125,15 +129,74 @@ def _grid_shape(pg: PlotGrid):
     return rows, cols
 
 
+def _blend_biome_borders(grid: np.ndarray, blend_prob: float = 0.2, seed: int = 42) -> np.ndarray:
+    """
+    Blend biome borders for more realistic transitions.
+    For each border plot (adjacent to a different biome), with probability blend_prob,
+    assign the plot the biome of a neighbor.
+    Water cells (value 0) are never changed.
+    """
+    import random
+    rng = random.Random(seed)  # Use fixed seed for consistent borders
+    rows, cols = grid.shape
+    blended = grid.copy()
+    
+    for r in range(rows):
+        for c in range(cols):
+            biome_idx = grid[r, c]
+            if biome_idx == 0:  # Skip water
+                continue
+            
+            # Check neighbors for different biome (excluding water)
+            neighbor_biomes = set()
+            for dr in [-1, 0, 1]:
+                for dc in [-1, 0, 1]:
+                    if dr == 0 and dc == 0:
+                        continue
+                    nr, nc = r + dr, c + dc
+                    if 0 <= nr < rows and 0 <= nc < cols:
+                        neighbor = grid[nr, nc]
+                        if neighbor != biome_idx and neighbor != 0:
+                            neighbor_biomes.add(neighbor)
+            
+            if neighbor_biomes and rng.random() < blend_prob:
+                blended[r, c] = rng.choice(list(neighbor_biomes))
+    
+    return blended
+
+
 def build_biome_grid(pg: PlotGrid) -> np.ndarray:
-    """Return 2D int array: 0=water, 1..N = biome index."""
+    """Return 2D int array: 0=water, 1..N = biome index.
+    
+    On first call: builds grid and applies blending, caches both.
+    On subsequent calls: uses cached blended grid, only updates cells where biome actually changed.
+    """
     rows, cols = _grid_shape(pg)
-    grid = np.zeros((rows, cols), dtype=int)
     biome_to_int = {b: i + 1 for i, b in enumerate(BIOME_COLORS)}
+    
+    # Build current raw grid
+    current_grid = np.zeros((rows, cols), dtype=int)
     for (r, c), plot in pg.plots.items():
         biome = plot.get_climate().get_biome()
-        grid[r - pg.min_row, c - pg.min_col] = biome_to_int.get(biome, 0)
-    return grid
+        current_grid[r - pg.min_row, c - pg.min_col] = biome_to_int.get(biome, 0)
+    
+    # First call - blend and cache
+    if _grid_cache['blended'] is None:
+        _grid_cache['original'] = current_grid.copy()
+        _grid_cache['blended'] = _blend_biome_borders(current_grid, blend_prob=0.2, seed=42)
+        return _grid_cache['blended'].copy()
+    
+    # Subsequent calls - update only cells where biome actually changed
+    result = _grid_cache['blended'].copy()
+    for r in range(rows):
+        for c in range(cols):
+            if current_grid[r, c] != _grid_cache['original'][r, c]:
+                # Biome changed - update to new biome (no blending)
+                result[r, c] = current_grid[r, c]
+                _grid_cache['original'][r, c] = current_grid[r, c]
+                _grid_cache['blended'][r, c] = current_grid[r, c]
+    
+    return result
 
 
 def biome_colorscale():
@@ -354,7 +417,7 @@ def create_dash_app(plot_grid: PlotGrid, initializer: GridInitializer):
                       config={'scrollZoom': True, 'displayModeBar': True}),
             dcc.Store(id='placements', data={}),  # {"row,col": density}
             dcc.Store(id='sim-state', data={'running': False, 'day': 0, 'initialized': False}),
-            dcc.Interval(id='sim-interval', interval=500, disabled=True),  # 500ms per day
+            dcc.Interval(id='sim-interval', interval=1000, disabled=True),  # 1s per day (reduced from 500ms for reliability)
         ]),
     ])
 
@@ -481,25 +544,19 @@ def create_dash_app(plot_grid: PlotGrid, initializer: GridInitializer):
     )
     def run_simulation_step(n_intervals, sim_state):
         from dash import no_update
-        import traceback
 
         if not sim_state['running']:
             return no_update, no_update, no_update
 
-        try:
-            # Advance one day
-            sim_state['day'] += 1
-            plot_grid.update_all_plots(day=sim_state['day'])
+        # Advance one day
+        sim_state['day'] += 1
+        plot_grid.update_all_plots(day=sim_state['day'])
 
-            # Update figure and stats
-            fig, mammoth_count = _build_figure(plot_grid, {}, sim_state['day'])
-            stats_children = _build_stats(plot_grid, sim_state['day'], mammoth_count)
+        # Update figure and stats
+        fig, mammoth_count = _build_figure(plot_grid, {}, sim_state['day'])
+        stats_children = _build_stats(plot_grid, sim_state['day'], mammoth_count)
 
-            return sim_state, fig, stats_children
-        except Exception as e:
-            print(f"ERROR on day {sim_state['day']}: {e}")
-            traceback.print_exc()
-            return sim_state, no_update, no_update
+        return sim_state, fig, stats_children
 
     return app
 
