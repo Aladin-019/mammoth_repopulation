@@ -214,11 +214,11 @@ class PlotGrid:
                     if hasattr(fauna, 'update_prey_mass'):
                         fauna.update_prey_mass(day)
             
-            # Predators not yet enabled
-            # if day % 2 == 1 and day > 1:
-            #     for fauna in plot.get_all_fauna():
-            #         if hasattr(fauna, 'update_predator_mass'):
-            #             fauna.update_predator_mass(day)
+            # Update predators on odd days (after day 1)
+            if day % 2 == 1 and day > 1:
+                for fauna in plot.get_all_fauna():
+                    if hasattr(fauna, 'update_predator_mass'):
+                        fauna.update_predator_mass(day)
         
         # Clean up all extinct species
         for plot in self.plots.values():

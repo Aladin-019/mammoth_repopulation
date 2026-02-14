@@ -7,16 +7,47 @@ from app.models.Flora.Tree import Tree
 from app.models.Flora.Moss import Moss
 from app.models.Flora.Flora import Flora
 from app.models.Fauna.Prey import Prey
-# Predators not yet enabled
-# from app.models.Fauna.Predator import Predator
+from app.models.Fauna.Predator import Predator
 from typing import List, Optional
 from app.globals import *
 
 class GridInitializer:
-    # TEMPORARILY DISABLED
-    def _create_predator(self, predator_name: str, prey_list, plot: Plot):  # -> Predator:  # Type hint disabled since Fauna import is commented
-        # Stub for testing - fauna not currently used
-        pass
+    def _create_predator(self, predator_name: str, prey_list: List, plot: Plot, population_per_km2: Optional[float] = None) -> Predator:
+        """
+        Create a predator object. Currently only supports wolves.
+        
+        Args:
+            predator_name: Name of the predator ('wolf')
+            prey_list: List of prey this predator hunts
+            plot: The plot to add the predator to
+            population_per_km2: Optional population density per km^2. If None, uses default (0.02).
+        """
+        if predator_name == 'wolf':
+            # Default population if not specified
+            if population_per_km2 is None:
+                base_population = 0.02  # wolves per km^2 (default)
+            else:
+                base_population = population_per_km2
+            
+            avg_mass = 45.0  # kg per wolf (Gray Wolf average)
+            avg_foot_area = 0.008  # m^2 (wolf paw)
+            avg_steps_taken = 50000  # steps per day (wolves travel far)
+            return Predator(
+                name='Wolf',
+                description='Gray wolf adapted to taiga and tundra conditions',
+                population=self._get_standardized_population(self._add_random_variation(base_population, 30.0)),
+                avg_mass=self._add_random_variation(avg_mass, 20.0),
+                ideal_growth_rate=self._add_random_variation(0.15, 10.0),
+                ideal_temp_range=(-50.0, 25.0),  # degree Celsius
+                min_food_per_day=self._get_standardized_float(self._add_random_variation(5.0, 10.0)),  # kg per day
+                feeding_rate=self._add_random_variation(8.0, 15.0),  # kg per day
+                avg_steps_taken=self._get_standardized_float(self._add_random_variation(avg_steps_taken, 20.0)),
+                avg_foot_area=self._m2_to_km2(self._add_random_variation(avg_foot_area, 15.0)),
+                plot=plot,
+                prey=prey_list,
+            )
+        
+        return None
     def _establish_food_chain_relationships(self, plot: Plot) -> None:
         """Set up which flora each prey consumes. Mammoths eat grass, shrub, and moss."""
         for fauna in plot.get_all_fauna():
@@ -395,6 +426,31 @@ class GridInitializer:
             # Set up food chain: mammoths eat all flora (grass, shrub, moss)
             self._establish_food_chain_relationships(plot)
         return mammoth
+
+    def add_wolf_to_plot(self, plot: Plot, population_per_km2: float = 0.02) -> Predator:
+        """
+        Add wolves to a specific plot with the specified population density.
+        Wolves will hunt any prey already on the plot.
+        
+        Args:
+            plot: The plot to add wolves to
+            population_per_km2: Population density in wolves per km^2 (default: 0.02)
+        
+        Returns:
+            The created Wolf Predator object
+        """
+        # Get existing prey on plot for wolves to hunt
+        prey_list = [f for f in plot.get_all_fauna() if hasattr(f, 'predators')]
+        
+        wolf = self._create_predator('wolf', prey_list, plot, population_per_km2=population_per_km2)
+        if wolf:
+            wolf.plot = plot
+            plot.add_fauna(wolf)
+            # Update prey's predator lists to include this wolf
+            for prey in prey_list:
+                if wolf not in prey.predators:
+                    prey.predators.append(wolf)
+        return wolf
 
 
 
