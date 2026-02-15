@@ -161,7 +161,7 @@ class Prey(Fauna):
         penalty_food = self.distance_from_min_food(
             environmental_conditions['food'])
 
-        penalty_avg = (penalty_temp + penalty_food) / 2
+        penalty_avg = (penalty_temp + 4*penalty_food) / 2
 
         return penalty_avg
 

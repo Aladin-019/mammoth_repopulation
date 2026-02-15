@@ -137,7 +137,7 @@ def _blend_biome_borders(grid: np.ndarray, blend_prob: float = 0.2, seed: int = 
     Water cells (value 0) are never changed.
     """
     import random
-    rng = random.Random(seed)  # Use fixed seed for consistent borders
+    rng = random.Random(seed)
     rows, cols = grid.shape
     blended = grid.copy()
     
@@ -255,37 +255,60 @@ def _build_figure(plot_grid: PlotGrid, placements: Dict = None, day: int = 0):
 
     shapes = []
 
-    # Show red borders on placement cells (before simulation starts)
+    # Show colored borders on placement cells (before simulation starts)
     if placements and day == 0:
-        for key, density in placements.items():
+        for key, info in placements.items():
             r, c = map(int, key.split(','))
             gr = r - plot_grid.min_row
             gc = c - plot_grid.min_col
+            # Handle both new format (dict with species) and old format (just density)
+            if isinstance(info, dict):
+                species = info.get('species', 'mammoth')
+            else:
+                species = 'mammoth'
+            # Different colors: red/orange for mammoth, gray for wolf
+            if species == 'wolf':
+                border_color = '#7f8c8d'
+                fill_color = 'rgba(127,140,141,0.15)'
+            else:
+                border_color = 'red'
+                fill_color = 'rgba(255,0,0,0.15)'
             shapes.append(dict(
                 type='rect',
                 x0=gc - 0.5, y0=gr - 0.5, x1=gc + 0.5, y1=gr + 0.5,
-                line=dict(color='red', width=2),
-                fillcolor='rgba(255,0,0,0.15)',
+                line=dict(color=border_color, width=2),
+                fillcolor=fill_color,
             ))
 
-    # Show brown borders on plots with mammoths (during simulation)
+    # Show borders on plots with fauna (during simulation)
     mammoth_count = 0
+    wolf_count = 0
     if day > 0:
         for (r, c), plot in plot_grid.plots.items():
             has_mammoths = any(f.get_name() == 'Mammoth' and f.get_population() > 0 
                                for f in plot.get_all_fauna())
+            has_wolves = any(f.get_name() == 'Wolf' and f.get_population() > 0 
+                             for f in plot.get_all_fauna())
+            gr = r - plot_grid.min_row
+            gc = c - plot_grid.min_col
             if has_mammoths:
                 mammoth_count += 1
-                gr = r - plot_grid.min_row
-                gc = c - plot_grid.min_col
                 shapes.append(dict(
                     type='rect',
                     x0=gc - 0.5, y0=gr - 0.5, x1=gc + 0.5, y1=gr + 0.5,
                     line=dict(color='#8B4513', width=2),  # Brown
                     fillcolor='rgba(139,69,19,0.15)',
                 ))
+            if has_wolves:
+                wolf_count += 1
+                shapes.append(dict(
+                    type='rect',
+                    x0=gc - 0.5, y0=gr - 0.5, x1=gc + 0.5, y1=gr + 0.5,
+                    line=dict(color='#7f8c8d', width=2),  # Gray
+                    fillcolor='rgba(127,140,141,0.15)',
+                ))
 
-    title_text = 'Eastern Siberia — Click to place mammoths' if day == 0 else f'Eastern Siberia Biome Map — Day {day}'
+    title_text = 'Eastern Siberia — Click to place fauna' if day == 0 else f'Eastern Siberia Biome Map — Day {day}'
     if placements and day == 0:
         title_text = f'Eastern Siberia — {len(placements)} placement(s)'
 
@@ -300,10 +323,10 @@ def _build_figure(plot_grid: PlotGrid, placements: Dict = None, day: int = 0):
         plot_bgcolor='#001F5C',
         paper_bgcolor='#f5f5f5',
     )
-    return fig, mammoth_count
+    return fig, mammoth_count, wolf_count
 
 
-def _build_stats(plot_grid: PlotGrid, day: int, mammoth_plots: int = 0):
+def _build_stats(plot_grid: PlotGrid, day: int, mammoth_plots: int = 0, wolf_plots: int = 0):
     """Build the stats panel children."""
     from dash import html
 
@@ -335,6 +358,24 @@ def _build_stats(plot_grid: PlotGrid, day: int, mammoth_plots: int = 0):
                     }),
                 ]
             ))
+        if wolf_plots > 0:
+            children.append(html.Div(
+                style={'display': 'flex', 'alignItems': 'center', 'marginTop': '8px', 'gap': '8px'},
+                children=[
+                    # Hollow gray box to match wolf plot borders
+                    html.Div(style={
+                        'width': '14px',
+                        'height': '14px',
+                        'border': '2px solid #7f8c8d',
+                        'borderRadius': '2px',
+                        'flexShrink': '0',
+                    }),
+                    html.Span(f"{wolf_plots} plots with wolves", style={
+                        'color': '#95a5a6',
+                        'fontSize': '12px',
+                    }),
+                ]
+            ))
     else:
         children.append(html.Div("  (none yet)"))
 
@@ -353,7 +394,7 @@ def create_dash_app(plot_grid: PlotGrid, initializer: GridInitializer):
     app.title = "Mammoth Repopulation Simulator"
 
     # Initial figure
-    init_fig, _ = _build_figure(plot_grid)
+    init_fig, _, _ = _build_figure(plot_grid)
 
     # ── Layout ──
     app.layout = html.Div(style={'display': 'flex', 'height': '100vh', 'fontFamily': 'Arial'}, children=[
@@ -367,11 +408,25 @@ def create_dash_app(plot_grid: PlotGrid, initializer: GridInitializer):
 
             # ── Placement controls ──
             html.Div(id='placement-controls', children=[
-                html.P("Click on a land plot to place mammoths. Set density below, then click plots on the map.",
+                html.P("Click on a land plot to place fauna. Select species and density below, then click plots on the map.",
                        style={'fontSize': '12px', 'color': '#aaa', 'lineHeight': '1.5'}),
 
+                # Species selector
+                html.Label("Species:", style={'fontWeight': 'bold', 'marginTop': '10px'}),
+                dcc.RadioItems(
+                    id='species-selector',
+                    options=[
+                        {'label': ' Mammoth', 'value': 'mammoth'},
+                        {'label': ' Wolf', 'value': 'wolf'},
+                    ],
+                    value='mammoth',
+                    style={'marginTop': '5px', 'marginBottom': '10px'},
+                    inputStyle={'marginRight': '5px'},
+                    labelStyle={'display': 'block', 'marginBottom': '5px', 'cursor': 'pointer'},
+                ),
+
                 # Density slider
-                html.Label("Density (mammoths/km²):", style={'fontWeight': 'bold', 'marginTop': '10px'}),
+                html.Label(id='density-label', children="Density (mammoths/km²):", style={'fontWeight': 'bold', 'marginTop': '10px'}),
                 html.Div(id='density-display', children="2.0", style={
                     'fontSize': '18px', 'fontWeight': 'bold', 'color': '#f39c12',
                     'textAlign': 'center', 'marginTop': '5px',
@@ -422,14 +477,17 @@ def create_dash_app(plot_grid: PlotGrid, initializer: GridInitializer):
     ])
 
     # ══════════════════════════════════════════════════════
-    #  Update density display when slider changes
+    #  Update density display and label when slider/species changes
     # ══════════════════════════════════════════════════════
     @app.callback(
         Output('density-display', 'children'),
+        Output('density-label', 'children'),
         Input('density-slider', 'value'),
+        Input('species-selector', 'value'),
     )
-    def update_density_display(value):
-        return f"{value}"
+    def update_density_display(value, species):
+        label = f"Density ({species}s/km²):"
+        return f"{value}", label
 
     # ══════════════════════════════════════════════════════
     #  Click on map to add/remove placement
@@ -442,10 +500,11 @@ def create_dash_app(plot_grid: PlotGrid, initializer: GridInitializer):
         Input('clear-btn', 'n_clicks'),
         State('placements', 'data'),
         State('density-slider', 'value'),
+        State('species-selector', 'value'),
         State('sim-state', 'data'),
         prevent_initial_call=True,
     )
-    def handle_click_or_clear(click_data, clear_clicks, placements, density, sim_state):
+    def handle_click_or_clear(click_data, clear_clicks, placements, density, species, sim_state):
         from dash import ctx, no_update
 
         triggered = ctx.triggered_id
@@ -455,7 +514,7 @@ def create_dash_app(plot_grid: PlotGrid, initializer: GridInitializer):
             return no_update, no_update, no_update
 
         if triggered == 'clear-btn':
-            fig, _ = _build_figure(plot_grid, {}, 0)
+            fig, _, _ = _build_figure(plot_grid, {}, 0)
             return {}, fig, []
 
         if triggered == 'biome-map' and click_data is not None:
@@ -473,9 +532,12 @@ def create_dash_app(plot_grid: PlotGrid, initializer: GridInitializer):
             if key in placements:
                 new_placements = {k: v for k, v in placements.items() if k != key}
             else:
-                new_placements = {**placements, key: density if density and density > 0 else 2.0}
+                new_placements = {**placements, key: {
+                    'density': density if density and density > 0 else 2.0,
+                    'species': species or 'mammoth'
+                }}
 
-            fig, _ = _build_figure(plot_grid, new_placements, 0)
+            fig, _, _ = _build_figure(plot_grid, new_placements, 0)
             placement_items = _build_placement_list(plot_grid, new_placements)
             return new_placements, fig, placement_items
 
@@ -510,13 +572,24 @@ def create_dash_app(plot_grid: PlotGrid, initializer: GridInitializer):
                 {},  # show placement controls
             )
         else:
-            # Start simulation - first add mammoths from placements
+            # Start simulation - first add fauna from placements
             if not sim_state['initialized'] and placements:
-                for key, density in placements.items():
+                for key, info in placements.items():
                     r, c = map(int, key.split(','))
                     plot = plot_grid.get_plot(r, c)
                     if plot:
-                        initializer.add_mammoth_to_plot(plot, population_per_km2=density)
+                        # Handle both new format (dict with species) and old format (just density)
+                        if isinstance(info, dict):
+                            density = info.get('density', 2.0)
+                            species = info.get('species', 'mammoth')
+                        else:
+                            density = info
+                            species = 'mammoth'
+                        
+                        if species == 'mammoth':
+                            initializer.add_mammoth_to_plot(plot, population_per_km2=density)
+                        elif species == 'wolf':
+                            initializer.add_wolf_to_plot(plot, population_per_km2=density)
                 sim_state['initialized'] = True
 
             sim_state['running'] = True
@@ -549,14 +622,13 @@ def create_dash_app(plot_grid: PlotGrid, initializer: GridInitializer):
             return no_update, no_update, no_update
 
         # Advance one day
-        sim_state['day'] += 1
-        plot_grid.update_all_plots(day=sim_state['day'])
-
-        # Update figure and stats
-        fig, mammoth_count = _build_figure(plot_grid, {}, sim_state['day'])
-        stats_children = _build_stats(plot_grid, sim_state['day'], mammoth_count)
-
-        return sim_state, fig, stats_children
+        new_state = dict(sim_state)
+        new_state['day'] += 1
+        plot_grid.update_all_plots(day=new_state['day'])
+        print(f"[SIM] Day {new_state['day']} tick at n_intervals={n_intervals}")
+        fig, mammoth_count, wolf_count = _build_figure(plot_grid, {}, new_state['day'])
+        stats_children = _build_stats(plot_grid, new_state['day'], mammoth_count, wolf_count)
+        return new_state, fig, stats_children
 
     return app
 
@@ -567,13 +639,22 @@ def _build_placement_list(plot_grid: PlotGrid, placements: Dict):
 
     items = []
     if placements:
-        for key, density in placements.items():
+        for key, info in placements.items():
             r, c = key.split(',')
             plot = plot_grid.get_plot(int(r), int(c))
             biome = plot.get_climate().get_biome() if plot else '?'
+            # Handle both new format (dict with species) and old format (just density)
+            if isinstance(info, dict):
+                density = info.get('density', 2.0)
+                species = info.get('species', 'mammoth')
+            else:
+                density = info
+                species = 'mammoth'
+            # Different colors for different species
+            color = '#f39c12' if species == 'mammoth' else '#95a5a6'  # Orange for mammoth, gray for wolf
             items.append(html.Div(
-                f"({r},{c}) {biome}: {density}/km²",
-                style={'color': '#f39c12'},
+                f"({r},{c}) {biome}: {species} {density}/km²",
+                style={'color': color},
             ))
     return items
 

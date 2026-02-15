@@ -294,15 +294,15 @@ class Fauna():
         Args:
             current_food (float): The current available food
         Returns:
-            float: 0 if enough food, else negative value capped at -1.0
+            float: 0 if enough food, else negative value capped at -2.0
         """
         self._validate_instance(current_food, float, "current_food")
         min_food = self.min_food_per_day
         if current_food >= min_food:
             return 0.0
         shortage = min_food - current_food
-        # Normalize penalty: -1.0 means zero food, 0 means enough food
-        penalty = -min(shortage / min_food, 1.0) if min_food > 0 else 0.0
+        # Normalize penalty: -2.0 means zero food, 0 means enough food
+        penalty = -min(shortage / min_food, 2.0) if min_food > 0 else 0.0
         return penalty
 
     def capacity_penalty(self) -> None:

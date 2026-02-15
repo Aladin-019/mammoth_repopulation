@@ -94,7 +94,7 @@ class Predator(Fauna):
         penalty_food = self.distance_from_min_food(
             environmental_conditions['food'])
 
-        penalty_avg = (penalty_temp + penalty_food) / 2
+        penalty_avg = (penalty_temp + 4*penalty_food) / 2
         
         return penalty_avg
 
@@ -109,7 +109,7 @@ class Predator(Fauna):
         """
         self._validate_instance(environmental_penalty, float, "environmental_penalty")
         
-        return self.ideal_growth_rate * (1 + environmental_penalty/2)
+        return self.ideal_growth_rate * (1 + environmental_penalty)
 
     def _update_mass_from_growth(self, base_growth_rate: float) -> None:
         """
