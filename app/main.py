@@ -266,13 +266,12 @@ def _build_figure(plot_grid: PlotGrid, placements: Dict = None, day: int = 0):
                 species = info.get('species', 'mammoth')
             else:
                 species = 'mammoth'
-            # Different colors: red/orange for mammoth, gray for wolf
             if species == 'wolf':
                 border_color = '#7f8c8d'
                 fill_color = 'rgba(127,140,141,0.15)'
             else:
-                border_color = 'red'
-                fill_color = 'rgba(255,0,0,0.15)'
+                border_color = '#8B4513'
+                fill_color = 'rgba(139,69,19,0.15)'
             shapes.append(dict(
                 type='rect',
                 x0=gc - 0.5, y0=gr - 0.5, x1=gc + 0.5, y1=gr + 0.5,
@@ -419,10 +418,10 @@ def create_dash_app(plot_grid: PlotGrid, initializer: GridInitializer):
                         {'label': ' Mammoth', 'value': 'mammoth'},
                         {'label': ' Wolf', 'value': 'wolf'},
                     ],
+                    style={'marginTop': '5px', 'marginBottom': '10px', 'color': '#fff'},
                     value='mammoth',
-                    style={'marginTop': '5px', 'marginBottom': '10px'},
                     inputStyle={'marginRight': '5px'},
-                    labelStyle={'display': 'block', 'marginBottom': '5px', 'cursor': 'pointer'},
+                    labelStyle={'color': '#fff', 'fontWeight': 'bold'},
                 ),
 
                 # Density slider
@@ -578,7 +577,6 @@ def create_dash_app(plot_grid: PlotGrid, initializer: GridInitializer):
                     r, c = map(int, key.split(','))
                     plot = plot_grid.get_plot(r, c)
                     if plot:
-                        # Handle both new format (dict with species) and old format (just density)
                         if isinstance(info, dict):
                             density = info.get('density', 2.0)
                             species = info.get('species', 'mammoth')
