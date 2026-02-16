@@ -8,6 +8,34 @@ class Predator(Fauna):
     Inherits from Fauna and adds predator specific update mass calculations.
     """
 
+    @classmethod
+    def from_existing_with_mass(cls, source_fauna, migrating_mass: float, plot: PlotInformation = None):
+        """
+        Create a new Predator instance from an existing one, with population calculated from migrating_mass.
+        Args:
+            source_fauna (Predator): The predator to copy attributes from
+            migrating_mass (float): The total mass for the new predator
+            plot (PlotInformation, optional): The plot for the new predator (defaults to source_fauna.plot)
+        Returns:
+            Predator: New predator instance
+        """
+        avg_mass = source_fauna.avg_mass
+        population = max(1, int(migrating_mass / avg_mass)) if avg_mass > 0 else 1
+        return cls(
+            name=source_fauna.name,
+            description=source_fauna.description,
+            population=population,
+            avg_mass=avg_mass,
+            ideal_temp_range=source_fauna.ideal_temp_range,
+            min_food_per_day=source_fauna.min_food_per_day / source_fauna.population if source_fauna.population > 0 else source_fauna.min_food_per_day,
+            ideal_growth_rate=source_fauna.ideal_growth_rate,
+            feeding_rate=source_fauna.feeding_rate,
+            avg_steps_taken=source_fauna.avg_steps_taken,
+            avg_foot_area=source_fauna.avg_foot_area,
+            plot=plot if plot is not None else source_fauna.plot,
+            prey=source_fauna.prey
+        )
+
     def __init__(self, name: str, description: str, population: int, avg_mass: float,
                  ideal_temp_range: Tuple[float, float], min_food_per_day: float, ideal_growth_rate: float, 
                  feeding_rate: float, avg_steps_taken: float, avg_foot_area: float, plot: PlotInformation, prey: List['Fauna']):

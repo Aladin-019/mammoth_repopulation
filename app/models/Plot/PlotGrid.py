@@ -1,6 +1,7 @@
 from typing import Dict, Tuple, List, Optional, Any
 from .Plot import Plot
 from app.interfaces.flora_plot_info import PlotInformation
+import logging
 import numpy as np
 try:
     import matplotlib.pyplot as plt
@@ -14,6 +15,7 @@ except ImportError:
     Rectangle = None
     Patch = None
 
+logger = logging.getLogger(__name__)
 
 # ** DAILY MIGRATION PROBABILITIES **
 # Articifically high daily migration probabilities to speed up simulation due to low compute
@@ -141,7 +143,6 @@ class PlotGrid:
             if migration_mass > 0:
                 target_fauna = target_plot.get_a_fauna(fauna.name)
                 if target_fauna:
-                    # Add migration mass to existing fauna and subtract from source
                     existing_mass = target_fauna.get_total_mass()
                     target_fauna.set_total_mass(existing_mass + migration_mass)
                     fauna.set_total_mass(fauna.get_total_mass() - migration_mass)
@@ -151,9 +152,8 @@ class PlotGrid:
                         new_fauna = fauna.__class__.from_existing_with_mass(fauna, migration_mass, plot=target_plot)
                         target_plot.add_fauna(new_fauna)
                         fauna.set_total_mass(fauna.get_total_mass() - migration_mass)
-                    except Exception:
-                        # If cannot construct, skip migration and do not subtract mass
-                        pass
+                    except Exception as e:
+                        logger.error(f"Failed to migrate fauna '{fauna.name}' with mass {migration_mass} to plot {target_plot}: {e}", exc_info=True)
 
     def migrate_species(self) -> None:
         """
@@ -166,13 +166,11 @@ class PlotGrid:
                 if fauna.get_total_mass() > 0 and neighbors:
                     target_plot = np.random.choice(neighbors)
                     if hasattr(fauna, 'update_prey_mass'):
-                        # Prey (mammoths) migration
                         if np.random.random() < P_PREY_MIGRATION:
                             self._migrate_fauna(fauna, target_plot, 'over_prey_capacity', PREY_MIGRATION_RATIO)
-                    # Predators not yet enabled
-                    # elif hasattr(fauna, 'update_predator_mass'):
-                    #     if np.random.random() < P_PREDATOR_MIGRATION:
-                    #         self._migrate_fauna(fauna, target_plot, 'over_predator_capacity', PREDATOR_MIGRATION_RATIO)
+                    elif hasattr(fauna, 'update_predator_mass'):
+                        if np.random.random() < P_PREDATOR_MIGRATION:
+                            self._migrate_fauna(fauna, target_plot, 'over_predator_capacity', PREDATOR_MIGRATION_RATIO)
 
     def update_all_plots(self, day: int) -> None:
         """

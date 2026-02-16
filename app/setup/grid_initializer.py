@@ -37,9 +37,9 @@ class GridInitializer:
                 description='Gray wolf adapted to taiga and tundra conditions',
                 population=self._get_standardized_population(self._add_random_variation(base_population, 30.0)),
                 avg_mass=self._add_random_variation(avg_mass, 20.0),
-                ideal_growth_rate=self._add_random_variation(0.15, 10.0),
+                ideal_growth_rate=self._add_random_variation(0.2, 10.0),
                 ideal_temp_range=(-50.0, 25.0),  # degree Celsius
-                min_food_per_day=self._get_standardized_float(self._add_random_variation(5.0, 10.0)),  # kg per day
+                min_food_per_day=self._get_standardized_float(self._add_random_variation(1.0, 10.0)),  # kg per day
                 feeding_rate=self._add_random_variation(8.0, 15.0),  # kg per day
                 avg_steps_taken=self._get_standardized_float(self._add_random_variation(avg_steps_taken, 20.0)),
                 avg_foot_area=self._m2_to_km2(self._add_random_variation(avg_foot_area, 15.0)),
