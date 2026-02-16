@@ -5,6 +5,7 @@ I recognize there is a great limitation on the accuracy of this project due to t
 
 # Simulation Window
 ![Demo screenshot](documentation/pictures/example_run.png)
+![Demo screenshot](documentation/pictures/example_run_2.png)
 
 # The simulation will:
 - Initialize a grid based on real Siberian geography
@@ -41,23 +42,40 @@ I recognize there is a great limitation on the accuracy of this project due to t
 
 ## Running the Simulation
 
-To run the mammoth repopulation simulation:
+This project uses Plotly + Dash for interactive browser visualization. Recommended steps:
 
-```bash
+1. Create and activate a virtual environment (optional but recommended).
+
+Windows (PowerShell):
+
+```powershell
+python -m venv .venv
+. .venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+# Ensure the app package is on PYTHONPATH when running from project root
+$env:PYTHONPATH = (Get-Location).Path
 python -m app.main
 ```
 
-Or from the `app` directory:
+macOS / Linux:
+
+```bash
+python -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+python -m app.main
+```
+
+Alternative: run directly from the `app` folder (after activating venv):
 
 ```bash
 cd app
 python main.py
 ```
 
-You can modify simulation parameters in `app/main.py`:
-- `num_days`: Number of days to simulate (default: 370)
-- `population_per_km2`: Initial mammoth population density
-- `visualize`: Whether to show real-time visualization
+After the server starts, open http://127.0.0.1:8050 in a browser. If port 8050 is in use, stop the process holding the port or set the `PORT` environment variable when launching.
+
+You can modify runtime behavior via `app/main.py` variables such as `num_days` and placement options in the UI.
 
 ## Requirements
 
@@ -71,6 +89,12 @@ You can modify simulation parameters in `app/main.py`:
 - `matplotlib` - Visualization and plotting
 - `pytest` - Testing framework
 - `pytest-cov` - Test coverage reporting
+
+Additional runtime UI dependencies:
+- `plotly` - Interactive plotting (used for the biome map)
+- `dash` - Web app framework (UI)
+
+Note: `matplotlib` is no longer required for the main visualization path; it may still appear in historical test files or coverage artifacts.
 
 **Optional**:
 - `pygrib` - Only needed for processing GRIB files into CSV (already completed)
