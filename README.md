@@ -8,19 +8,17 @@ I recognize there is a great limitation on the accuracy of this project due to t
 
 # The simulation will:
 - Initialize a grid based on real Siberian geography
-- Add mammoths to specified location
-- Run the simulation for a specified number of days
+- UI cursor-based custom placement of Prey/Predator on map
+- Display real-time visualization and analytics of biome and fauna changes using Dash within browser
 - Update climate conditions probabilistically (based on real extracted data)
-- Plot-level Flora and Fauna total mass updates based on environmental penalties and    growth rates
+- Plot-level Flora and Fauna total mass updates based on environmental penalties and growth rates
 - Achieve an Ice Age mammoth-steppe biome via megafauna trampling and grazing 
-- Display real-time visualization of biome changes
 
 # Future plans:
-- UI cursor-based custom placement of Prey/Predator on map
-- Dockerization (possibly run simulation window in browser)
-- Edit/Change simulation variables in UI
+- Dockerization
+- Include more analytics
 - Save/store initial simulation conditions
-- Introduce Predators and other Prey
+- Switch between different views
 - Integrate premafrost requirement into mammoth steppe condition
 - Version with mammoth herd as a reinforcement learning model
 
