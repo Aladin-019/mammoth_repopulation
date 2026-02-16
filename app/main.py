@@ -469,8 +469,8 @@ def create_dash_app(plot_grid: PlotGrid, initializer: GridInitializer):
         html.Div(style={'flex': 1, 'position': 'relative'}, children=[
             dcc.Graph(id='biome-map', figure=init_fig, style={'height': '100%'},
                       config={'scrollZoom': True, 'displayModeBar': True}),
-            dcc.Store(id='placements', data={}),  # {"row,col": density}
-            dcc.Store(id='sim-state', data={'running': False, 'day': 0, 'initialized': False}),
+            dcc.Store(id='placements', data={}),
+            dcc.Store(id='sim-state', data={'running': False, 'day': 1, 'initialized': False}),
             dcc.Interval(id='sim-interval', interval=1000, disabled=True),  # 1s per day (reduced from 500ms for reliability)
         ]),
     ])

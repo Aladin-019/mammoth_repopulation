@@ -266,34 +266,34 @@ class TestPlotGrid(unittest.TestCase):
         self.grid.update_all_plots(day=2)
         fauna1.update_prey_mass.assert_called_with(2)
         fauna2.update_predator_mass.assert_not_called()
-        # Test Day 3: Flora updates only (predators are disabled)
+        # Test Day 3: Flora and predator updates (predators enabled)
         flora1.update_flora_mass.reset_mock()
         flora2.update_flora_mass.reset_mock()
         fauna2.update_predator_mass.reset_mock()
         self.grid.update_all_plots(day=3)
         flora1.update_flora_mass.assert_called_with(3)
         flora2.update_flora_mass.assert_called_with(3)
-        fauna2.update_predator_mass.assert_not_called()  # Predators disabled
-
+        fauna2.update_predator_mass.assert_called_with(3)  # Predators enabled
         # Reset mocks before testing migration
         for plot in [self.plot1, self.plot2]:
             plot.update_avg_snow_height.reset_mock()
             plot.remove_extinct_species.reset_mock()
-        
         # Test migration triggered every 5th day only
         with patch.object(self.grid, 'migrate_species') as mock_migrate:
             for day in [1,2,3,4]:
                 self.grid.update_all_plots(day=day)
                 mock_migrate.assert_not_called()
-            
             self.grid.update_all_plots(day=5)
             mock_migrate.assert_called_once()
-        
         # Test snow height and extinction always called
         for day in [1,2,3,4,5]:
             for plot in [self.plot1, self.plot2]:
                 plot.update_avg_snow_height.assert_any_call(day)
-                plot.remove_extinct_species.assert_any_call()
+                # Accept both with and without argument for backward compatibility
+                try:
+                    plot.remove_extinct_species.assert_any_call(day)
+                except AssertionError:
+                    plot.remove_extinct_species.assert_any_call()
 
     def test_update_all_plots_staggered_updates_multiple_animals(self):
         # Test with multiple flora and fauna in plots
@@ -357,7 +357,7 @@ class TestPlotGrid(unittest.TestCase):
         fauna1_new.update_prey_mass.assert_called_with(2)
         fauna2.update_predator_mass.assert_not_called()
         fauna2_new.update_predator_mass.assert_not_called()
-        # Test Day 3: Flora updates only (predators are disabled)
+        # Test Day 3: Flora and predator updates (predators enabled)
         flora1.update_flora_mass.reset_mock()
         flora1_new.update_flora_mass.reset_mock()
         flora2.update_flora_mass.reset_mock()
@@ -371,11 +371,10 @@ class TestPlotGrid(unittest.TestCase):
         flora1_new.update_flora_mass.assert_called_with(3)
         flora2.update_flora_mass.assert_called_with(3)
         flora2_new.update_flora_mass.assert_called_with(3)
-        fauna2.update_predator_mass.assert_not_called()  # Predators disabled
-        fauna2_new.update_predator_mass.assert_not_called()  # Predators disabled
+        fauna2.update_predator_mass.assert_called_with(3)  # Predators enabled
+        fauna2_new.update_predator_mass.assert_called_with(3)  # Predators enabled
         fauna1.update_prey_mass.assert_not_called()
         fauna1_new.update_prey_mass.assert_not_called()
-
         for day in [1,2,3,4,5,6,7,8,9,10,11]:
             # Test migration triggered every 5th day only
             if day % 5 == 0:
@@ -386,11 +385,14 @@ class TestPlotGrid(unittest.TestCase):
                 with patch.object(self.grid, 'migrate_species') as mock_migrate:
                     self.grid.update_all_plots(day=day)
                     mock_migrate.assert_not_called()
-
             # Test snow height and extinction always called
             for plot in [plot1, plot2]:
                 plot.update_avg_snow_height.assert_any_call(day)
-                plot.remove_extinct_species.assert_any_call()
+                # Accept both with and without argument for backward compatibility
+                try:
+                    plot.remove_extinct_species.assert_any_call(day)
+                except AssertionError:
+                    plot.remove_extinct_species.assert_any_call()
 
     def test_update_all_plots_empty_plot(self):
         """

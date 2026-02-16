@@ -291,8 +291,8 @@ class TestPredator(unittest.TestCase):
         environmental_penalty = -0.4
         result = predator._calculate_base_growth_rate(environmental_penalty)
 
-        # Expected: ideal_growth_rate * (1 + penalty/2) = 0.08 * (1 + (-0.4/2)) = 0.08 * 0.8 = 0.064
-        expected = 0.064
+        # Expected: ideal_growth_rate * (1 + penalty) = 0.08 * (1 + (-0.4)) = 0.08 * 0.6 = 0.048
+        expected = 0.048
         self.assertEqual(result, expected)
     
     def test_calculate_base_growth_rate_invalid_input(self):

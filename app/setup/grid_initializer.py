@@ -12,58 +12,6 @@ from typing import List, Optional
 from app.globals import *
 
 class GridInitializer:
-    def _create_predator(self, predator_name: str, prey_list: List, plot: Plot, population_per_km2: Optional[float] = None) -> Predator:
-        """
-        Create a predator object. Currently only supports wolves.
-        
-        Args:
-            predator_name: Name of the predator ('wolf')
-            prey_list: List of prey this predator hunts
-            plot: The plot to add the predator to
-            population_per_km2: Optional population density per km^2. If None, uses default (0.02).
-        """
-        if predator_name == 'wolf':
-            # Default population if not specified
-            if population_per_km2 is None:
-                base_population = 0.02  # wolves per km^2 (default)
-            else:
-                base_population = population_per_km2
-            
-            avg_mass = 45.0  # kg per wolf (Gray Wolf average)
-            avg_foot_area = 0.008  # m^2 (wolf paw)
-            avg_steps_taken = 50000  # steps per day (wolves travel far)
-            return Predator(
-                name='Wolf',
-                description='Gray wolf adapted to taiga and tundra conditions',
-                population=self._get_standardized_population(self._add_random_variation(base_population, 30.0)),
-                avg_mass=self._add_random_variation(avg_mass, 20.0),
-                ideal_growth_rate=self._add_random_variation(0.2, 10.0),
-                ideal_temp_range=(-50.0, 25.0),  # degree Celsius
-                min_food_per_day=self._get_standardized_float(self._add_random_variation(1.0, 10.0)),  # kg per day
-                feeding_rate=self._add_random_variation(8.0, 15.0),  # kg per day
-                avg_steps_taken=self._get_standardized_float(self._add_random_variation(avg_steps_taken, 20.0)),
-                avg_foot_area=self._m2_to_km2(self._add_random_variation(avg_foot_area, 15.0)),
-                plot=plot,
-                prey=prey_list,
-            )
-        
-        return None
-    def _establish_food_chain_relationships(self, plot: Plot) -> None:
-        """Set up which flora each prey consumes. Mammoths eat grass, shrub, and moss."""
-        for fauna in plot.get_all_fauna():
-            if fauna.get_name() == 'Mammoth':
-                consumable_flora = []
-                for flora in plot.get_all_flora():
-                    if flora.get_name() in ['Grass', 'Shrub', 'Moss']:
-                        consumable_flora.append(flora)
-                fauna.consumable_flora = consumable_flora
-                for flora in consumable_flora:
-                    if fauna not in flora.consumers:
-                        flora.consumers.append(fauna)
-    def _update_predator_prey_lists(self, plot: Plot) -> None:
-        # Stub for testing
-        pass
-
     """
     Helper class to automatically initialize plots in a PlotGrid based on biome data.
     
@@ -103,23 +51,23 @@ class GridInitializer:
         self.biome_defaults = {
             'southern taiga': {
                 'flora': ['tree', 'shrub', 'grass', 'moss'],
-                'prey': [],  # Mammoths will be added manually to specific plots
-                # 'predators': []  # Predators not yet enabled
+                'prey': [],
+                'predators': []
             },
             'northern taiga': {
                 'flora': ['tree', 'shrub', 'grass', 'moss'],
-                'prey': [],  # Mammoths will be added manually to specific plots
-                # 'predators': []  # Predators not yet enabled
+                'prey': [],
+                'predators': []
             },
             'southern tundra': {
                 'flora': ['tree','shrub', 'grass', 'moss'],
-                'prey': [],  # Mammoths will be added manually to specific plots
-                # 'predators': []  # Predators not yet enabled
+                'prey': [],
+                'predators': []
             },
             'northern tundra': {
                 'flora': ['shrub', 'grass', 'moss'],
-                'prey': [],  # Mammoths will be added manually to specific plots
-                # 'predators': []  # Predators not yet enabled
+                'prey': [],
+                'predators': []
             }
         }
 
@@ -181,6 +129,40 @@ class GridInitializer:
         
         return plot
 
+    def _establish_food_chain_relationships(self, plot: Plot) -> None:
+        """Set up which flora each prey consumes. Mammoths eat grass, shrub, and moss."""
+        for fauna in plot.get_all_fauna():
+            if fauna.get_name() == 'Mammoth':
+                consumable_flora = []
+                for flora in plot.get_all_flora():
+                    if flora.get_name() in ['Grass', 'Shrub', 'Moss']:
+                        consumable_flora.append(flora)
+                fauna.consumable_flora = consumable_flora
+                for flora in consumable_flora:
+                    if fauna not in flora.consumers:
+                        flora.consumers.append(fauna)
+    
+    def _update_predator_prey_lists(self, plot: Plot) -> None:
+        """
+        Ensure that if both wolves and mammoths are present in the plot,
+        wolves have mammoths in their prey list and mammoths have wolves in their predator list.
+        """
+        # Find all wolves and mammoths in the plot
+        wolves = [fauna for fauna in plot.get_all_fauna() if getattr(fauna, 'name', None) == 'Wolf']
+        mammoths = [fauna for fauna in plot.get_all_fauna() if getattr(fauna, 'name', None) == 'Mammoth']
+
+        for wolf in wolves:
+            # Add all mammoths to wolf's prey list if not already present
+            for mammoth in mammoths:
+                if mammoth not in wolf.prey:
+                    wolf.prey.append(mammoth)
+
+        for mammoth in mammoths:
+            # Add all wolves to mammoth's predator list if not already present
+            for wolf in wolves:
+                if wolf not in mammoth.predators:
+                    mammoth.predators.append(wolf)
+
     def _add_default_flora(self, plot: Plot, biome: str) -> None:
         """Add default flora to the plot based on biome."""
         if biome not in self.biome_defaults:
@@ -193,25 +175,6 @@ class GridInitializer:
             flora = self._create_flora_for_biome(flora_name, biome, plot)
             if flora:
                 plot.add_flora(flora)
-
-    # TEMPORARILY UNUSED
-    # re-enable it when add default fauna and modify it to add all fauna (not just mammoths)
-    # def _add_default_fauna(self, plot: Plot, biome: str) -> None:
-    #     """Add default fauna to the plot based on biome. Currently only mammoths."""
-    #     if biome not in self.biome_defaults:
-    #         return
-            
-    #     prey_names = self.biome_defaults[biome]['prey']
-        
-    #     # Add mammoths only (no other prey or predators for now)
-    #     for prey_name in prey_names:
-    #         if prey_name == 'mammoth':
-    #             mammoth = self._create_prey(prey_name, plot)
-    #             if mammoth:
-    #                 mammoth.plot = plot
-    #                 plot.add_fauna(mammoth)
-    #                 # Set up food chain: mammoths eat all flora (grass, shrub, moss)
-    #                 self._establish_food_chain_relationships(plot)
 
     def _get_standardized_float(self, base_float: float) -> float:
         """Convert from base 1km^2 to standardized value based on current plot size."""
@@ -425,7 +388,45 @@ class GridInitializer:
             plot.add_fauna(mammoth)
             # Set up food chain: mammoths eat all flora (grass, shrub, moss)
             self._establish_food_chain_relationships(plot)
+            # Update predator-prey lists
+            self._update_predator_prey_lists(plot)
         return mammoth
+
+    def _create_predator(self, predator_name: str, prey_list: List, plot: Plot, population_per_km2: Optional[float] = None) -> Predator:
+        """
+        Create a predator object. Currently only supports wolves.
+        
+        Args:
+            predator_name: Name of the predator ('wolf')
+            prey_list: List of prey this predator hunts
+            plot: The plot to add the predator to
+            population_per_km2: Optional population density per km^2. If None, uses default (0.02).
+        """
+        if predator_name == 'wolf':
+            # Default population if not specified
+            if population_per_km2 is None:
+                base_population = 0.02  # wolves per km^2 (default)
+            else:
+                base_population = population_per_km2
+            
+            avg_mass = 45.0  # kg per wolf (Gray Wolf average)
+            avg_foot_area = 0.008  # m^2 (wolf paw)
+            avg_steps_taken = 50000  # steps per day (wolves travel far)
+            return Predator(
+                name='Wolf',
+                description='Gray wolf adapted to taiga and tundra conditions',
+                population=self._get_standardized_population(self._add_random_variation(base_population, 30.0)),
+                avg_mass=self._add_random_variation(avg_mass, 20.0),
+                ideal_growth_rate=self._add_random_variation(0.2, 10.0),
+                ideal_temp_range=(-60.0, 30.0),  # degree Celsius
+                min_food_per_day=self._get_standardized_float(self._add_random_variation(0.5, 10.0)),  # kg per day
+                feeding_rate=self._add_random_variation(1.0, 15.0),  # kg per day
+                avg_steps_taken=self._get_standardized_float(self._add_random_variation(avg_steps_taken, 20.0)),
+                avg_foot_area=self._m2_to_km2(self._add_random_variation(avg_foot_area, 15.0)),
+                plot=plot,
+                prey=prey_list,
+            )
+        return None
 
     def add_wolf_to_plot(self, plot: Plot, population_per_km2: float = 0.02) -> Predator:
         """
@@ -450,6 +451,8 @@ class GridInitializer:
             for prey in prey_list:
                 if wolf not in prey.predators:
                     prey.predators.append(wolf)
+            # Update predator-prey lists
+            self._update_predator_prey_lists(plot)
         return wolf
 
 

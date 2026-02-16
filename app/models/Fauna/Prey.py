@@ -110,16 +110,11 @@ class Prey(Fauna):
 
         try:
             environmental_conditions = self._get_current_environmental_conditions(day)
-            
             environmental_penalty = self._calculate_environmental_penalty(environmental_conditions)
-            
             base_growth_rate = self._calculate_base_growth_rate(environmental_penalty)
             consumption_rate = self.total_consumption_rate()
-            
             self._update_mass_from_growth_and_consumption(base_growth_rate, consumption_rate)
-
             self.capacity_penalty()
-
         except Exception as e:
             raise RuntimeError(f"Failed to update prey mass: {e}")
 
@@ -178,23 +173,18 @@ class Prey(Fauna):
 
         return self.ideal_growth_rate * (1 + environmental_penalty/2)
 
-    def _update_mass_from_growth_and_consumption(self, base_growth_rate: float, consumption_rate: float) -> None:
+    def _update_mass_from_growth_and_consumption(self, base_growth_rate: float, consumption_amount: float) -> None:
         """
-        Update mass based on growth rate and consumption rate.
-        
+        Update mass based on growth rate (fractional) and consumption amount (absolute).
         Args:
-            base_growth_rate (float): The base growth rate to apply
-            consumption_rate (float): The consumption rate to apply
+            base_growth_rate (float): The base growth rate to apply (fractional)
+            consumption_amount (float): The absolute amount to subtract (kg)
         """
         self._validate_instance(base_growth_rate, float, "base_growth_rate")
-        self._validate_instance(consumption_rate, float, "consumption_rate")
-        
-        actual_growth_rate = base_growth_rate - consumption_rate
+        self._validate_instance(consumption_amount, float, "consumption_amount")
         current_mass = self.get_total_mass()
-        new_mass = current_mass + current_mass * actual_growth_rate
-        
+        new_mass = current_mass + current_mass * base_growth_rate - consumption_amount
         self.set_total_mass(max(0, new_mass))  # Prevent negative mass
-        
         # Update population
         if self.avg_mass > 0:
             new_population = int(new_mass / self.avg_mass)

@@ -74,13 +74,9 @@ class Predator(Fauna):
         
         try:
             environmental_conditions = self._get_current_environmental_conditions(day)
-            
-            environmental_penalty = self._calculate_environmental_penalty(environmental_conditions)
-            
+            environmental_penalty = self._calculate_environmental_penalty(environmental_conditions) 
             base_growth_rate = self._calculate_base_growth_rate(environmental_penalty)
-            
             self._update_mass_from_growth(base_growth_rate)
-
             self.capacity_penalty()
 
         except Exception as e:
