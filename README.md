@@ -63,13 +63,6 @@ pip install -r requirements.txt
 python -m app.main
 ```
 
-Alternative: run directly from the `app` folder (after activating venv):
-
-```bash
-cd app
-python main.py
-```
-
 After the server starts, open http://127.0.0.1:8050 in a browser. If port 8050 is in use, stop the process holding the port or set the `PORT` environment variable when launching.
 
 You can modify runtime behavior via `app/main.py` variables such as `num_days` and placement options in the UI.
