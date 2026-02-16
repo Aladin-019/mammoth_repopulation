@@ -244,12 +244,8 @@ def _build_figure(plot_grid: PlotGrid, placements: Dict = None, day: int = 0):
         colorscale=cs,
         zmin=0,
         zmax=n_colors - 1,
-        colorbar=dict(
-            title='Biome', tickvals=list(range(n_colors)),
-            ticktext=cbar_labels, tickfont=dict(size=9), len=0.5, x=1.02,
-        ),
         hovertemplate='Row %{y}, Col %{x}<br>Biome idx: %{z}<extra></extra>',
-        showscale=True,
+        showscale=False,
         name='Biome',
     )
 
@@ -312,13 +308,38 @@ def _build_figure(plot_grid: PlotGrid, placements: Dict = None, day: int = 0):
         title_text = f'Eastern Siberia — {len(placements)} placement(s)'
 
     fig = go.Figure(data=[biome_trace])
+    legend_shapes = []
+    legend_annotations = []
+    box_x0 = 1.02
+    box_x1 = 1.06
+    start_y = 0.9
+    step_y = 0.08
+    items = ['Water'] + list(BIOME_COLORS.keys())
+    colors = ['#001F5C'] + list(BIOME_COLORS.values())
+    for i, (label, color) in enumerate(zip(items, colors)):
+        y_center = start_y - i * step_y
+        y0 = y_center - step_y * 0.35
+        y1 = y_center + step_y * 0.35
+        legend_shapes.append(dict(
+            type='rect', xref='paper', yref='paper',
+            x0=box_x0, x1=box_x1, y0=y0, y1=y1,
+            line=dict(color='#000000', width=1), fillcolor=color,
+        ))
+        legend_annotations.append(dict(
+            x=box_x1 + 0.01, y=y_center, xref='paper', yref='paper',
+            text=label, showarrow=False, xanchor='left', yanchor='middle',
+            font=dict(size=10, color='#111111')
+        ))
+
+    all_shapes = shapes + legend_shapes
 
     fig.update_layout(
         title=dict(text=title_text, x=0.5, font=dict(size=16)),
         xaxis=dict(showticklabels=False, showgrid=False, constrain='domain'),
         yaxis=dict(showticklabels=False, showgrid=False, scaleanchor='x'),
-        shapes=shapes,
-        margin=dict(l=10, r=120, t=50, b=10),
+        shapes=all_shapes,
+        annotations=legend_annotations,
+        margin=dict(l=10, r=140, t=50, b=10),
         plot_bgcolor='#001F5C',
         paper_bgcolor='#f5f5f5',
     )
