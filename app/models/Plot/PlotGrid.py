@@ -137,6 +137,9 @@ class PlotGrid:
             capacity_check (str): Method name to check capacity on target plot
             migration_percent (float): Percentage of mass to migrate
         """
+        # Block migration if source fauna has less than avg mass (non-viable population)
+        if fauna.get_total_mass() < getattr(fauna, 'avg_mass', 1):
+            return
         # Only migrate to target plot if its not over capacity (has space)
         if not getattr(target_plot, capacity_check)():
             migration_mass = fauna.get_total_mass() * migration_percent
@@ -221,14 +224,14 @@ class PlotGrid:
         # Clean up all extinct species
         for plot in self.plots.values():
             plot.remove_extinct_species()
-        
-        # Update biomes for each plot
-        for plot in self.plots.values():
-            plot.check_and_update_biome()
 
         # Handle migration - migrate_species loops over all plots
         if day % 5 == 0:
             self.migrate_species()
+
+        # Update biomes for each plot
+        for plot in self.plots.values():
+            plot.check_and_update_biome()
 
     def visualize_biomes(self, biome_colors: Dict[str, str], figsize: Tuple[int, int] = (12, 8), 
                         save_path: Optional[str] = None, ax: Optional = None, day: Optional[int] = None):
@@ -484,4 +487,3 @@ class PlotGrid:
                         # Assign biome of a random neighbor (never water)
                         blended_grid[r, c] = random.choice(list(neighbor_biomes))
         return blended_grid
-    
