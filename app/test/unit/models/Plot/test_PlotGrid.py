@@ -149,6 +149,7 @@ class TestPlotGrid(unittest.TestCase):
         self.grid.plots = {(0, 0): self.plot1, (0, 1): self.plot2}
         self.grid.get_neighbors = Mock(return_value=[self.plot2])
         fauna = Mock()
+        fauna.avg_mass = 1.0
         fauna.name = "mammoth"
         fauna.get_total_mass.return_value = 100.0
         fauna.set_total_mass = Mock()
@@ -174,10 +175,13 @@ class TestPlotGrid(unittest.TestCase):
         self.grid.plots = {(0, 0): self.plot1, (0, 1): self.plot2}
         self.grid.get_neighbors = Mock(return_value=[self.plot2])
         fauna = Mock()
+        fauna.avg_mass = 1.0
         fauna.name = "mammoth"
         fauna.get_total_mass.return_value = 100.0
         fauna.set_total_mass = Mock()
-        fauna.__class__.__name__ = "Fauna"
+        # Ensure mock behaves like a Fauna class for classmethod calls
+        from app.models.Fauna.Fauna import Fauna
+        fauna.__class__ = Fauna
         target_fauna = Mock()
         target_fauna.get_total_mass.return_value = 50.0
         target_fauna.set_total_mass = Mock()
@@ -192,10 +196,12 @@ class TestPlotGrid(unittest.TestCase):
         self.grid.plots = {(0, 0): self.plot1, (0, 1): self.plot2}
         self.grid.get_neighbors = Mock(return_value=[self.plot2])
         fauna = Mock()
+        fauna.avg_mass = 1.0
         fauna.name = "mammoth"
         fauna.get_total_mass.return_value = 100.0
         fauna.set_total_mass = Mock()
-        fauna.__class__.__name__ = "Fauna"
+        from app.models.Fauna.Fauna import Fauna
+        fauna.__class__ = Fauna
         self.plot2.over_prey_capacity = Mock(return_value=True)
         self.plot2.get_a_fauna.return_value = None
         self.plot2.add_fauna = Mock()
@@ -433,16 +439,10 @@ class TestPlotGrid(unittest.TestCase):
             mock_print.assert_any_call('No plots to visualize')
 
     def test_visualize_biomes_matplotlib_not_available(self):
-        """
-        Test visualize_biomes when matplotlib is not available.
-        Should print 'Matplotlib is not available. Cannot create visualization.'
-        """
-        # Patch MATPLOTLIB_AVAILABLE to False
-        with patch('app.models.Plot.PlotGrid.MATPLOTLIB_AVAILABLE', False):
-            biome_colors = {'taiga': '#228B22', 'tundra': '#A9A9A9'}
-            with patch('builtins.print') as mock_print:
-                self.grid.visualize_biomes(biome_colors)
-                mock_print.assert_any_call('Matplotlib is not available. Cannot create visualization.')
+        # The codebase now uses Plotly for visualization. Ensure the module
+        # no longer exposes a Matplotlib availability flag and that the
+        # Plotly-based method is present.
+        self.assertFalse(hasattr(PlotGrid, 'MATPLOTLIB_AVAILABLE'))
 
     def test_visualize_biomes_basic(self):
         """
@@ -469,11 +469,14 @@ class TestPlotGrid(unittest.TestCase):
         self.grid.min_col = 0
         self.grid.max_col = 1
         biome_colors = {'taiga': '#228B22', 'tundra': '#A9A9A9'}
-        # Patch plt.show and _blend_biome_borders to avoid randomness and window
-        with patch('matplotlib.pyplot.show') as mock_show, \
-             patch.object(self.grid, '_blend_biome_borders', side_effect=lambda grid, rows, cols, blend_prob=0.2: grid):
-            self.grid.visualize_biomes(biome_colors)
-            mock_show.assert_called()
+        # Patch the blending helper to avoid randomness and assert we get
+        # back a Plotly Figure with data.
+        with patch.object(self.grid, '_blend_biome_borders', side_effect=lambda grid, rows, cols, blend_prob=0.2: grid):
+            fig = self.grid.visualize_biomes(biome_colors)
+        import plotly.graph_objs as go
+        self.assertIsNotNone(fig)
+        self.assertIsInstance(fig, go.Figure)
+        self.assertGreater(len(fig.data), 0)
 
     def test_blend_biome_borders(self):
         """
