@@ -232,13 +232,77 @@ class PlotGrid:
             A Plotly `Figure` representing the biome grid.
         """
         import plotly.graph_objs as go
-        # Clear cached blended grid and biome states before plotting
-        self._initial_blended_grid = None
-        self._current_biomes = {}
-        if not self.plots:
-            print("No plots to visualize")
+        try:
+            import plotly.graph_objs as go
+
+            # Clear cached blended grid and biome states before plotting
+            self._initial_blended_grid = None
+            self._current_biomes = {}
+
+            if not self.plots:
+                print("No plots to visualize")
+                return None
+
+            rows, cols, grid, biome_to_int, int_to_biome, int_to_color = \
+                self._prepare_grid_and_mappings(biome_colors)
+
+            grid = self._apply_blending_and_cache(grid, rows, cols, biome_to_int)
+
+            # Build Plotly figure
+            fig = go.Figure(data=go.Heatmap(
+                z=grid,
+                x=list(range(self.min_col, self.max_col + 1)),
+                y=list(range(self.min_row, self.max_row + 1)),
+                colorscale=[[i / (len(int_to_color) - 1), c] for i, c in int_to_color.items()],
+                showscale=False,
+                hovertemplate='Row: %{y}<br>Col: %{x}<br>Biome: %{customdata}',
+                customdata=np.vectorize(lambda v: int_to_biome.get(v, 'Water'))(grid),
+                zsmooth='nearest',
+            ))
+
+            mammoth_count, total_mammoth_population = self._add_mammoth_borders(fig)
+
+            self._add_legend_annotations(fig, biome_colors)
+
+            # Title and layout
+            title = 'Mammoth Repopulation Simulator'
+            if day is not None:
+                title = f'Eastern Siberia Biome Map - Day {day}'
+            fig.update_layout(
+                title=title,
+                xaxis_title='Column',
+                yaxis_title='Row',
+                margin=dict(l=40, r=40, t=60, b=120),
+                width=900, height=700,
+                xaxis=dict(constrain='domain'),
+                yaxis=dict(constrain='domain'),
+            )
+            fig.update_xaxes(showticklabels=False)
+            fig.update_yaxes(showticklabels=False)
+
+            # Add mammoth indicator and population text
+            fig.add_annotation(
+                x=cols + 0.5, y=rows - 0.5,
+                text="Mammoths are present",
+                showarrow=False,
+                font=dict(size=10, color="black"),
+                xref="x", yref="y"
+            )
+            fig.add_annotation(
+                x=cols + 0.5, y=rows - 1.5,
+                text=f"<b>Mammoth population: {total_mammoth_population}</b>",
+                showarrow=False,
+                font=dict(size=10, color="black", family="Arial"),
+                xref="x", yref="y"
+            )
+
+            return fig
+        except Exception:
+            logger.exception("Failed to build biome visualization")
             return None
 
+    def _prepare_grid_and_mappings(self, biome_colors: Dict[str, str]):
+        """Prepare numeric grid and color mappings for plotting."""
         rows = self.max_row - self.min_row + 1
         cols = self.max_col - self.min_col + 1
         grid = np.full((rows, cols), -1, dtype=int)  # -1 for empty cells (water)
@@ -255,6 +319,10 @@ class PlotGrid:
             biome = plot.get_climate().get_biome()
             grid[grid_row, grid_col] = biome_to_int.get(biome, 0)
 
+        return rows, cols, grid, biome_to_int, int_to_biome, int_to_color
+
+    def _apply_blending_and_cache(self, grid: np.ndarray, rows: int, cols: int, biome_to_int: Dict[str, int]) -> np.ndarray:
+        """Apply border blending and update or reuse cached blended grid."""
         # Apply border blending only on initial render (day 0), then reuse that blended grid
         create_new = True  # Plotly always creates new figure
         if create_new and self._initial_blended_grid is None:
@@ -276,18 +344,10 @@ class PlotGrid:
         else:
             grid[grid == -1] = 0
 
-        # Create Plotly heatmap (discrete colors)
-        fig = go.Figure(data=go.Heatmap(
-            z=grid,
-            x=list(range(self.min_col, self.max_col + 1)),
-            y=list(range(self.min_row, self.max_row + 1)),
-            colorscale=[ [i/(len(int_to_color)-1), c] for i, c in int_to_color.items() ],
-            showscale=False,
-            hovertemplate='Row: %{y}<br>Col: %{x}<br>Biome: %{customdata}',
-            customdata=np.vectorize(lambda v: int_to_biome.get(v, 'Water'))(grid)
-        ))
+        return grid
 
-        # Add mammoth borders
+    def _add_mammoth_borders(self, fig):
+        """Add rectangular borders for plots containing mammoths and return counts."""
         mammoth_border_color = '#8B4513'
         mammoth_count = 0
         total_mammoth_population = 0
@@ -304,14 +364,16 @@ class PlotGrid:
                 mammoth_count += 1
                 fig.add_shape(
                     type="rect",
-                    x0=grid_col-0.5, y0=grid_row-0.5,
-                    x1=grid_col+0.5, y1=grid_row+0.5,
+                    x0=grid_col - 0.5, y0=grid_row - 0.5,
+                    x1=grid_col + 0.5, y1=grid_row + 0.5,
                     line=dict(color=mammoth_border_color, width=3),
                     fillcolor="rgba(0,0,0,0)",
                     layer="above"
                 )
+        return mammoth_count, total_mammoth_population
 
-        # Custom legend: row of colored boxes with biome names beside each
+    def _add_legend_annotations(self, fig, biome_colors: Dict[str, str]):
+        """Add a simple vertical legend as shapes + annotations (keeps previous layout)."""
         legend_labels = ['Water'] + list(biome_colors.keys())
         legend_colors = ['#001F5C'] + list(biome_colors.values())
         legend_y = -1.5
@@ -322,15 +384,15 @@ class PlotGrid:
             # Draw colored box
             fig.add_shape(
                 type="rect",
-                x0=legend_x, y0=legend_y+i*box_height,
-                x1=legend_x+0.5, y1=legend_y+i*box_height+box_height*0.8,
+                x0=legend_x, y0=legend_y + i * box_height,
+                x1=legend_x + 0.5, y1=legend_y + i * box_height + box_height * 0.8,
                 line=dict(color='black', width=2),
                 fillcolor=color,
                 layer="above"
             )
             # Add biome name to right, center-aligned (slightly smaller font to avoid clipping)
             fig.add_annotation(
-                x=legend_x+0.7, y=legend_y+i*box_height+box_height*0.4,
+                x=legend_x + 0.7, y=legend_y + i * box_height + box_height * 0.4,
                 text=label,
                 showarrow=False,
                 font=dict(size=10, color='black', family='Arial'),
@@ -338,54 +400,12 @@ class PlotGrid:
                 align="left",
                 valign="middle"
             )
-
-        # Title and layout
-        title = 'Mammoth Repopulation Simulator'
-        if day is not None:
-            title = f'Eastern Siberia Biome Map - Day {day}'
-        fig.update_layout(
-            title=title,
-            xaxis_title='Column',
-            yaxis_title='Row',
-            margin=dict(l=40, r=40, t=60, b=120),
-            width=900, height=700,
-            xaxis=dict(constrain='domain'),
-            yaxis=dict(constrain='domain'),
-        )
-        fig.update_xaxes(showticklabels=False)
-        fig.update_yaxes(showticklabels=False)
-
-        # Add mammoth indicator and population text
-        fig.add_annotation(
-            x=cols+0.5, y=rows-0.5,
-            text="Mammoths are present",
-            showarrow=False,
-            font=dict(size=10, color="black"),
-            xref="x", yref="y"
-        )
-        fig.add_annotation(
-            x=cols+0.5, y=rows-1.5,
-            text=f"<b>Mammoth population: {total_mammoth_population}</b>",
-            showarrow=False,
-            font=dict(size=10, color="black", family="Arial"),
-            xref="x", yref="y"
-        )
-
-        return fig
-
     def _blend_biome_borders(self, grid: np.ndarray, rows: int, cols: int, blend_prob: float = 0.2) -> np.ndarray:
-        """
-        Helps blend biome borders in visualize_biomes for more realistic transitions.
-        For each border plot (adjacent to a different biome), with probability blend_prob,
-        assign the plot the biome of a neighbor.
-        Water cells (value -1) are never changed and are never used as blending targets.
-        Args:
-            grid: 2D numpy array of biome indices (-1 for water, >= 1 for biomes)
-            rows: number of rows in grid
-            cols: number of columns in grid
-            blend_prob: probability to blend a border plot
-        Returns:
-            grid: blended 2D numpy array
+        """Blend biome borders for more realistic transitions.
+
+        For each border plot (adjacent to a different biome), with probability
+        ``blend_prob`` assign the plot the biome of a neighbor. Water cells
+        (value -1) are never changed.
         """
         import random
         WATER_VALUE = -1
@@ -396,7 +416,7 @@ class PlotGrid:
                 # Skip water cells - they should never change
                 if biome_idx == WATER_VALUE:
                     continue
-                
+
                 # Check neighbors for different biome (excluding water)
                 neighbor_biomes = set()
                 for dr in [-1, 0, 1]:

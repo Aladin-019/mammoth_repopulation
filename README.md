@@ -49,8 +49,6 @@ Windows (PowerShell):
 python -m venv .venv
 . .venv\Scripts\Activate.ps1
 pip install -r requirements.txt
-# Ensure the app package is on PYTHONPATH when running from project root
-$env:PYTHONPATH = (Get-Location).Path
 python -m app.main
 ```
 

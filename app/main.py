@@ -8,6 +8,7 @@ from typing import Tuple, List, Dict
 from app.setup.grid_initializer import GridInitializer
 from app.models.Plot.PlotGrid import PlotGrid
 import numpy as np
+import logging
 
 
 # ── Biome colors used throughout ──
@@ -234,116 +235,127 @@ def get_population_stats(pg: PlotGrid) -> Dict:
 def _build_figure(plot_grid: PlotGrid, placements: Dict = None, day: int = 0):
     """Build a Plotly figure showing the biome grid with optional placement markers."""
     import plotly.graph_objects as go
+    log = logging.getLogger(__name__)
 
-    biome_grid = build_biome_grid(plot_grid)
-    cs, n_colors = biome_colorscale()
-    cbar_labels = ['Water'] + list(BIOME_COLORS.keys())
+    def _build_biome_trace(pg: PlotGrid):
+        grid = build_biome_grid(pg)
+        cs, n_colors = biome_colorscale()
+        return go.Heatmap(
+            z=grid.tolist(),
+            colorscale=cs,
+            zmin=0,
+            zmax=n_colors - 1,
+            hovertemplate='Row %{y}, Col %{x}<br>Biome idx: %{z}<extra></extra>',
+            showscale=False,
+            name='Biome',
+        )
 
-    biome_trace = go.Heatmap(
-        z=biome_grid.tolist(),
-        colorscale=cs,
-        zmin=0,
-        zmax=n_colors - 1,
-        hovertemplate='Row %{y}, Col %{x}<br>Biome idx: %{z}<extra></extra>',
-        showscale=False,
-        name='Biome',
-    )
+    def _placement_shapes(placements_local: Dict, pg: PlotGrid, d: int):
+        shapes_local = []
+        if placements_local and d == 0:
+            for key, info in placements_local.items():
+                r, c = map(int, key.split(','))
+                gr = r - pg.min_row
+                gc = c - pg.min_col
+                if isinstance(info, dict):
+                    species = info.get('species', 'mammoth')
+                else:
+                    species = 'mammoth'
+                if species == 'wolf':
+                    border_color = '#7f8c8d'
+                    fill_color = 'rgba(127,140,141,0.15)'
+                else:
+                    border_color = '#8B4513'
+                    fill_color = 'rgba(139,69,19,0.15)'
+                shapes_local.append(dict(
+                    type='rect',
+                    x0=gc - 0.5, y0=gr - 0.5, x1=gc + 0.5, y1=gr + 0.5,
+                    line=dict(color=border_color, width=2),
+                    fillcolor=fill_color,
+                ))
+        return shapes_local
 
-    shapes = []
+    def _fauna_shapes_and_counts(pg: PlotGrid, d: int):
+        shapes_local = []
+        mammoth_count_local = 0
+        wolf_count_local = 0
+        if d > 0:
+            for (r, c), plot in pg.plots.items():
+                has_mammoths = any(f.get_name() == 'Mammoth' and f.get_population() > 0 for f in plot.get_all_fauna())
+                has_wolves = any(f.get_name() == 'Wolf' and f.get_population() > 0 for f in plot.get_all_fauna())
+                gr = r - pg.min_row
+                gc = c - pg.min_col
+                if has_mammoths:
+                    mammoth_count_local += 1
+                    shapes_local.append(dict(
+                        type='rect',
+                        x0=gc - 0.5, y0=gr - 0.5, x1=gc + 0.5, y1=gr + 0.5,
+                        line=dict(color='#8B4513', width=2),
+                        fillcolor='rgba(139,69,19,0.15)',
+                    ))
+                if has_wolves:
+                    wolf_count_local += 1
+                    shapes_local.append(dict(
+                        type='rect',
+                        x0=gc - 0.5, y0=gr - 0.5, x1=gc + 0.5, y1=gr + 0.5,
+                        line=dict(color='#7f8c8d', width=2),
+                        fillcolor='rgba(127,140,141,0.15)',
+                    ))
+        return shapes_local, mammoth_count_local, wolf_count_local
 
-    # Show colored borders on placement cells (before simulation starts)
-    if placements and day == 0:
-        for key, info in placements.items():
-            r, c = map(int, key.split(','))
-            gr = r - plot_grid.min_row
-            gc = c - plot_grid.min_col
-            # Handle both new format (dict with species) and old format (just density)
-            if isinstance(info, dict):
-                species = info.get('species', 'mammoth')
-            else:
-                species = 'mammoth'
-            if species == 'wolf':
-                border_color = '#7f8c8d'
-                fill_color = 'rgba(127,140,141,0.15)'
-            else:
-                border_color = '#8B4513'
-                fill_color = 'rgba(139,69,19,0.15)'
-            shapes.append(dict(
-                type='rect',
-                x0=gc - 0.5, y0=gr - 0.5, x1=gc + 0.5, y1=gr + 0.5,
-                line=dict(color=border_color, width=2),
-                fillcolor=fill_color,
+    def _legend_shapes_annotations():
+        legend_shapes_local = []
+        legend_annotations_local = []
+        box_x0 = 1.02
+        box_x1 = 1.06
+        start_y = 0.9
+        step_y = 0.08
+        items = ['Water'] + list(BIOME_COLORS.keys())
+        colors = ['#001F5C'] + list(BIOME_COLORS.values())
+        for i, (label, color) in enumerate(zip(items, colors)):
+            y_center = start_y - i * step_y
+            y0 = y_center - step_y * 0.35
+            y1 = y_center + step_y * 0.35
+            legend_shapes_local.append(dict(
+                type='rect', xref='paper', yref='paper',
+                x0=box_x0, x1=box_x1, y0=y0, y1=y1,
+                line=dict(color='#000000', width=1), fillcolor=color,
             ))
+            legend_annotations_local.append(dict(
+                x=box_x1 + 0.01, y=y_center, xref='paper', yref='paper',
+                text=label, showarrow=False, xanchor='left', yanchor='middle',
+                font=dict(size=10, color='#111111')
+            ))
+        return legend_shapes_local, legend_annotations_local
 
-    # Show borders on plots with fauna (during simulation)
-    mammoth_count = 0
-    wolf_count = 0
-    if day > 0:
-        for (r, c), plot in plot_grid.plots.items():
-            has_mammoths = any(f.get_name() == 'Mammoth' and f.get_population() > 0 
-                               for f in plot.get_all_fauna())
-            has_wolves = any(f.get_name() == 'Wolf' and f.get_population() > 0 
-                             for f in plot.get_all_fauna())
-            gr = r - plot_grid.min_row
-            gc = c - plot_grid.min_col
-            if has_mammoths:
-                mammoth_count += 1
-                shapes.append(dict(
-                    type='rect',
-                    x0=gc - 0.5, y0=gr - 0.5, x1=gc + 0.5, y1=gr + 0.5,
-                    line=dict(color='#8B4513', width=2),  # Brown
-                    fillcolor='rgba(139,69,19,0.15)',
-                ))
-            if has_wolves:
-                wolf_count += 1
-                shapes.append(dict(
-                    type='rect',
-                    x0=gc - 0.5, y0=gr - 0.5, x1=gc + 0.5, y1=gr + 0.5,
-                    line=dict(color='#7f8c8d', width=2),  # Gray
-                    fillcolor='rgba(127,140,141,0.15)',
-                ))
+    try:
+        biome_trace = _build_biome_trace(plot_grid)
+        placement_shapes = _placement_shapes(placements, plot_grid, day)
+        fauna_shapes, mammoth_count, wolf_count = _fauna_shapes_and_counts(plot_grid, day)
+        legend_shapes, legend_annotations = _legend_shapes_annotations()
 
-    title_text = 'Eastern Siberia — Click to place fauna' if day == 0 else f'Eastern Siberia Biome Map — Day {day}'
-    if placements and day == 0:
-        title_text = f'Eastern Siberia — {len(placements)} placement(s)'
+        title_text = 'Eastern Siberia — Click to place fauna' if day == 0 else f'Eastern Siberia Biome Map — Day {day}'
+        if placements and day == 0:
+            title_text = f'Eastern Siberia — {len(placements)} placement(s)'
 
-    fig = go.Figure(data=[biome_trace])
-    legend_shapes = []
-    legend_annotations = []
-    box_x0 = 1.02
-    box_x1 = 1.06
-    start_y = 0.9
-    step_y = 0.08
-    items = ['Water'] + list(BIOME_COLORS.keys())
-    colors = ['#001F5C'] + list(BIOME_COLORS.values())
-    for i, (label, color) in enumerate(zip(items, colors)):
-        y_center = start_y - i * step_y
-        y0 = y_center - step_y * 0.35
-        y1 = y_center + step_y * 0.35
-        legend_shapes.append(dict(
-            type='rect', xref='paper', yref='paper',
-            x0=box_x0, x1=box_x1, y0=y0, y1=y1,
-            line=dict(color='#000000', width=1), fillcolor=color,
-        ))
-        legend_annotations.append(dict(
-            x=box_x1 + 0.01, y=y_center, xref='paper', yref='paper',
-            text=label, showarrow=False, xanchor='left', yanchor='middle',
-            font=dict(size=10, color='#111111')
-        ))
+        fig = go.Figure(data=[biome_trace])
+        all_shapes = placement_shapes + fauna_shapes + legend_shapes
 
-    all_shapes = shapes + legend_shapes
-
-    fig.update_layout(
-        title=dict(text=title_text, x=0.5, font=dict(size=16)),
-        xaxis=dict(showticklabels=False, showgrid=False, constrain='domain'),
-        yaxis=dict(showticklabels=False, showgrid=False, scaleanchor='x'),
-        shapes=all_shapes,
-        annotations=legend_annotations,
-        margin=dict(l=10, r=140, t=50, b=10),
-        plot_bgcolor='#001F5C',
-        paper_bgcolor='#f5f5f5',
-    )
-    return fig, mammoth_count, wolf_count
+        fig.update_layout(
+            title=dict(text=title_text, x=0.5, font=dict(size=16)),
+            xaxis=dict(showticklabels=False, showgrid=False, constrain='domain'),
+            yaxis=dict(showticklabels=False, showgrid=False, scaleanchor='x'),
+            shapes=all_shapes,
+            annotations=legend_annotations,
+            margin=dict(l=10, r=140, t=50, b=10),
+            plot_bgcolor='#001F5C',
+            paper_bgcolor='#f5f5f5',
+        )
+        return fig, mammoth_count, wolf_count
+    except Exception:
+        log.exception('Failed to build figure')
+        # Return a minimal fallback figure and zero counts to avoid breaking callers
+        return go.Figure(), 0, 0
 
 
 def _build_stats(plot_grid: PlotGrid, day: int, mammoth_plots: int = 0, wolf_plots: int = 0):
