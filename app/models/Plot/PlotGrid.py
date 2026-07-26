@@ -257,7 +257,7 @@ class PlotGrid:
                 showscale=False,
                 hovertemplate='Row: %{y}<br>Col: %{x}<br>Biome: %{customdata}',
                 customdata=np.vectorize(lambda v: int_to_biome.get(v, 'Water'))(grid),
-                zsmooth=False,
+                zsmooth='nearest',
             ))
 
             mammoth_count, total_mammoth_population = self._add_mammoth_borders(fig)

@@ -9,6 +9,8 @@ from app.setup.grid_initializer import GridInitializer
 from app.models.Plot.PlotGrid import PlotGrid
 import numpy as np
 import logging
+import threading
+from app.simulation import SimulationRunner
 
 
 # ── Biome colors used throughout ──
@@ -118,6 +120,12 @@ def create_siberia_grid(resolution: float = 0.75, lon_min: float = 120.0, lon_ma
 # ═══════════════════════════════════════════════════════════
 #  Grid data helpers
 # ═══════════════════════════════════════════════════════════
+
+# Module-level lock to prevent overlapping interval callbacks
+SIM_LOCK = threading.Lock()
+
+# Simulation runner (set when app is created)
+SIM_RUNNER = None
 
 # Cache for blended grid - blend once at startup, then only update changed cells
 _grid_cache: Dict = {'blended': None, 'original': None}
@@ -428,6 +436,10 @@ def create_dash_app(plot_grid: PlotGrid, initializer: GridInitializer):
     # Initial figure
     init_fig, _, _ = _build_figure(plot_grid)
 
+    # Create background simulation runner
+    global SIM_RUNNER
+    SIM_RUNNER = SimulationRunner(plot_grid, initializer, SIM_LOCK, interval_seconds=1.0)
+
     # ── Layout ──
     app.layout = html.Div(style={'display': 'flex', 'height': '100vh', 'fontFamily': 'Arial'}, children=[
         # ── Sidebar ──
@@ -581,6 +593,7 @@ def create_dash_app(plot_grid: PlotGrid, initializer: GridInitializer):
     @app.callback(
         Output('sim-state', 'data'),
         Output('sim-interval', 'disabled'),
+        Output('sim-interval', 'n_intervals'),
         Output('start-btn', 'children'),
         Output('start-btn', 'style'),
         Output('placement-controls', 'style'),
@@ -590,50 +603,36 @@ def create_dash_app(plot_grid: PlotGrid, initializer: GridInitializer):
         prevent_initial_call=True,
     )
     def toggle_simulation(n_clicks, sim_state, placements):
-        if sim_state['running']:
-            # Stop simulation
-            sim_state['running'] = False
-            return (
-                sim_state,
-                True,  # disable interval
-                'Start Simulation',
-                {'marginTop': '10px', 'padding': '12px 20px', 'fontSize': '14px',
-                 'cursor': 'pointer', 'backgroundColor': '#27ae60',
-                 'color': '#fff', 'border': 'none', 'borderRadius': '5px',
-                 'fontWeight': 'bold', 'width': '100%'},
-                {},  # show placement controls
-            )
-        else:
-            # Start simulation - first add fauna from placements
-            if not sim_state['initialized'] and placements:
-                for key, info in placements.items():
-                    r, c = map(int, key.split(','))
-                    plot = plot_grid.get_plot(r, c)
-                    if plot:
-                        if isinstance(info, dict):
-                            density = info.get('density', 2.0)
-                            species = info.get('species', 'mammoth')
-                        else:
-                            density = info
-                            species = 'mammoth'
-                        
-                        if species == 'mammoth':
-                            initializer.add_mammoth_to_plot(plot, population_per_km2=density)
-                        elif species == 'wolf':
-                            initializer.add_wolf_to_plot(plot, population_per_km2=density)
-                sim_state['initialized'] = True
+        """Start or stop the background SimulationRunner and return updated UI outputs."""
+        global SIM_RUNNER
+        from dash import no_update
 
-            sim_state['running'] = True
-            return (
-                sim_state,
-                False,  # enable interval
-                'Stop Simulation',
-                {'marginTop': '10px', 'padding': '12px 20px', 'fontSize': '14px',
-                 'cursor': 'pointer', 'backgroundColor': '#c0392b',
-                 'color': '#fff', 'border': 'none', 'borderRadius': '5px',
-                 'fontWeight': 'bold', 'width': '100%'},
-                {'display': 'none'},  # hide placement controls
-            )
+        # If no runner available, fall back to current behavior
+        if SIM_RUNNER is None:
+            return sim_state, True, 0, 'Start Simulation', {}, {}
+
+        # Stop runner
+        if sim_state.get('running'):
+            SIM_RUNNER.stop()
+            new_state = dict(sim_state)
+            new_state['running'] = False
+            return new_state, True, 0, 'Start Simulation', {'marginTop': '10px', 'padding': '12px 20px', 'fontSize': '14px',
+                                                           'cursor': 'pointer', 'backgroundColor': '#27ae60',
+                                                           'color': '#fff', 'border': 'none', 'borderRadius': '5px',
+                                                           'fontWeight': 'bold', 'width': '100%'}, {}
+
+        # Start runner: apply placements if needed, then start
+        if not sim_state.get('initialized') and placements:
+            SIM_RUNNER.apply_placements(placements)
+
+        SIM_RUNNER.start()
+        new_state = dict(sim_state)
+        new_state['running'] = True
+        new_state['initialized'] = SIM_RUNNER.get_state().get('initialized', new_state.get('initialized', False))
+        return new_state, False, 0, 'Stop Simulation', {'marginTop': '10px', 'padding': '12px 20px', 'fontSize': '14px',
+                                                        'cursor': 'pointer', 'backgroundColor': '#c0392b',
+                                                        'color': '#fff', 'border': 'none', 'borderRadius': '5px',
+                                                        'fontWeight': 'bold', 'width': '100%'}, {'display': 'none'}
 
     # ══════════════════════════════════════════════════════
     #  Simulation step on interval
@@ -648,18 +647,28 @@ def create_dash_app(plot_grid: PlotGrid, initializer: GridInitializer):
     )
     def run_simulation_step(n_intervals, sim_state):
         from dash import no_update
+        # Read state from the SimulationRunner and render UI
+        global SIM_RUNNER
+        if SIM_RUNNER is None:
+            return sim_state, no_update, no_update
 
-        if not sim_state['running']:
-            return no_update, no_update, no_update
+        runner_state = SIM_RUNNER.get_state()
+        # If not running, return explicit state
+        if not runner_state.get('running'):
+            return runner_state, no_update, no_update
 
-        # Advance one day
-        new_state = dict(sim_state)
-        new_state['day'] += 1
-        plot_grid.update_all_plots(day=new_state['day'])
-        print(f"[SIM] Day {new_state['day']} tick at n_intervals={n_intervals}")
-        fig, mammoth_count, wolf_count = _build_figure(plot_grid, {}, new_state['day'])
-        stats_children = _build_stats(plot_grid, new_state['day'], mammoth_count, wolf_count)
-        return new_state, fig, stats_children
+        # Try to acquire lock for safe read of plot_grid
+        acquired = SIM_LOCK.acquire(blocking=False)
+        if not acquired:
+            return runner_state, no_update, no_update
+
+        try:
+            day = runner_state.get('day', sim_state.get('day', 1))
+            fig, mammoth_count, wolf_count = _build_figure(plot_grid, {}, day)
+            stats_children = _build_stats(plot_grid, day, mammoth_count, wolf_count)
+            return runner_state, fig, stats_children
+        finally:
+            SIM_LOCK.release()
 
     return app
 
