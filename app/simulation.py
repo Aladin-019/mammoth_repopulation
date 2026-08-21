@@ -4,7 +4,6 @@ from typing import Dict, Any, Optional
 from app.models.Plot.PlotGrid import PlotGrid
 from app.setup.grid_initializer import GridInitializer
 
-
 class SimulationRunner:
     """Background thread that owns the simulation state and advances days.
 

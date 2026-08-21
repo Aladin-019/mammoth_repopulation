@@ -1,0 +1,5 @@
+# Development/profiling dependencies
+-r requirements.txt
+
+py-spy==0.4.2      # Sampling profiler - attaches to a running process
+snakeviz==2.2.2    # Interactive viewer for cProfile/.prof output (flame-graph style)
